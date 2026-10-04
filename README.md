@@ -3,24 +3,25 @@
 Final Project - Intermediate Programmer
 **PT Neuronworks Indonesia** · September 2026
 
-Aplikasi web manajemen inventory dan order dengan multi-warehouse, tiga peran (Admin / Sales / Warehouse Staff), Purchase Order, Sales Order, Stock Ledger, Dashboard KPI, CSV Reporting, dan Product Availability API. Gambar produk disimpan di MinIO (S3-compatible). UI berbahasa Inggris dengan satu tema terang.
+A web-based inventory and order management application with multi-warehouse support, three roles (Admin / Sales / Warehouse Staff), Purchase Order, Sales Order, Stock Ledger, KPI Dashboard, CSV Reporting, and a Product Availability API. Product images are stored in MinIO (S3-compatible). English UI with a single light theme.
 
-## Tech Stack (Wajib)
+## Tech Stack (Required)
 - **Backend:** PHP 8.3 Native OOP (brief: 8.2+), Controller → Service → Repository
 - **Frontend:** HTML, CSS, Vanilla JavaScript + Fetch API
 - **Database:** MySQL 8, PDO prepared statements, InnoDB transactions
-- **Container:** Docker + Docker Compose (5 services: `app` — PHP 8.3, `cron` — low-stock check, `db` — MySQL 8, `redis` — sessions, `memcached` — product & permission cache). Object storage memakai MinIO eksternal (`portfolio-minio`, lihat `MINIO_*` di `compose.yaml`).
+- **Container:** Docker + Docker Compose (5 services: `app` — PHP 8.3, `cron` — low-stock check, `db` — MySQL 8, `redis` — sessions, `memcached` — product & permission cache). Object storage uses an external MinIO instance (`portfolio-minio`, see `MINIO_*` in `compose.yaml`).
 - **Testing:** PHPUnit (Unit + Integration), PHPStan level 5 ✅
 
-## Konfigurasi `.env` (wajib sebelum start)
+## `.env` Configuration (required before start)
 
-Semua credential dibaca dari file `.env` dan **tidak** disimpan di repository
-(secret di `compose.yaml` memakai pola `${VAR:?}`, jadi Compose menolak start
-bila `.env` belum ada). Pada clone bersih, buat `.env` di root proyek — salin
-blok di bawah ini (nilai di bawah aman untuk lokal/demo, **ganti untuk produksi**):
+All credentials are read from a `.env` file and are **not** stored in the
+repository (secrets in `compose.yaml` use the `${VAR:?}` pattern, so Compose
+refuses to start if `.env` is missing). On a clean clone, create a `.env`
+file at the project root — copy the block below (the values below are safe
+for local/demo use, **change them for production**):
 
 ```dotenv
-# Aplikasi
+# Application
 APP_ENV=local
 APP_DEBUG=true
 APP_PORT=8090
@@ -45,7 +46,7 @@ REDIS_PORT=6379
 MEMCACHED_HOST=memcached
 MEMCACHED_PORT=11211
 
-# Object storage (MinIO eksternal — portfolio-minio)
+# Object storage (external MinIO — portfolio-minio)
 MINIO_ENDPOINT=http://host.docker.internal:9000
 MINIO_PUBLIC_URL=http://localhost:9000
 MINIO_REGION=us-east-1
@@ -53,19 +54,19 @@ MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin123
 MINIO_BUCKET=portfolio-uploads
 
-# Keamanan
+# Security
 ID_OBFUSCATION_KEY=change_this_to_a_long_random_string
 ```
 
-> Kalau `.env` belum dibuat, `docker compose up` sengaja gagal dengan pesan
-> `required variable ... is missing` — itu perilaku keamanan yang diharapkan,
-> bukan bug.
+> If `.env` has not been created, `docker compose up` intentionally fails
+> with `required variable ... is missing` — that is expected security
+> behavior, not a bug.
 
 ## Quick Start
 
 ```bash
-# 1. Buat file .env dulu (lihat bagian "Konfigurasi .env" di atas), lalu start
-#    5 containers: app + cron + db + redis + memcached (MinIO jalan terpisah)
+# 1. Create the .env file first (see ".env Configuration" above), then start
+#    5 containers: app + cron + db + redis + memcached (MinIO runs separately)
 docker compose up --build -d
 
 # Schema + seed data load automatically on first start via MySQL's
@@ -180,4 +181,3 @@ docs/
 ## Status
 **Stage 9 Release** — v1.0-mvp
 All 6 slices complete. Docker clean rebuild verified. PHPUnit Unit 101/101 + Integration 17/17 ✅ · PHPStan level 5 0 errors ✅ (re-verified 2026-09-25) · QA 103 checks pass ✅
-
