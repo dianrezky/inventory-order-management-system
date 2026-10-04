@@ -115,58 +115,66 @@ class CategoryService
         $result = new Result();
 
         try {
+            // The first failing step wins; $result is populated only when all pass.
             $name = trim((string) ($input['name'] ?? ''));
-            $nameError = $this->validateName($name);
-            if ($nameError !== null) {
-                return $this->validationResult($result, $nameError);
-            }
-
             $description = $this->nullableTrim($input['description'] ?? null);
-            $descriptionError = $this->validateDescription($description);
-            if ($descriptionError !== null) {
-                return $this->validationResult($result, $descriptionError);
+
+            $errorResult = null;
+            $fieldError = $this->validateName($name) ?? $this->validateDescription($description);
+            if ($fieldError !== null) {
+                $errorResult = $this->validationResult($result, $fieldError);
             }
 
-            $nameExistsResult = $this->categoryRepository->nameExists($name);
-            if ($nameExistsResult->code !== Result::CODE_SUCCESS) {
-                return $nameExistsResult;
-            }
-            if ($nameExistsResult->data) {
-                return $this->validationResult($result, 'This name is already in use.');
-            }
-
-            $codeOrError = $this->resolveCode($input['code'] ?? null, $name, null);
-            if (is_array($codeOrError) && isset($codeOrError['error'])) {
-                return $this->validationResult($result, $codeOrError['error']);
-            }
-            $code = $codeOrError;
-
-            $isActive = $this->parseStatus($input['status'] ?? $input['is_active'] ?? true);
-
-            $createResult = $this->categoryRepository->create([
-                'code' => $code,
-                'name' => $name,
-                'description' => $description,
-                'is_active' => $isActive,
-            ]);
-            if ($createResult->code !== Result::CODE_SUCCESS) {
-                return $createResult;
+            if ($errorResult === null) {
+                $nameExistsResult = $this->categoryRepository->nameExists($name);
+                if ($nameExistsResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $nameExistsResult;
+                } elseif ($nameExistsResult->data) {
+                    $errorResult = $this->validationResult($result, 'This name is already in use.');
+                }
             }
 
-            $findResult = $this->categoryRepository->findById($createResult->data);
-            if ($findResult->code !== Result::CODE_SUCCESS) {
-                return $findResult;
+            $code = null;
+            if ($errorResult === null) {
+                $codeOrError = $this->resolveCode($input['code'] ?? null, $name, null);
+                if (is_array($codeOrError) && isset($codeOrError['error'])) {
+                    $errorResult = $this->validationResult($result, $codeOrError['error']);
+                } else {
+                    $code = $codeOrError;
+                }
             }
 
-            if ($findResult->data === null) {
-                return $this->validationResult($result, 'Could not create the record. Please try again.');
+            $createResult = null;
+            if ($errorResult === null) {
+                $createResult = $this->categoryRepository->create([
+                    'code' => $code,
+                    'name' => $name,
+                    'description' => $description,
+                    'is_active' => $this->parseStatus($input['status'] ?? $input['is_active'] ?? true),
+                ]);
+                if ($createResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $createResult;
+                }
             }
 
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'The category has been created.';
-            $result->data = $findResult->data;
+            if ($errorResult === null) {
+                $findResult = $this->categoryRepository->findById($createResult->data);
+                if ($findResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $findResult;
+                } elseif ($findResult->data === null) {
+                    $errorResult = $this->validationResult($result, 'Could not create the record. Please try again.');
+                } else {
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The category has been created.';
+                    $result->data = $findResult->data;
 
-            $this->logEvent($actorId, 'create', $findResult->data->id, "Created category \"{$findResult->data->name}\" ({$findResult->data->code})");
+                    $this->logEvent($actorId, 'create', $findResult->data->id, "Created category \"{$findResult->data->name}\" ({$findResult->data->code})");
+                }
+            }
+
+            if ($errorResult !== null) {
+                return $errorResult;
+            }
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -182,62 +190,71 @@ class CategoryService
         $result = new Result();
 
         try {
+            // The first failing step wins; $result is populated only when all pass.
             $existingResult = $this->categoryRepository->findById($id);
+            $errorResult = null;
             if ($existingResult->code !== Result::CODE_SUCCESS) {
-                return $existingResult;
-            }
-            if ($existingResult->data === null) {
-                return $this->validationResult($result, 'Record not found.');
+                $errorResult = $existingResult;
+            } elseif ($existingResult->data === null) {
+                $errorResult = $this->validationResult($result, 'Record not found.');
             }
 
             $name = trim((string) ($input['name'] ?? ''));
-            $nameError = $this->validateName($name);
-            if ($nameError !== null) {
-                return $this->validationResult($result, $nameError);
-            }
-
             $description = $this->nullableTrim($input['description'] ?? null);
-            $descriptionError = $this->validateDescription($description);
-            if ($descriptionError !== null) {
-                return $this->validationResult($result, $descriptionError);
+            if ($errorResult === null) {
+                $fieldError = $this->validateName($name) ?? $this->validateDescription($description);
+                if ($fieldError !== null) {
+                    $errorResult = $this->validationResult($result, $fieldError);
+                }
             }
 
-            $nameExistsResult = $this->categoryRepository->nameExists($name, $id);
-            if ($nameExistsResult->code !== Result::CODE_SUCCESS) {
-                return $nameExistsResult;
-            }
-            if ($nameExistsResult->data) {
-                return $this->validationResult($result, 'This name is already in use.');
-            }
-
-            $codeOrError = $this->resolveCode($input['code'] ?? null, $name, $id);
-            if (is_array($codeOrError) && isset($codeOrError['error'])) {
-                return $this->validationResult($result, $codeOrError['error']);
-            }
-            $code = $codeOrError;
-
-            $isActive = $this->parseStatus($input['status'] ?? $input['is_active'] ?? $existingResult->data->isActive);
-
-            $updateResult = $this->categoryRepository->update($id, [
-                'code' => $code,
-                'name' => $name,
-                'description' => $description,
-                'is_active' => $isActive,
-            ]);
-            if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
+            if ($errorResult === null) {
+                $nameExistsResult = $this->categoryRepository->nameExists($name, $id);
+                if ($nameExistsResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $nameExistsResult;
+                } elseif ($nameExistsResult->data) {
+                    $errorResult = $this->validationResult($result, 'This name is already in use.');
+                }
             }
 
-            $findResult = $this->categoryRepository->findById($id);
-            if ($findResult->code !== Result::CODE_SUCCESS) {
-                return $findResult;
+            $code = null;
+            if ($errorResult === null) {
+                $codeOrError = $this->resolveCode($input['code'] ?? null, $name, $id);
+                if (is_array($codeOrError) && isset($codeOrError['error'])) {
+                    $errorResult = $this->validationResult($result, $codeOrError['error']);
+                } else {
+                    $code = $codeOrError;
+                }
             }
 
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'The category has been updated.';
-            $result->data = $findResult->data;
+            if ($errorResult === null) {
+                $updateResult = $this->categoryRepository->update($id, [
+                    'code' => $code,
+                    'name' => $name,
+                    'description' => $description,
+                    'is_active' => $this->parseStatus($input['status'] ?? $input['is_active'] ?? $existingResult->data->isActive),
+                ]);
+                if ($updateResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updateResult;
+                }
+            }
 
-            $this->logEvent($actorId, 'update', $id, "Updated category \"{$findResult->data->name}\" ({$findResult->data->code})");
+            if ($errorResult === null) {
+                $findResult = $this->categoryRepository->findById($id);
+                if ($findResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $findResult;
+                } else {
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The category has been updated.';
+                    $result->data = $findResult->data;
+
+                    $this->logEvent($actorId, 'update', $id, "Updated category \"{$findResult->data->name}\" ({$findResult->data->code})");
+                }
+            }
+
+            if ($errorResult !== null) {
+                return $errorResult;
+            }
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -293,33 +310,40 @@ class CategoryService
         $result = new Result();
 
         try {
+            // The first failing step wins; $result is populated only when all pass.
             $existingResult = $this->categoryRepository->findById($id);
+            $errorResult = null;
             if ($existingResult->code !== Result::CODE_SUCCESS) {
-                return $existingResult;
-            }
-            if ($existingResult->data === null) {
-                return $this->validationResult($result, 'Record not found.');
-            }
-
-            $countResult = $this->categoryRepository->countAssignedSkus($id);
-            if ($countResult->code !== Result::CODE_SUCCESS) {
-                return $countResult;
+                $errorResult = $existingResult;
+            } elseif ($existingResult->data === null) {
+                $errorResult = $this->validationResult($result, 'Record not found.');
             }
 
-            if ((int) $countResult->data > 0) {
-                return $this->validationResult($result, self::MESSAGE_CANNOT_DELETE_HAS_PRODUCTS);
+            if ($errorResult === null) {
+                $countResult = $this->categoryRepository->countAssignedSkus($id);
+                if ($countResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $countResult;
+                } elseif ((int) $countResult->data > 0) {
+                    $errorResult = $this->validationResult($result, self::MESSAGE_CANNOT_DELETE_HAS_PRODUCTS);
+                }
             }
 
-            $deleteResult = $this->categoryRepository->delete($id);
-            if ($deleteResult->code !== Result::CODE_SUCCESS) {
-                return $deleteResult;
+            if ($errorResult === null) {
+                $deleteResult = $this->categoryRepository->delete($id);
+                if ($deleteResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $deleteResult;
+                } else {
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The category has been deleted.';
+                    $result->data = null;
+
+                    $this->logEvent($actorId, 'delete', $id, "Deleted category \"{$existingResult->data->name}\" ({$existingResult->data->code})");
+                }
             }
 
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'The category has been deleted.';
-            $result->data = null;
-
-            $this->logEvent($actorId, 'delete', $id, "Deleted category \"{$existingResult->data->name}\" ({$existingResult->data->code})");
+            if ($errorResult !== null) {
+                return $errorResult;
+            }
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -410,14 +434,14 @@ class CategoryService
         }
 
         $existsResult = $this->categoryRepository->codeExists($code, $excludeId);
+        $resolved = $code;
         if ($existsResult->code !== Result::CODE_SUCCESS) {
-            return ['error' => self::MESSAGE_FAILED_FUNCTION];
-        }
-        if ($existsResult->data) {
-            return ['error' => 'This category code is already in use.'];
+            $resolved = ['error' => self::MESSAGE_FAILED_FUNCTION];
+        } elseif ($existsResult->data) {
+            $resolved = ['error' => 'This category code is already in use.'];
         }
 
-        return $code;
+        return $resolved;
     }
 
     private function generateUniqueCode($name)

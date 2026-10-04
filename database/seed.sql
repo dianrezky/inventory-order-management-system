@@ -422,4 +422,20 @@ INSERT INTO role_permissions (permission_key, role) VALUES
     ('reports.purchase_orders.view', 'Admin')
 ON DUPLICATE KEY UPDATE role = VALUES(role);
 
+-- ----------------------------------------------------------------------------
+-- file_validation_rules — permitted product-image extensions + magic bytes.
+-- Consulted by ImageUploadService (via FileValidationService / Memcached).
+-- ----------------------------------------------------------------------------
+INSERT INTO file_validation_rules (extension, mime_type, header_hex, footer_hex, read_bytes, is_active) VALUES
+    ('jpg',  'image/jpeg', 'FFD8FF',   'FFD9',             3, 1),
+    ('jpeg', 'image/jpeg', 'FFD8FF',   'FFD9',             3, 1),
+    ('png',  'image/png',  '89504E47', '49454E44AE426082', 8, 1),
+    ('webp', 'image/webp', '52494646', NULL,               4, 1)
+ON DUPLICATE KEY UPDATE
+    mime_type  = VALUES(mime_type),
+    header_hex = VALUES(header_hex),
+    footer_hex = VALUES(footer_hex),
+    read_bytes = VALUES(read_bytes),
+    is_active  = VALUES(is_active);
+
 

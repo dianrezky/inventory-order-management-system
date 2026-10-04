@@ -51,82 +51,91 @@ class GoodsReceiptService
         $result = new Result();
 
         try {
+            // The first failing step wins; the atomic stock write runs only after
+            // every pre-flight check passes, and $result is populated on success.
+            $errorResult = null;
             $findResult = $this->purchaseOrderRepository->findById($purchaseOrderId);
             if ($findResult->code !== Result::CODE_SUCCESS) {
-                return $findResult;
+                $errorResult = $findResult;
             }
 
-            $purchaseOrder = $findResult->data;
+            $purchaseOrder = null;
+            if ($errorResult === null) {
+                $purchaseOrder = $findResult->data;
 
-            $headerInfo = '';
-            if ($purchaseOrder === null) {
-                $headerInfo = 'Record not found.';
-            } elseif (!$purchaseOrder->canReceiveGoods()) {
-                $headerInfo = 'Goods can only be received for an Ordered or Partially Received purchase order.';
-            }
+                $headerInfo = '';
+                if ($purchaseOrder === null) {
+                    $headerInfo = 'Record not found.';
+                } elseif (!$purchaseOrder->canReceiveGoods()) {
+                    $headerInfo = 'Goods can only be received for an Ordered or Partially Received purchase order.';
+                }
 
-            if ($headerInfo !== '') {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = $headerInfo;
-                $result->data = null;
-
-                return $result;
-            }
-
-            $itemsResult = $this->purchaseOrderItemRepository->findByPurchaseOrderId($purchaseOrderId);
-            if ($itemsResult->code !== Result::CODE_SUCCESS) {
-                return $itemsResult;
+                if ($headerInfo !== '') {
+                    $result->code = Result::CODE_VALIDATION;
+                    $result->info = $headerInfo;
+                    $result->data = null;
+                    $errorResult = $result;
+                }
             }
 
             $itemsById = [];
-            foreach ($itemsResult->data as $item) {
-                $itemsById[$item->id] = $item;
+            if ($errorResult === null) {
+                $itemsResult = $this->purchaseOrderItemRepository->findByPurchaseOrderId($purchaseOrderId);
+                if ($itemsResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $itemsResult;
+                } else {
+                    foreach ($itemsResult->data as $item) {
+                        $itemsById[$item->id] = $item;
+                    }
+                }
             }
 
-            $lines = $this->buildValidatedLines($receiptLines, $itemsById, $purchaseOrderId);
-
-            if ($lines instanceof Result) {
-                return $lines;
+            $lines = null;
+            if ($errorResult === null) {
+                $lines = $this->buildValidatedLines($receiptLines, $itemsById, $purchaseOrderId);
+                if ($lines instanceof Result) {
+                    $errorResult = $lines;
+                } elseif ($lines === []) {
+                    $result->code = Result::CODE_VALIDATION;
+                    $result->info = 'Enter a quantity for at least one line item.';
+                    $result->data = null;
+                    $errorResult = $result;
+                }
             }
 
-            if ($lines === []) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = 'Enter a quantity for at least one line item.';
-                $result->data = null;
+            if ($errorResult === null) {
+                $refreshed = $this->applyLinesInTransaction(
+                    $lines,
+                    $purchaseOrder->destinationWarehouseId,
+                    $purchaseOrderId,
+                    $userId
+                );
 
-                return $result;
+                if ($refreshed instanceof Result) {
+                    $errorResult = $refreshed;
+                } elseif ($refreshed === null) {
+                    $result->code = Result::CODE_VALIDATION;
+                    $result->info = 'Record not found.';
+                    $result->data = null;
+                    $errorResult = $result;
+                } else {
+                    $finalItemsResult = $this->purchaseOrderItemRepository->findByPurchaseOrderId($purchaseOrderId);
+                    $finalItems = $finalItemsResult->code === Result::CODE_SUCCESS ? $finalItemsResult->data : [];
+
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The goods receipt has been recorded and stock updated.';
+                    $result->data = $refreshed->withItems($finalItems);
+
+                    // Logged after commit() — never inside the transaction that owns
+                    // the actual stock/ledger write (see EventLogService header comment).
+                    if ($this->eventLogService !== null) {
+                        $this->eventLogService->record($userId, 'receive', 'PurchaseOrder', $purchaseOrderId, "Recorded goods receipt for PO #{$purchaseOrderId}");
+                    }
+                }
             }
 
-            $refreshed = $this->applyLinesInTransaction(
-                $lines,
-                $purchaseOrder->destinationWarehouseId,
-                $purchaseOrderId,
-                $userId
-            );
-
-            if ($refreshed instanceof Result) {
-                return $refreshed;
-            }
-
-            if ($refreshed === null) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = 'Record not found.';
-                $result->data = null;
-
-                return $result;
-            }
-
-            $finalItemsResult = $this->purchaseOrderItemRepository->findByPurchaseOrderId($purchaseOrderId);
-            $finalItems = $finalItemsResult->code === Result::CODE_SUCCESS ? $finalItemsResult->data : [];
-
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'The goods receipt has been recorded and stock updated.';
-            $result->data = $refreshed->withItems($finalItems);
-
-            // Logged after commit() — never inside the transaction that owns
-            // the actual stock/ledger write (see EventLogService header comment).
-            if ($this->eventLogService !== null) {
-                $this->eventLogService->record($userId, 'receive', 'PurchaseOrder', $purchaseOrderId, "Recorded goods receipt for PO #{$purchaseOrderId}");
+            if ($errorResult !== null) {
+                return $errorResult;
             }
         } catch (\Throwable $e) {
             $this->transactionManager->rollBack();
@@ -159,43 +168,56 @@ class GoodsReceiptService
         // canReceiveGoods() check in process() ran unlocked, so a receipt racing
         // a cancel could otherwise re-open a Cancelled PO via recomputeStatus().
         // Concurrent receipts of the same PO also serialise here.
+        // $outcome holds the first failing Result; on success the refreshed PO is
+        // returned. Either way the single exit picks rollBack() vs commit().
+        $outcome = null;
+        $resultData = null;
+
         $poLockResult = $this->purchaseOrderRepository->lockForUpdate($purchaseOrderId);
         if ($poLockResult->code !== Result::CODE_SUCCESS) {
-            $this->transactionManager->rollBack();
-
-            return $poLockResult;
-        }
-        $lockedStatus = $poLockResult->data['status'] ?? null;
-        if (!in_array($lockedStatus, [PurchaseOrder::STATUS_ORDERED, PurchaseOrder::STATUS_PARTIALLY_RECEIVED], true)) {
-            throw new InvalidStateException('Goods can only be received for an Ordered or Partially Received purchase order.');
-        }
-
-        foreach ($lines as $line) {
-            $lineResult = $this->applyReceiptLine($line['item'], $line['qty'], $warehouseId, $purchaseOrderId, $userId);
-            if ($lineResult instanceof Result) {
-                $this->transactionManager->rollBack();
-
-                return $lineResult;
+            $outcome = $poLockResult;
+        } else {
+            $lockedStatus = $poLockResult->data['status'] ?? null;
+            if (!in_array($lockedStatus, [PurchaseOrder::STATUS_ORDERED, PurchaseOrder::STATUS_PARTIALLY_RECEIVED], true)) {
+                throw new InvalidStateException('Goods can only be received for an Ordered or Partially Received purchase order.');
             }
         }
 
-        $recomputeResult = $this->purchaseOrderService->recomputeStatus($purchaseOrderId);
-        if ($recomputeResult->code !== Result::CODE_SUCCESS) {
-            $this->transactionManager->rollBack();
-
-            return $recomputeResult;
+        if ($outcome === null) {
+            foreach ($lines as $line) {
+                $lineResult = $this->applyReceiptLine($line['item'], $line['qty'], $warehouseId, $purchaseOrderId, $userId);
+                if ($lineResult instanceof Result) {
+                    $outcome = $lineResult;
+                    break;
+                }
+            }
         }
 
-        $findResult = $this->purchaseOrderRepository->findById($purchaseOrderId);
-        if ($findResult->code !== Result::CODE_SUCCESS) {
+        if ($outcome === null) {
+            $recomputeResult = $this->purchaseOrderService->recomputeStatus($purchaseOrderId);
+            if ($recomputeResult->code !== Result::CODE_SUCCESS) {
+                $outcome = $recomputeResult;
+            }
+        }
+
+        if ($outcome === null) {
+            $findResult = $this->purchaseOrderRepository->findById($purchaseOrderId);
+            if ($findResult->code !== Result::CODE_SUCCESS) {
+                $outcome = $findResult;
+            } else {
+                $resultData = $findResult->data;
+            }
+        }
+
+        if ($outcome !== null) {
             $this->transactionManager->rollBack();
 
-            return $findResult;
+            return $outcome;
         }
 
         $this->transactionManager->commit();
 
-        return $findResult->data;
+        return $resultData;
     }
 
     private function buildValidatedLines($receiptLines, $itemsById, $purchaseOrderId)
@@ -238,59 +260,72 @@ class GoodsReceiptService
     // Returns null on success, or a failure Result the caller rolls back and hands straight back (BR-009).
     private function applyReceiptLine($item, $quantityReceived, $warehouseId, $purchaseOrderId, $userId)
     {
+        // Each stock mutation runs only while the previous ones succeeded; the
+        // first failing repository Result is returned for the caller to roll back.
+        $failure = null;
+
         // Locking read: the received quantity is current and can't change until
         // commit, so the over-receipt check below holds under concurrency.
         $freshItemResult = $this->purchaseOrderItemRepository->findByIdForUpdate($item->id);
         if ($freshItemResult->code !== Result::CODE_SUCCESS) {
-            return $freshItemResult;
-        }
-
-        $freshItem = $freshItemResult->data;
-        if ($freshItem === null || $quantityReceived > $freshItem->qtyRemaining()) {
-            throw new InvalidStateException('Quantity received cannot exceed the quantity still outstanding for this line.');
-        }
-
-        $lockResult = $this->productStockRepository->lockForUpdate($item->productId, $warehouseId);
-        if ($lockResult->code !== Result::CODE_SUCCESS) {
-            return $lockResult;
-        }
-
-        if ($lockResult->data === null) {
-            $createResult = $this->productStockRepository->create($item->productId, $warehouseId, 0);
-            if ($createResult->code !== Result::CODE_SUCCESS) {
-                return $createResult;
+            $failure = $freshItemResult;
+        } else {
+            $freshItem = $freshItemResult->data;
+            if ($freshItem === null || $quantityReceived > $freshItem->qtyRemaining()) {
+                throw new InvalidStateException('Quantity received cannot exceed the quantity still outstanding for this line.');
             }
+        }
 
+        $lockResult = null;
+        if ($failure === null) {
             $lockResult = $this->productStockRepository->lockForUpdate($item->productId, $warehouseId);
             if ($lockResult->code !== Result::CODE_SUCCESS) {
-                return $lockResult;
+                $failure = $lockResult;
             }
         }
 
-        $incrementResult = $this->productStockRepository->incrementQuantity($item->productId, $warehouseId, $quantityReceived);
-        if ($incrementResult->code !== Result::CODE_SUCCESS) {
-            return $incrementResult;
+        if ($failure === null && $lockResult->data === null) {
+            $createResult = $this->productStockRepository->create($item->productId, $warehouseId, 0);
+            if ($createResult->code !== Result::CODE_SUCCESS) {
+                $failure = $createResult;
+            } else {
+                $lockResult = $this->productStockRepository->lockForUpdate($item->productId, $warehouseId);
+                if ($lockResult->code !== Result::CODE_SUCCESS) {
+                    $failure = $lockResult;
+                }
+            }
         }
 
-        $insertResult = $this->stockLedgerRepository->insert([
-            'product_id' => $item->productId,
-            'warehouse_id' => $warehouseId,
-            'type' => StockLedgerEntry::TYPE_RECEIPT,
-            'qty' => $quantityReceived,
-            'ref_type' => StockLedgerEntry::REF_PO,
-            'ref_id' => $purchaseOrderId,
-            'note' => null,
-            'done_by_user_id' => $userId,
-        ]);
-        if ($insertResult->code !== Result::CODE_SUCCESS) {
-            return $insertResult;
+        if ($failure === null) {
+            $incrementResult = $this->productStockRepository->incrementQuantity($item->productId, $warehouseId, $quantityReceived);
+            if ($incrementResult->code !== Result::CODE_SUCCESS) {
+                $failure = $incrementResult;
+            }
         }
 
-        $incrementReceivedResult = $this->purchaseOrderItemRepository->incrementQtyReceived($item->id, $quantityReceived);
-        if ($incrementReceivedResult->code !== Result::CODE_SUCCESS) {
-            return $incrementReceivedResult;
+        if ($failure === null) {
+            $insertResult = $this->stockLedgerRepository->insert([
+                'product_id' => $item->productId,
+                'warehouse_id' => $warehouseId,
+                'type' => StockLedgerEntry::TYPE_RECEIPT,
+                'qty' => $quantityReceived,
+                'ref_type' => StockLedgerEntry::REF_PO,
+                'ref_id' => $purchaseOrderId,
+                'note' => null,
+                'done_by_user_id' => $userId,
+            ]);
+            if ($insertResult->code !== Result::CODE_SUCCESS) {
+                $failure = $insertResult;
+            }
         }
 
-        return null;
+        if ($failure === null) {
+            $incrementReceivedResult = $this->purchaseOrderItemRepository->incrementQtyReceived($item->id, $quantityReceived);
+            if ($incrementReceivedResult->code !== Result::CODE_SUCCESS) {
+                $failure = $incrementReceivedResult;
+            }
+        }
+
+        return $failure;
     }
 }

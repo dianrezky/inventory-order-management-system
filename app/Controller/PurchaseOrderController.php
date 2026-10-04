@@ -65,12 +65,11 @@ class PurchaseOrderController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
-        }
-
         $currentUser = $this->currentUser();
-        $purchaseOrder = $this->container->getPurchaseOrderService()->findById($id);
+        $purchaseOrder = null;
+        if ($id !== null) {
+            $purchaseOrder = $this->container->getPurchaseOrderService()->findById($id);
+        }
 
         if ($purchaseOrder === null) {
             return $this->notFound();
@@ -174,10 +173,12 @@ class PurchaseOrderController extends BaseController
         $result = $this->container->getPurchaseOrderService()->submit($id, $this->currentUser()->id);
 
         if ($result->code !== Result::CODE_SUCCESS) {
-            return $this->badRequest($this->t($result->info));
+            $response = $this->badRequest($this->t($result->info));
+        } else {
+            $response = $this->redirect(self::ROUTE_PURCHASE_ORDERS . '/' . $this->encodeId($id));
         }
 
-        return $this->redirect(self::ROUTE_PURCHASE_ORDERS . '/' . $this->encodeId($id));
+        return $response;
     }
 
     public function cancelAction($id)
@@ -195,10 +196,12 @@ class PurchaseOrderController extends BaseController
         $result = $this->container->getPurchaseOrderService()->cancel($id, $this->currentUser()->id);
 
         if ($result->code !== Result::CODE_SUCCESS) {
-            return $this->badRequest($this->t($result->info));
+            $response = $this->badRequest($this->t($result->info));
+        } else {
+            $response = $this->redirect(self::ROUTE_PURCHASE_ORDERS . '/' . $this->encodeId($id));
         }
 
-        return $this->redirect(self::ROUTE_PURCHASE_ORDERS . '/' . $this->encodeId($id));
+        return $response;
     }
 
     public function receiveFormAction($id)
@@ -209,11 +212,10 @@ class PurchaseOrderController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $purchaseOrder = null;
+        if ($id !== null) {
+            $purchaseOrder = $this->container->getPurchaseOrderService()->findById($id);
         }
-
-        $purchaseOrder = $this->container->getPurchaseOrderService()->findById($id);
 
         if ($purchaseOrder === null) {
             return $this->notFound();
@@ -233,11 +235,10 @@ class PurchaseOrderController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $purchaseOrder = null;
+        if ($id !== null) {
+            $purchaseOrder = $this->container->getPurchaseOrderService()->findById($id);
         }
-
-        $purchaseOrder = $this->container->getPurchaseOrderService()->findById($id);
 
         if ($purchaseOrder === null) {
             return $this->notFound();

@@ -10,6 +10,7 @@ use App\Service\CategoryService;
 
 class CategoryMySQLRepository implements CategoryRepositoryInterface
 {
+    private const COLUMNS = 'id, code, name, description, is_active, created_at, updated_at';
     private $queryBuilder;
 
     // Whitelisted ORDER BY fragments — $sort is a caller-controlled string, so
@@ -36,7 +37,7 @@ class CategoryMySQLRepository implements CategoryRepositoryInterface
             $row = $this->queryBuilder->findOne(
                 'categories',
                 null,
-                'id, code, name, description, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 ['id' => $id]
             );
@@ -64,7 +65,7 @@ class CategoryMySQLRepository implements CategoryRepositoryInterface
             $rows = $this->queryBuilder->findAll(
                 'categories',
                 null,
-                'id, code, name, description, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 ['name', 'description', 'code'],
                 $search,
@@ -277,7 +278,7 @@ class CategoryMySQLRepository implements CategoryRepositoryInterface
             $rows = $this->queryBuilder->findAll(
                 'categories',
                 null,
-                'id, code, name, description, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 [],
                 null,
@@ -458,7 +459,7 @@ class CategoryMySQLRepository implements CategoryRepositoryInterface
                 if ($s === 'active') { $isActiveValues[] = 1; }
                 elseif ($s === 'inactive') { $isActiveValues[] = 0; }
             }
-            if (count($isActiveValues) > 0) {
+            if (!empty($isActiveValues)) {
                 $inFilters['is_active'] = $isActiveValues;
             }
         }

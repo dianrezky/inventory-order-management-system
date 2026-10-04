@@ -76,10 +76,9 @@ $val = static function (string $field, string $default = '') use ($profileOld, $
                 <div class="form-field">
                     <div class="form-field__label-row">
                         <label class="form-field__label" for="profile-name">Full Name <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                        <span class="field-info-icon" tabindex="0" role="note" aria-label="Full name information">
+                        <button type="button" class="field-info-icon" aria-label="Full name information">
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                            <span class="field-tooltip">Your full name as displayed across the system. This name will appear on your profile, in activity logs, and on documents you create. Please use your real name for proper identification.</span>
-                        </span>
+                            <span class="field-tooltip">Your full name as displayed across the system. This name will appear on your profile, in activity logs, and on documents you create. Please use your real name for proper identification.</span></button>
                     </div>
                     <input class="input" type="text" id="profile-name" name="name" required minlength="3" maxlength="100"
                            value="<?= htmlspecialchars($val('name'), ENT_QUOTES, 'UTF-8') ?>"
@@ -90,10 +89,9 @@ $val = static function (string $field, string $default = '') use ($profileOld, $
                 <div class="form-field">
                     <div class="form-field__label-row">
                         <label class="form-field__label" for="profile-email">Email Address <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                        <span class="field-info-icon" tabindex="0" role="note" aria-label="Email address information">
+                        <button type="button" class="field-info-icon" aria-label="Email address information">
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                            <span class="field-tooltip">Your active email address used for system notifications, password recovery, and communication with other users. Must be a valid email format. Contact an administrator if you need to change your email address.</span>
-                        </span>
+                            <span class="field-tooltip">Your active email address used for system notifications, password recovery, and communication with other users. Must be a valid email format. Contact an administrator if you need to change your email address.</span></button>
                     </div>
                     <input class="input" type="email" id="profile-email" name="email" required maxlength="150"
                            value="<?= htmlspecialchars($val('email'), ENT_QUOTES, 'UTF-8') ?>"
@@ -104,10 +102,9 @@ $val = static function (string $field, string $default = '') use ($profileOld, $
                 <div class="form-field">
                     <div class="form-field__label-row">
                         <label class="form-field__label" for="profile-role">Role</label>
-                        <span class="field-info-icon" tabindex="0" role="note" aria-label="Role information">
+                        <button type="button" class="field-info-icon" aria-label="Role information">
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                            <span class="field-tooltip">Your assigned role determines your access permissions and capabilities within the system. Roles include Administrator, Operational Admin, Inventory Manager, Warehouse Staff, and Sales. To change your role, please contact a system Administrator.</span>
-                        </span>
+                            <span class="field-tooltip">Your assigned role determines your access permissions and capabilities within the system. Roles include Administrator, Operational Admin, Inventory Manager, Warehouse Staff, and Sales. To change your role, please contact a system Administrator.</span></button>
                     </div>
                     <input class="input" type="text" id="profile-role" value="<?= htmlspecialchars((string) $profileUser->role->label(), ENT_QUOTES, 'UTF-8') ?>" disabled>
                 </div>

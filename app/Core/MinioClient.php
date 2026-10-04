@@ -2,7 +2,7 @@
 
 namespace App\Core;
 
-use RuntimeException;
+use App\Core\Exception\StorageException;
 
 // Minimal S3-compatible client for MinIO — implements just enough of the AWS
 // Signature Version 4 signing process to PUT, GET, and DELETE objects over curl.
@@ -27,6 +27,11 @@ use RuntimeException;
 //
 class MinioClient
 {
+    // SigV4 ISO-8601 basic datetime format (e.g. 20240101T120000Z).
+    private const AMZ_DATETIME_FORMAT = 'Ymd\THis\Z';
+    // SigV4 signing algorithm identifier and the hash algorithm it is built on.
+    private const SIGV4_ALGORITHM = 'AWS4-HMAC-SHA256';
+    private const HASH_ALGO = 'sha256';
     /** Namespace prefix for all IOMS objects inside the shared bucket. */
     public const IOMS_PREFIX = 'ioms/';
 
@@ -38,7 +43,7 @@ class MinioClient
     private $publicBaseUrl;
 
     /**
-     * @throws RuntimeException if any required configuration value is missing or empty.
+     * @throws StorageException if any required configuration value is missing or empty.
      */
     public function __construct(
         string $endpoint,
@@ -49,16 +54,16 @@ class MinioClient
         string $publicBaseUrl
     ) {
         if ($endpoint === '') {
-            throw new RuntimeException('MinIO endpoint is not configured. Set MINIO_ENDPOINT.');
+            throw new StorageException('MinIO endpoint is not configured. Set MINIO_ENDPOINT.');
         }
         if ($accessKey === '') {
-            throw new RuntimeException('MinIO access key is not configured. Set MINIO_ACCESS_KEY.');
+            throw new StorageException('MinIO access key is not configured. Set MINIO_ACCESS_KEY.');
         }
         if ($secretKey === '') {
-            throw new RuntimeException('MinIO secret key is not configured. Set MINIO_SECRET_KEY.');
+            throw new StorageException('MinIO secret key is not configured. Set MINIO_SECRET_KEY.');
         }
         if ($bucket === '') {
-            throw new RuntimeException('MinIO bucket is not configured. Set MINIO_BUCKET.');
+            throw new StorageException('MinIO bucket is not configured. Set MINIO_BUCKET.');
         }
 
         $this->endpoint = rtrim($endpoint, '/');
@@ -79,7 +84,7 @@ class MinioClient
      * The key MUST already include the "ioms/" namespace prefix.
      * Callers are responsible for prepending the prefix.
      *
-     * @throws RuntimeException on any non-2xx response or transport failure.
+     * @throws StorageException on any non-2xx response or transport failure.
      *                          Callers (ImageUploadService) already wrap this in a
      *                          try/catch(\Throwable) and translate it into a Result,
      *                          so we don't need Result plumbing here.
@@ -91,7 +96,7 @@ class MinioClient
         ]);
 
         if ($response['status'] < 200 || $response['status'] >= 300) {
-            throw new RuntimeException(sprintf(
+            throw new StorageException(sprintf(
                 'MinIO PUT %s failed (HTTP %d): %s',
                 $key,
                 $response['status'],
@@ -131,26 +136,24 @@ class MinioClient
      *
      * @param string $key  The object key (with ioms/ prefix).
      * @param int    $expiresInSeconds  URL validity duration (min 60, max 604800).
-     * @throws RuntimeException on signing failure.
+     * @throws StorageException on signing failure.
      */
     public function getPresignedUrl(string $key, int $expiresInSeconds = 3600): string
     {
         $expiresInSeconds = max(60, min(604800, $expiresInSeconds));
-        $expirationIso = gmdate('Y-m-d\TH:i:s\Z', time() + $expiresInSeconds);
 
         // Presigned URL query parameters that MUST be included in the signed headers
         $queryParams = [
-            'X-Amz-Algorithm'    => 'AWS4-HMAC-SHA256',
+            'X-Amz-Algorithm'    => self::SIGV4_ALGORITHM,
             'X-Amz-Credential'    => rawurlencode($this->accessKey) . '%2F' . rawurlencode(
                 gmdate('Ymd') . '%2F' . rawurlencode($this->region) . '%2Fs3%2Faws4_request'
             ),
-            'X-Amz-Date'         => gmdate('Ymd\THis\Z'),
+            'X-Amz-Date'         => gmdate(self::AMZ_DATETIME_FORMAT),
             'X-Amz-Expires'      => (string) $expiresInSeconds,
             'X-Amz-SignedHeaders' => 'host',
         ];
         ksort($queryParams);
 
-        $signedHeaders = 'host';
         $encodedKey = $this->encodeKeyPath($key);
 
         // ── Build the canonical request for presigned URL ───────────────
@@ -162,7 +165,7 @@ class MinioClient
         $canonicalQueryString = rtrim($canonicalQueryString, '&');
 
         $hostHeader = parse_url($this->endpoint, PHP_URL_HOST) . $this->portSuffix();
-        $payloadHash = hash('sha256', ''); // Empty payload for GET
+        $payloadHash = hash(self::HASH_ALGO, ''); // Empty payload for GET
 
         $canonicalHeaders = 'host:' . $hostHeader . "\n";
         $signedHeaders = 'host';
@@ -179,32 +182,30 @@ class MinioClient
         $dateStamp = gmdate('Ymd');
         $credentialScope = $dateStamp . '/' . $this->region . '/s3/aws4_request';
         $stringToSign = implode("\n", [
-            'AWS4-HMAC-SHA256',
-            gmdate('Ymd\THis\Z'),
+            self::SIGV4_ALGORITHM,
+            gmdate(self::AMZ_DATETIME_FORMAT),
             $credentialScope,
-            hash('sha256', $canonicalRequest),
+            hash(self::HASH_ALGO, $canonicalRequest),
         ]);
 
         $signingKey = $this->deriveSigningKey($dateStamp);
-        $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+        $signature = hash_hmac(self::HASH_ALGO, $stringToSign, $signingKey);
 
         // Build the final presigned URL
-        $presignedUrl = $this->endpoint
+        return $this->endpoint
             . $canonicalUri
             . '?' . $canonicalQueryString
             . '&X-Amz-Signature=' . rawurlencode($signature);
-
-        return $presignedUrl;
     }
 
     /**
      * Tests whether the given object key exists by issuing a HEAD request.
      * Returns true if the server responds HTTP 200; false for 404; throws
-     * RuntimeException for any other non-2xx response.
+     * StorageException for any other non-2xx response.
      *
      * The key MUST already include the "ioms/" namespace prefix.
      *
-     * @throws RuntimeException on transport errors or non-404 server errors.
+     * @throws StorageException on transport errors or non-404 server errors.
      */
     public function objectExists(string $key): bool
     {
@@ -217,7 +218,7 @@ class MinioClient
             return true;
         }
 
-        throw new RuntimeException(sprintf(
+        throw new StorageException(sprintf(
             'MinIO HEAD %s failed (HTTP %d): %s',
             $key,
             $response['status'],
@@ -298,9 +299,9 @@ class MinioClient
     {
         $host = parse_url($this->endpoint, PHP_URL_HOST) . $this->portSuffix();
         $canonicalUri = '/' . $this->bucket . '/' . $this->encodeKeyPath($key);
-        $amzDate = gmdate('Ymd\THis\Z');
+        $amzDate = gmdate(self::AMZ_DATETIME_FORMAT);
         $dateStamp = gmdate('Ymd');
-        $payloadHash = hash('sha256', $body);
+        $payloadHash = hash(self::HASH_ALGO, $body);
 
         $headers = array_merge($extraHeaders, [
             'Host'               => $host,
@@ -340,7 +341,7 @@ class MinioClient
         curl_close($ch);
 
         if ($errno !== 0) {
-            throw new RuntimeException('MinIO request transport error: ' . $error);
+            throw new StorageException('MinIO request transport error: ' . $error);
         }
 
         return ['status' => $status, 'body' => (string) $responseBody];
@@ -381,14 +382,14 @@ class MinioClient
 
         $credentialScope = $dateStamp . '/' . $this->region . '/s3/aws4_request';
         $stringToSign = implode("\n", [
-            'AWS4-HMAC-SHA256',
+            self::SIGV4_ALGORITHM,
             $amzDate,
             $credentialScope,
-            hash('sha256', $canonicalRequest),
+            hash(self::HASH_ALGO, $canonicalRequest),
         ]);
 
         $signingKey = $this->deriveSigningKey($dateStamp);
-        $signature = hash_hmac('sha256', $stringToSign, $signingKey);
+        $signature = hash_hmac(self::HASH_ALGO, $stringToSign, $signingKey);
 
         return sprintf(
             'AWS4-HMAC-SHA256 Credential=%s/%s, SignedHeaders=%s, Signature=%s',
@@ -401,11 +402,11 @@ class MinioClient
 
     private function deriveSigningKey(string $dateStamp): string
     {
-        $kDate = hash_hmac('sha256', $dateStamp, 'AWS4' . $this->secretKey, true);
-        $kRegion = hash_hmac('sha256', $this->region, $kDate, true);
-        $kService = hash_hmac('sha256', 's3', $kRegion, true);
+        $kDate = hash_hmac(self::HASH_ALGO, $dateStamp, 'AWS4' . $this->secretKey, true);
+        $kRegion = hash_hmac(self::HASH_ALGO, $this->region, $kDate, true);
+        $kService = hash_hmac(self::HASH_ALGO, 's3', $kRegion, true);
 
-        return hash_hmac('sha256', 'aws4_request', $kService, true);
+        return hash_hmac(self::HASH_ALGO, 'aws4_request', $kService, true);
     }
 
     // URI-encodes each path segment (per RFC 3986, matching AWS's

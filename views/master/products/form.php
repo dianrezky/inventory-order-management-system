@@ -106,10 +106,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="sku">SKU Code <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="SKU Code information">
+                    <button type="button" class="field-info-icon" aria-label="SKU Code information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">SKU (Stock Keeping Unit) is a unique code used to identify and distinguish each product within the inventory system. Each product must have a distinct SKU. Maximum 30 characters. Use uppercase letters, numbers, and hyphens only.</span>
-                    </span>
+                        <span class="field-tooltip">SKU (Stock Keeping Unit) is a unique code used to identify and distinguish each product within the inventory system. Each product must have a distinct SKU. Maximum 30 characters. Use uppercase letters, numbers, and hyphens only.</span></button>
                 </div>
                 <input class="input" type="text" id="sku" name="sku" required maxlength="30"
                        value="<?= htmlspecialchars($val('sku'), ENT_QUOTES, 'UTF-8') ?>"
@@ -121,10 +120,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="barcode">Barcode / EAN</label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Barcode information">
+                    <button type="button" class="field-info-icon" aria-label="Barcode information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The product barcode number following EAN-13 or UPC-A standards. This field is optional and is used for integration with warehouse barcode scanners. Leave blank if the product does not have a barcode.</span>
-                    </span>
+                        <span class="field-tooltip">The product barcode number following EAN-13 or UPC-A standards. This field is optional and is used for integration with warehouse barcode scanners. Leave blank if the product does not have a barcode.</span></button>
                 </div>
                 <input class="input" type="text" id="barcode" name="barcode" maxlength="50"
                        value="<?= htmlspecialchars($val('barcode'), ENT_QUOTES, 'UTF-8') ?>"
@@ -135,10 +133,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="name">Product Name <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Product name information">
+                    <button type="button" class="field-info-icon" aria-label="Product name information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The product name displayed in the catalog and sales documents. Use a clear and descriptive name that is easy to identify. Minimum 3 characters, maximum 150 characters.</span>
-                    </span>
+                        <span class="field-tooltip">The product name displayed in the catalog and sales documents. Use a clear and descriptive name that is easy to identify. Minimum 3 characters, maximum 150 characters.</span></button>
                 </div>
                 <input class="input" type="text" id="name" name="name" required minlength="3" maxlength="150"
                        value="<?= htmlspecialchars($val('name'), ENT_QUOTES, 'UTF-8') ?>"
@@ -149,10 +146,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="description">Description</label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Description information">
+                    <button type="button" class="field-info-icon" aria-label="Description information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">Detailed product description covering physical specifications (dimensions, material, weight), recommended storage conditions, handling instructions, and other relevant information to help users fully understand the product. This field is optional but highly recommended for products with technical specifications. Maximum 500 characters.</span>
-                    </span>
+                        <span class="field-tooltip">Detailed product description covering physical specifications (dimensions, material, weight), recommended storage conditions, handling instructions, and other relevant information to help users fully understand the product. This field is optional but highly recommended for products with technical specifications. Maximum 500 characters.</span></button>
                 </div>
                 <textarea class="input" id="description" name="description" rows="4" maxlength="500"
                           placeholder="Please Enter The Product Description Here. Include Physical Specifications, Storage Conditions, And Handling Instructions..."><?= htmlspecialchars($val('description'), ENT_QUOTES, 'UTF-8') ?></textarea>
@@ -168,10 +164,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="form-field">
                     <div class="form-field__label-row">
                         <label class="form-field__label" for="category_id">Category <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                        <span class="field-info-icon" tabindex="0" role="note" aria-label="Category information">
+                        <button type="button" class="field-info-icon" aria-label="Category information">
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                            <span class="field-tooltip">Category is used to group products by type or function, such as Electronics, Mechanical Parts, Consumables, etc. Grouping facilitates search, reporting, and inventory analysis. Categories must be created first in Master Data &rarr; Categories before they can be selected here.</span>
-                        </span>
+                            <span class="field-tooltip">Category is used to group products by type or function, such as Electronics, Mechanical Parts, Consumables, etc. Grouping facilitates search, reporting, and inventory analysis. Categories must be created first in Master Data &rarr; Categories before they can be selected here.</span></button>
                     </div>
                     <select class="input" id="category_id" name="category_id" required style="min-height:44px;" aria-required="true">
                         <option value="">— Please Select A Category —</option>
@@ -186,10 +181,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="form-field">
                     <div class="form-field__label-row">
                         <label class="form-field__label" for="unit">Unit of Measure <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                        <span class="field-info-icon" tabindex="0" role="note" aria-label="Unit of measure information">
+                        <button type="button" class="field-info-icon" aria-label="Unit of measure information">
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                            <span class="field-tooltip">The unit of measurement used to count and track the quantity of the product in inventory. This unit will be used consistently throughout the system including in purchase orders, sales orders, and stock reports. Choose the most common unit for this product, such as: Pcs (smallest unit), Box, Pack, Kg, Liter, Roll, or Set.</span>
-                        </span>
+                            <span class="field-tooltip">The unit of measurement used to count and track the quantity of the product in inventory. This unit will be used consistently throughout the system including in purchase orders, sales orders, and stock reports. Choose the most common unit for this product, such as: Pcs (smallest unit), Box, Pack, Kg, Liter, Roll, or Set.</span></button>
                     </div>
                     <?php
                     // Stored units are free text (seed data uses lowercase "pcs", plus "sheet", "ream"…).
@@ -218,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
 
                 <div class="form-field">
-                    <label class="form-field__label">Product Status</label>
+                    <span class="form-field__label">Product Status</span>
                     <div class="status-toggle" role="radiogroup" aria-label="Product status">
                         <label class="status-toggle__option <?= $isActive ? 'is-selected' : '' ?>">
                             <input type="radio" name="is_active" value="1" <?= $isActive ? 'checked' : '' ?> aria-label="Active">
@@ -252,10 +246,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="form-field">
                     <div class="form-field__label-row">
                         <label class="form-field__label" for="initial_warehouse_id">Warehouse Location</label>
-                        <span class="field-info-icon" tabindex="0" role="note" aria-label="Warehouse location information">
+                        <button type="button" class="field-info-icon" aria-label="Warehouse location information">
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                            <span class="field-tooltip">The warehouse location where the initial product stock will be stored. If a warehouse is selected, the initial stock will be recorded directly in that warehouse. If there is no initial stock, select the option "— No initial allocation —". Warehouses must be created first in Master Data &rarr; Warehouses.</span>
-                        </span>
+                            <span class="field-tooltip">The warehouse location where the initial product stock will be stored. If a warehouse is selected, the initial stock will be recorded directly in that warehouse. If there is no initial stock, select the option "— No initial allocation —". Warehouses must be created first in Master Data &rarr; Warehouses.</span></button>
                     </div>
                     <select class="input" id="initial_warehouse_id" name="initial_warehouse_id" style="min-height:44px;">
                         <option value="">— No initial allocation —</option>
@@ -271,10 +264,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="form-field">
                     <div class="form-field__label-row">
                         <label class="form-field__label" for="initial_qty">Initial Quantity</label>
-                        <span class="field-info-icon" tabindex="0" role="note" aria-label="Initial quantity information">
+                        <button type="button" class="field-info-icon" aria-label="Initial quantity information">
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                            <span class="field-tooltip">The initial stock quantity of the product to be allocated to the selected warehouse. If a value greater than 0 (zero) is entered, the system will automatically record an INITIAL_SETUP transaction in the Stock Ledger, indicating that this stock is an initial entry for a newly added product, not a result of purchase or sales.</span>
-                        </span>
+                            <span class="field-tooltip">The initial stock quantity of the product to be allocated to the selected warehouse. If a value greater than 0 (zero) is entered, the system will automatically record an INITIAL_SETUP transaction in the Stock Ledger, indicating that this stock is an initial entry for a newly added product, not a result of purchase or sales.</span></button>
                     </div>
                     <input class="input" type="number" min="0" step="1" id="initial_qty" name="initial_qty"
                            value="<?= htmlspecialchars($val('initial_qty', '0'), ENT_QUOTES, 'UTF-8') ?>"
@@ -292,10 +284,9 @@ document.addEventListener('DOMContentLoaded', function () {
 <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="purchase_price_display">Base Purchase Price (Rp) <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Purchase price information">
+                    <button type="button" class="field-info-icon" aria-label="Purchase price information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The base purchase price per unit of the product in Indonesian Rupiah (Rp). This price is used as a reference when creating Purchase Orders (PO) or when calculating COGS (Cost of Goods Sold). The entered value must be a whole number without decimals. The system will automatically format with periods as thousand separators when displayed.</span>
-                    </span>
+                        <span class="field-tooltip">The base purchase price per unit of the product in Indonesian Rupiah (Rp). This price is used as a reference when creating Purchase Orders (PO) or when calculating COGS (Cost of Goods Sold). The entered value must be a whole number without decimals. The system will automatically format with periods as thousand separators when displayed.</span></button>
                 </div>
                 <div class="currency-input">
                     <span class="currency-input__prefix" aria-hidden="true">Rp</span>
@@ -310,10 +301,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="sale_price_display">Selling Price (Rp) <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Selling price information">
+                    <button type="button" class="field-info-icon" aria-label="Selling price information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The selling price per unit of the product in Indonesian Rupiah (Rp). This price will be used as the default price when creating Sales Orders (SO). The selling price must always be greater than or equal to the purchase price to prevent losses. The system will automatically format with periods as thousand separators.</span>
-                    </span>
+                        <span class="field-tooltip">The selling price per unit of the product in Indonesian Rupiah (Rp). This price will be used as the default price when creating Sales Orders (SO). The selling price must always be greater than or equal to the purchase price to prevent losses. The system will automatically format with periods as thousand separators.</span></button>
                 </div>
                 <div class="currency-input">
                     <span class="currency-input__prefix" aria-hidden="true">Rp</span>
@@ -328,10 +318,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="reorder_point">Minimum Stock Threshold <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Reorder point information">
+                    <button type="button" class="field-info-icon" aria-label="Reorder point information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The minimum stock level that determines when the system should trigger a LOW_STOCK warning. When the actual stock quantity drops to or falls below this value, the system will activate an alert to remind users to reorder. This value must be greater than 0 (zero). Example: if the reorder point is 20, the alert will trigger when the stock is 20 or less.</span>
-                    </span>
+                        <span class="field-tooltip">The minimum stock level that determines when the system should trigger a LOW_STOCK warning. When the actual stock quantity drops to or falls below this value, the system will activate an alert to remind users to reorder. This value must be greater than 0 (zero). Example: if the reorder point is 20, the alert will trigger when the stock is 20 or less.</span></button>
                 </div>
                 <input class="input" type="number" min="0" step="1" id="reorder_point" name="reorder_point" required
                        value="<?= htmlspecialchars(preg_replace('/\D/', '', $val('reorder_point', '10')), ENT_QUOTES, 'UTF-8') ?>"
@@ -347,15 +336,14 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="form-field">
                 <div class="form-field__label-row">
                     <span class="form-field__label" style="display:block;">Product Image</span>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Product image information">
+                    <button type="button" class="field-info-icon" aria-label="Product image information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The product image displayed in the catalog and reports. This field is optional. Supported formats: JPEG, PNG, or WebP. Maximum file size is 2MB. Large images will slow down page loading. It is recommended to use 800x800 pixels resolution with WebP format for optimal quality and file size.</span>
-                    </span>
+                        <span class="field-tooltip">The product image displayed in the catalog and reports. This field is optional. Supported formats: JPEG, PNG, or WebP. Maximum file size is 2MB. Large images will slow down page loading. It is recommended to use 800x800 pixels resolution with WebP format for optimal quality and file size.</span></button>
                 </div>
                 <?php if ($isEdit && $product->imagePath !== null): ?>
                 <img class="table__thumb" style="margin-bottom: var(--space-2);" src="<?= htmlspecialchars($product->imagePath, ENT_QUOTES, 'UTF-8') ?>" alt="">
                 <?php endif; ?>
-                <input class="input" type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp" style="height:auto;padding:var(--space-2);">
+                <input class="input" type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp" aria-label="Product image" style="height:auto;padding:var(--space-2);">
             </div>
         </div>
     </div>

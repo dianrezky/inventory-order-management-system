@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["node", "@playwright/test"],
+    "baseUrl": ".",
+    "paths": {
+      "@support/*": ["support/*"],
+      "@factories/*": ["factories/*"],
+      "@components/*": ["components/*"],
+      "@pages/*": ["pages/*"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", ".run", ".auth", ".cache", "playwright-report", "test-results"]
+}

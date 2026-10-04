@@ -4,15 +4,15 @@
     // ─── Activate / Deactivate via AJAX
 
     async function submitStatusForm(form) {
-        var action = form.action;
-        var submitBtn = form.querySelector('button[type="submit"]');
-        var originalText = submitBtn ? submitBtn.textContent.trim() : '';
+        const action = form.action;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn ? submitBtn.textContent.trim() : '';
 
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '…'; }
 
         try {
-            var fd = new FormData(form);
-            var result = await App.api(action, { method: 'POST', body: fd });
+            const fd = new FormData(form);
+            const result = await App.api(action, { method: 'POST', body: fd });
 
             if (result.ok) {
                 App.toast('Status updated successfully.', 'success');
@@ -36,11 +36,11 @@
         });
 
         // Product availability checker (detail / SKU lookup page)
-        var skuInput = App.$('[data-sku-check]');
-        var stockDisplay = App.$('[data-stock-display]');
+        const skuInput = App.$('[data-sku-check]');
+        const stockDisplay = App.$('[data-stock-display]');
         if (skuInput && stockDisplay) {
             skuInput.addEventListener('input', function () {
-                var sku = skuInput.value.trim();
+                const sku = skuInput.value.trim();
                 if (!sku) { stockDisplay.textContent = ''; return; }
                 App.api('/api/products/' + encodeURIComponent(sku) + '/availability')
                     .then(function (r) {

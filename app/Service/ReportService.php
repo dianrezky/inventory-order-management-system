@@ -16,31 +16,36 @@ class ReportService
     public const PER_PAGE = 5;
     public const DEFAULT_REPORT_TYPE = 'stock_valuation';
 
+    // Sort labels reused across several report types (kept DRY for S1192).
+    private const LABEL_VALUATION_HIGH_LOW = 'Valuation (High-Low)';
+    private const LABEL_VALUATION_LOW_HIGH = 'Valuation (Low-High)';
+    private const LABEL_NAME_ASC = 'Product Name (A-Z)';
+
     // Sorts each report type can actually apply (first = default). The sort
     // select offers only these; anything else posted falls back to the default.
     public const SORT_OPTIONS = [
         'stock_valuation' => [
-            'valuation_desc' => 'Valuation (High-Low)',
-            'valuation_asc'  => 'Valuation (Low-High)',
+            'valuation_desc' => self::LABEL_VALUATION_HIGH_LOW,
+            'valuation_asc'  => self::LABEL_VALUATION_LOW_HIGH,
             'velocity_desc'  => 'Velocity (Fastest First)',
-            'name_asc'       => 'Product Name (A-Z)',
+            'name_asc'       => self::LABEL_NAME_ASC,
         ],
         'inventory_aging' => [
             'aging_desc'     => 'Oldest Stock First',
-            'valuation_desc' => 'Valuation (High-Low)',
-            'valuation_asc'  => 'Valuation (Low-High)',
-            'name_asc'       => 'Product Name (A-Z)',
+            'valuation_desc' => self::LABEL_VALUATION_HIGH_LOW,
+            'valuation_asc'  => self::LABEL_VALUATION_LOW_HIGH,
+            'name_asc'       => self::LABEL_NAME_ASC,
         ],
         'slow_moving' => [
             'velocity_asc'   => 'Slowest First',
-            'valuation_desc' => 'Valuation (High-Low)',
-            'valuation_asc'  => 'Valuation (Low-High)',
-            'name_asc'       => 'Product Name (A-Z)',
+            'valuation_desc' => self::LABEL_VALUATION_HIGH_LOW,
+            'valuation_asc'  => self::LABEL_VALUATION_LOW_HIGH,
+            'name_asc'       => self::LABEL_NAME_ASC,
         ],
         'movement_ledger' => [
             'date_desc'      => 'Newest First',
             'date_asc'       => 'Oldest First',
-            'name_asc'       => 'Product Name (A-Z)',
+            'name_asc'       => self::LABEL_NAME_ASC,
         ],
     ];
 

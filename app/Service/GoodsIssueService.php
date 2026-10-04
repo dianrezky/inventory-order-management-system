@@ -114,6 +114,10 @@ class GoodsIssueService
         // Result when stock is insufficient (or any repo call fails), and issue() picks rollBack() vs commit() from
         // which came back. Any other \Throwable propagates to issue()'s catch, which owns the generic translation.
         try {
+            // $outcome is the first failing Result, or the fulfilled SalesOrder on
+            // success; issue() picks rollBack() vs commit() from which came back.
+            $outcome = null;
+
             // ARCH-02: lock the SO row FIRST and re-check its status from that
             // locking read. The Approved check in issue() ran unlocked, so two
             // concurrent issues of the same SO (or an issue racing a cancel) both
@@ -121,80 +125,48 @@ class GoodsIssueService
             // deducted stock and wrote Issue ledger rows a second time.
             $lockResult = $this->salesOrderRepository->lockForUpdate($salesOrder->id);
             if ($lockResult->code !== Result::CODE_SUCCESS) {
-                return $lockResult;
+                $outcome = $lockResult;
             }
 
-            $lockedStatus = $lockResult->data[0]['status'] ?? null;
-            if ($lockedStatus !== SalesOrder::STATUS_APPROVED) {
-                throw new InvalidStateException('Goods can only be issued for an approved sales order.');
+            $items = [];
+            if ($outcome === null) {
+                $lockedStatus = $lockResult->data[0]['status'] ?? null;
+                if ($lockedStatus !== SalesOrder::STATUS_APPROVED) {
+                    throw new InvalidStateException('Goods can only be issued for an approved sales order.');
+                }
+
+                $itemsResult = $this->salesOrderItemRepository->findBySalesOrderIdWithProduct($salesOrder->id);
+                if ($itemsResult->code !== Result::CODE_SUCCESS) {
+                    $outcome = $itemsResult;
+                } else {
+                    $items = $itemsResult->data;
+                }
             }
 
-            $itemsResult = $this->salesOrderItemRepository->findBySalesOrderIdWithProduct($salesOrder->id);
-            if ($itemsResult->code !== Result::CODE_SUCCESS) {
-                return $itemsResult;
+            if ($outcome === null) {
+                $outcome = $this->applyIssuanceLines($items, $salesOrder, $actorUserId);
             }
 
-            $items = $itemsResult->data;
-
-            foreach ($items as $item) {
-                // ARCH-02: row lock per product/warehouse before the check-then-deduct, so two concurrent issues cannot oversell
-                $stockResult = $this->productStockRepository->lockForUpdate(
-                    $item->productId,
-                    $salesOrder->sourceWarehouseId,
-                );
-                if ($stockResult->code !== Result::CODE_SUCCESS) {
-                    return $stockResult;
-                }
-
-                $stock = $stockResult->data;
-
-                if ($stock === null) {
-                    throw new InsufficientStockException('Insufficient stock: there is not enough stock on hand to issue this sales order.');
-                }
-
-                if ($stock->quantity < $item->qty) {
-                    throw new InsufficientStockException('Insufficient stock: there is not enough stock on hand to issue this sales order.');
-                }
-
-                $incrementResult = $this->productStockRepository->incrementQuantity(
-                    $item->productId,
-                    $salesOrder->sourceWarehouseId,
-                    -$item->qty,
-                );
-                if ($incrementResult->code !== Result::CODE_SUCCESS) {
-                    return $incrementResult;
-                }
-
-                $insertResult = $this->stockLedgerRepository->insert([
-                    'product_id' => $item->productId,
-                    'warehouse_id' => $salesOrder->sourceWarehouseId,
-                    'type' => 'Issue',
-                    'qty' => -$item->qty,
-                    'ref_type' => 'SO',
-                    'ref_id' => $salesOrder->id,
-                    'done_by_user_id' => $actorUserId,
-                    'done_at' => date('Y-m-d H:i:s'),
+            if ($outcome === null) {
+                $updateStatus = $this->salesOrderRepository->updateStatus($salesOrder->id, SalesOrder::STATUS_FULFILLED, [
+                    'issued_by' => $actorUserId,
+                    'issued_at' => date('Y-m-d H:i:s'),
                 ]);
-                if ($insertResult->code !== Result::CODE_SUCCESS) {
-                    return $insertResult;
+                if ($updateStatus->code !== Result::CODE_SUCCESS) {
+                    $outcome = $updateStatus;
                 }
             }
 
-            $updateStatus = $this->salesOrderRepository->updateStatus($salesOrder->id, SalesOrder::STATUS_FULFILLED, [
-                'issued_by' => $actorUserId,
-                'issued_at' => date('Y-m-d H:i:s'),
-            ]);
-
-            if ($updateStatus->code !== Result::CODE_SUCCESS) {
-                return $updateStatus;
+            if ($outcome === null) {
+                $refreshedResult = $this->salesOrderRepository->findById($salesOrder->id);
+                if ($refreshedResult->code !== Result::CODE_SUCCESS) {
+                    $outcome = $refreshedResult;
+                } else {
+                    $outcome = $refreshedResult->data->withItems($items);
+                }
             }
 
-            $refreshedResult = $this->salesOrderRepository->findById($salesOrder->id);
-            if ($refreshedResult->code !== Result::CODE_SUCCESS) {
-                return $refreshedResult;
-            }
-
-            return $refreshedResult->data->withItems($items);
+            return $outcome;
         } catch (InsufficientStockException $e) {
             $result = new Result();
             $result->code = Result::CODE_VALIDATION;
@@ -203,5 +175,59 @@ class GoodsIssueService
 
             return $result;
         }
+    }
+
+    // Deducts stock and writes an Issue ledger row for each line, inside the
+    // transaction opened by issue(). Returns null on success, or the first
+    // failing repository Result. Throws InsufficientStockException (caught by
+    // executeIssuanceTransaction) when a line cannot be covered by stock on hand.
+    private function applyIssuanceLines($items, $salesOrder, $actorUserId)
+    {
+        $failure = null;
+
+        foreach ($items as $item) {
+            // ARCH-02: row lock per product/warehouse before the check-then-deduct, so two concurrent issues cannot oversell
+            $stockResult = $this->productStockRepository->lockForUpdate(
+                $item->productId,
+                $salesOrder->sourceWarehouseId,
+            );
+            if ($stockResult->code !== Result::CODE_SUCCESS) {
+                $failure = $stockResult;
+                break;
+            }
+
+            $stock = $stockResult->data;
+
+            if ($stock === null || $stock->quantity < $item->qty) {
+                throw new InsufficientStockException('Insufficient stock: there is not enough stock on hand to issue this sales order.');
+            }
+
+            $incrementResult = $this->productStockRepository->incrementQuantity(
+                $item->productId,
+                $salesOrder->sourceWarehouseId,
+                -$item->qty,
+            );
+            if ($incrementResult->code !== Result::CODE_SUCCESS) {
+                $failure = $incrementResult;
+                break;
+            }
+
+            $insertResult = $this->stockLedgerRepository->insert([
+                'product_id' => $item->productId,
+                'warehouse_id' => $salesOrder->sourceWarehouseId,
+                'type' => 'Issue',
+                'qty' => -$item->qty,
+                'ref_type' => 'SO',
+                'ref_id' => $salesOrder->id,
+                'done_by_user_id' => $actorUserId,
+                'done_at' => date('Y-m-d H:i:s'),
+            ]);
+            if ($insertResult->code !== Result::CODE_SUCCESS) {
+                $failure = $insertResult;
+                break;
+            }
+        }
+
+        return $failure;
     }
 }

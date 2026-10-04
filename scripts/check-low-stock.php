@@ -27,7 +27,7 @@ $root = dirname(__DIR__);
 
 // Load composer autoload
 if (is_file($root . '/vendor/autoload.php')) {
-    require_once $root . '/vendor/autoload.php';
+    require_once $root . '/vendor/autoload.php'; // NOSONAR
 } else {
     fwrite(STDERR, "Error: autoload.php not found. Run 'composer install' first.\n");
     exit(1);

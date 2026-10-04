@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // Standalone worker for the ARCH-02 concurrency test (GoodsIssueConcurrencyTest): launched via proc_open() as a genuinely separate OS process with its own PDO/MySQL connection so two GoodsIssueService::issue() calls really overlap inside MySQL. Usage: php goods_issue_worker.php <soId> <actorUserId>, printing exactly one line of JSON to stdout.
 
-require __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use App\Core\Database;
 use App\Core\Result;

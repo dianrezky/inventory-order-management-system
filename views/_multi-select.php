@@ -19,13 +19,14 @@ $options    = $options    ?? [];
     <div class="ms-wrapper" id="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>-wrapper">
 
         <!-- Visible tag + search input -->
-        <div class="ms-input" role="combobox" aria-haspopup="listbox" aria-expanded="false">
+        <div class="ms-input" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>-dropdown">
             <input
                 type="text"
                 class="ms-search"
                 placeholder="<?= htmlspecialchars($placeholder, ENT_QUOTES, 'UTF-8') ?>"
                 autocomplete="off"
                 aria-autocomplete="list"
+                aria-label="<?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>"
                 aria-controls="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>-dropdown"
             >
         </div>
@@ -59,6 +60,7 @@ $options    = $options    ?? [];
         <!-- Hidden native select for form submission -->
         <select
             class="ms-native-select"
+            id="<?= htmlspecialchars($id, ENT_QUOTES, 'UTF-8') ?>"
             name="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>[]"
             multiple
             tabindex="-1"

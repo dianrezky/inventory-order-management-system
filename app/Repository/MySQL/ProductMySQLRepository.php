@@ -9,6 +9,8 @@ use App\Repository\Interface\ProductRepositoryInterface;
 
 class ProductMySQLRepository implements ProductRepositoryInterface
 {
+    private const SELECT_WITH_CATEGORY = 'p.*, c.name AS category_name';
+    private const JOIN_STOCK = 'ps.product_id = p.id';
     private $queryBuilder;
 
     public function __construct(QueryBuilder $queryBuilder)
@@ -24,7 +26,7 @@ class ProductMySQLRepository implements ProductRepositoryInterface
             $row = $this->queryBuilder->findOne(
                 'products',
                 'p',
-                'p.*, c.name AS category_name',
+                self::SELECT_WITH_CATEGORY,
                 $this->categoryJoin(),
                 ['p.id' => $id]
             );
@@ -50,7 +52,7 @@ class ProductMySQLRepository implements ProductRepositoryInterface
             $row = $this->queryBuilder->findOne(
                 'products',
                 'p',
-                'p.*, c.name AS category_name',
+                self::SELECT_WITH_CATEGORY,
                 $this->categoryJoin(),
                 ['p.sku' => $sku]
             );
@@ -233,7 +235,7 @@ class ProductMySQLRepository implements ProductRepositoryInterface
             $rows = $this->queryBuilder->findAll(
                 'products',
                 'p',
-                'p.*, c.name AS category_name',
+                self::SELECT_WITH_CATEGORY,
                 $this->categoryJoin(),
                 [],
                 null,
@@ -286,6 +288,11 @@ class ProductMySQLRepository implements ProductRepositoryInterface
         $result = new Result();
 
         try {
+            // Default to active; only explicitly-set falsy values make it inactive.
+            $isActive = 1;
+            if (isset($data['is_active']) && !$data['is_active']) {
+                $isActive = 0;
+            }
             $result->data = $this->queryBuilder->insert('products', [
                 'sku' => (string) $data['sku'],
                 'barcode' => !empty($data['barcode']) ? (string) $data['barcode'] : null,
@@ -297,7 +304,7 @@ class ProductMySQLRepository implements ProductRepositoryInterface
                 'sale_price' => (string) $data['sale_price'],
                 'reorder_point' => (int) $data['reorder_point'],
                 'image_path' => $data['image_path'] ?? null,
-                'is_active' => isset($data['is_active']) ? ($data['is_active'] ? 1 : 0) : 1,
+                'is_active' => $isActive,
             ]);
 
             $result->code = Result::CODE_SUCCESS;
@@ -403,7 +410,7 @@ class ProductMySQLRepository implements ProductRepositoryInterface
                 'p',
                 'p.id, p.reorder_point, p.is_active, COALESCE(SUM(ps.quantity), 0) AS total_stock',
                 [
-                    ['type' => 'LEFT', 'table' => 'product_stocks', 'alias' => 'ps', 'on' => 'ps.product_id = p.id'],
+                    ['type' => 'LEFT', 'table' => 'product_stocks', 'alias' => 'ps', 'on' => self::JOIN_STOCK],
                     ['type' => 'LEFT', 'table' => 'warehouses', 'alias' => 'w', 'on' => 'w.id = ps.warehouse_id AND w.is_active = 1'],
                 ],
                 [],
@@ -461,7 +468,7 @@ class ProductMySQLRepository implements ProductRepositoryInterface
                 'p.*, c.name AS category_name, COALESCE(SUM(ps.quantity), 0) AS total_stock',
                 [
                     ['type' => 'LEFT', 'table' => 'categories', 'alias' => 'c', 'on' => 'c.id = p.category_id'],
-                    ['type' => 'LEFT', 'table' => 'product_stocks', 'alias' => 'ps', 'on' => 'ps.product_id = p.id'],
+                    ['type' => 'LEFT', 'table' => 'product_stocks', 'alias' => 'ps', 'on' => self::JOIN_STOCK],
                 ],
                 [],
                 null,
@@ -509,14 +516,14 @@ class ProductMySQLRepository implements ProductRepositoryInterface
         $joins = $this->categoryJoin();
 
         if ($warehouseIds !== null && count($warehouseIds) > 0) {
-            $joins[] = ['type' => 'INNER', 'table' => 'product_stocks', 'alias' => 'ps', 'on' => 'ps.product_id = p.id'];
+            $joins[] = ['type' => 'INNER', 'table' => 'product_stocks', 'alias' => 'ps', 'on' => self::JOIN_STOCK];
         } elseif ($needsStockJoin) {
             // The stockStatus HAVING clause below aggregates ps.quantity, so the
             // join must exist even when no warehouse filter narrows it — otherwise
             // "ps" is an unknown alias and the query fails (silently, inside the
             // repository's catch block) whenever a stock-status filter is applied
             // without also filtering by warehouse.
-            $joins[] = ['type' => 'LEFT', 'table' => 'product_stocks', 'alias' => 'ps', 'on' => 'ps.product_id = p.id'];
+            $joins[] = ['type' => 'LEFT', 'table' => 'product_stocks', 'alias' => 'ps', 'on' => self::JOIN_STOCK];
         }
 
         return $joins;

@@ -101,10 +101,9 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="report_type">Report Type <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Report type information">
+                    <button type="button" class="field-info-icon" aria-label="Report type information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The type of operational report to generate. Stock Valuation &amp; Turnover Summary provides an overview of current inventory value and movement velocity. Inventory Aging Analysis shows how long items have been in stock. Slow-Moving &amp; Dead Stock identifies items with low or no turnover. Movement Ledger Audit provides a detailed chronological record of all stock transactions.</span>
-                    </span>
+                        <span class="field-tooltip">The type of operational report to generate. Stock Valuation &amp; Turnover Summary provides an overview of current inventory value and movement velocity. Inventory Aging Analysis shows how long items have been in stock. Slow-Moving &amp; Dead Stock identifies items with low or no turnover. Movement Ledger Audit provides a detailed chronological record of all stock transactions.</span></button>
                 </div>
                 <select class="input" id="report_type" name="report_type" required style="min-height:44px;" aria-required="true">
                     <option value="stock_valuation" <?= $reportType === 'stock_valuation' ? 'selected' : '' ?>>Stock Valuation &amp; Turnover Summary</option>
@@ -117,17 +116,16 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="date_from">Date Range <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Date range information">
+                    <button type="button" class="field-info-icon" aria-label="Date range information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The date range for the report query. The Start Date and End Date define the period of analysis. All metrics, charts, and tabular data will reflect transactions and stock levels within this range. Defaults to the last 30 days from today.</span>
-                    </span>
+                        <span class="field-tooltip">The date range for the report query. The Start Date and End Date define the period of analysis. All metrics, charts, and tabular data will reflect transactions and stock levels within this range. Defaults to the last 30 days from today.</span></button>
                 </div>
                 <div style="display:flex;align-items:center;gap:var(--space-2);">
                     <input class="input" type="date" id="date_from" name="date_from"
                            value="<?= htmlspecialchars($dateFrom, ENT_QUOTES, 'UTF-8') ?>"
                            required style="min-height:44px;" aria-required="true">
                     <span style="color:var(--color-text-secondary);font-size:var(--font-size-body-sm);flex-shrink:0;">to</span>
-                    <input class="input" type="date" id="date_to" name="date_to"
+                    <input class="input" type="date" id="date_to" name="date_to" aria-label="End date"
                            value="<?= htmlspecialchars($dateTo, ENT_QUOTES, 'UTF-8') ?>"
                            required style="min-height:44px;" aria-required="true">
                 </div>
@@ -136,10 +134,9 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="warehouse_id">Warehouse Location</label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Warehouse filter information">
+                    <button type="button" class="field-info-icon" aria-label="Warehouse filter information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">Filter the report to show data for a specific warehouse location only. Select a warehouse from the list to narrow down the analysis to that facility. Select "All Warehouses" to include data from all locations.</span>
-                    </span>
+                        <span class="field-tooltip">Filter the report to show data for a specific warehouse location only. Select a warehouse from the list to narrow down the analysis to that facility. Select "All Warehouses" to include data from all locations.</span></button>
                 </div>
                 <select class="input" id="warehouse_id" name="warehouse_id" style="min-height:44px;">
                     <option value="">All Warehouses (National)</option>
@@ -155,10 +152,9 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="category_id">Product Category</label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Category filter information">
+                    <button type="button" class="field-info-icon" aria-label="Category filter information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">Filter the report to show data for a specific product category only. Select a category to narrow the analysis to that product group. Select "All Categories" to include all product types in the report.</span>
-                    </span>
+                        <span class="field-tooltip">Filter the report to show data for a specific product category only. Select a category to narrow the analysis to that product group. Select "All Categories" to include all product types in the report.</span></button>
                 </div>
                 <select class="input" id="category_id" name="category_id" style="min-height:44px;">
                     <option value="">All Categories</option>
@@ -335,7 +331,9 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <div class="report-category-bar">
                 <?php $whIdx = 0; foreach ($whData as $wdId => $wd):
                     $pct = $whGrandTotal > 0 ? round($wd['valuation'] / $whGrandTotal * 100, 1) : 0;
-                    if ($pct <= 0) continue;
+                    if ($pct <= 0) {
+                        continue;
+                    }
                 ?>
                 <div class="report-category-bar__segment"
                      style="width:<?= $pct ?>%;background:<?= $CATEGORY_COLORS[$whIdx % count($CATEGORY_COLORS)] ?>;"
@@ -348,7 +346,9 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <div class="report-category-grid">
                 <?php $whIdx2 = 0; foreach ($whData as $wdId => $wd):
                     $pct = $whGrandTotal > 0 ? round($wd['valuation'] / $whGrandTotal * 100, 1) : 0;
-                    if ($pct <= 0) continue;
+                    if ($pct <= 0) {
+                        continue;
+                    }
                 ?>
                 <div class="report-category-item">
                     <div class="report-category-item__header">
@@ -410,14 +410,14 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <?php if ($reportType === 'movement_ledger'): ?>
             <thead>
                 <tr>
-                    <th>Date/Time</th>
-                    <th>Product</th>
-                    <th>SKU Code</th>
-                    <th>Warehouse</th>
-                    <th style="text-align:right;">Quantity</th>
-                    <th>Reference</th>
-                    <th>Done By</th>
-                    <th style="text-align:center;">Type</th>
+                    <th scope="col">Date/Time</th>
+                    <th scope="col">Product</th>
+                    <th scope="col">SKU Code</th>
+                    <th scope="col">Warehouse</th>
+                    <th scope="col" style="text-align:right;">Quantity</th>
+                    <th scope="col">Reference</th>
+                    <th scope="col">Done By</th>
+                    <th scope="col" style="text-align:center;">Type</th>
                 </tr>
             </thead>
             <tbody>
@@ -449,14 +449,14 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <?php elseif ($reportType === 'inventory_aging'): ?>
             <thead>
                 <tr>
-                    <th>SKU Code</th>
-                    <th>Product Name</th>
-                    <th>Category</th>
-                    <th style="text-align:right;">Current Stock</th>
-                    <th>Last Receipt</th>
-                    <th style="text-align:right;">Aging</th>
-                    <th style="text-align:right;">Total Valuation</th>
-                    <th style="text-align:center;">Status</th>
+                    <th scope="col">SKU Code</th>
+                    <th scope="col">Product Name</th>
+                    <th scope="col">Category</th>
+                    <th scope="col" style="text-align:right;">Current Stock</th>
+                    <th scope="col">Last Receipt</th>
+                    <th scope="col" style="text-align:right;">Aging</th>
+                    <th scope="col" style="text-align:right;">Total Valuation</th>
+                    <th scope="col" style="text-align:center;">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -488,14 +488,14 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <?php elseif ($reportType === 'slow_moving'): ?>
             <thead>
                 <tr>
-                    <th>SKU Code</th>
-                    <th>Product Name</th>
-                    <th>Category</th>
-                    <th style="text-align:right;">Current Stock</th>
-                    <th style="text-align:right;">30-Day Outflow</th>
-                    <th style="text-align:right;">Velocity</th>
-                    <th style="text-align:right;">Total Valuation</th>
-                    <th style="text-align:center;">Status</th>
+                    <th scope="col">SKU Code</th>
+                    <th scope="col">Product Name</th>
+                    <th scope="col">Category</th>
+                    <th scope="col" style="text-align:right;">Current Stock</th>
+                    <th scope="col" style="text-align:right;">30-Day Outflow</th>
+                    <th scope="col" style="text-align:right;">Velocity</th>
+                    <th scope="col" style="text-align:right;">Total Valuation</th>
+                    <th scope="col" style="text-align:center;">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -527,15 +527,15 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <?php else: ?>
             <thead>
                 <tr>
-                    <th>SKU Code</th>
-                    <th>Product Name</th>
-                    <th>Category</th>
-                    <th>Warehouse Hub</th>
-                    <th style="text-align:right;">Current Stock</th>
-                    <th style="text-align:right;">Unit Cost</th>
-                    <th style="text-align:right;">Total Valuation</th>
-                    <th style="text-align:right;">30-Day Turnover</th>
-                    <th style="text-align:center;">Status</th>
+                    <th scope="col">SKU Code</th>
+                    <th scope="col">Product Name</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Warehouse Hub</th>
+                    <th scope="col" style="text-align:right;">Current Stock</th>
+                    <th scope="col" style="text-align:right;">Unit Cost</th>
+                    <th scope="col" style="text-align:right;">Total Valuation</th>
+                    <th scope="col" style="text-align:right;">30-Day Turnover</th>
+                    <th scope="col" style="text-align:center;">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -574,7 +574,7 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
         <span class="report-pagination__info">Showing <?= $startRecord ?>-<?= $endRecord ?> of <?= $lineItemsTotal ?> line items</span>
         <nav class="pagination" aria-label="Report pagination">
             <?php if ($page > 1): ?>
-                <button type="submit" form="report-filter-form" name="page" value="<?= $page - 1 ?>" class="btn btn--secondary btn--sm" aria-label="Previous page" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">&laquo; Prev</button>
+                <button type="submit" form="report-filter-form" name="page" value="<?= $page - 1 ?>" class="btn btn--secondary btn--sm" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">&laquo; Prev</button>
             <?php else: ?>
                 <span class="btn btn--secondary btn--sm" aria-disabled="true" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;opacity:0.4;cursor:not-allowed;">&laquo; Prev</span>
             <?php endif; ?>
@@ -606,7 +606,7 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             <?php endif; ?>
 
             <?php if ($page < $totalPages): ?>
-                <button type="submit" form="report-filter-form" name="page" value="<?= $page + 1 ?>" class="btn btn--secondary btn--sm" aria-label="Next page" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">Next &raquo;</button>
+                <button type="submit" form="report-filter-form" name="page" value="<?= $page + 1 ?>" class="btn btn--secondary btn--sm" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">Next &raquo;</button>
             <?php else: ?>
                 <span class="btn btn--secondary btn--sm" aria-disabled="true" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;opacity:0.4;cursor:not-allowed;">Next &raquo;</span>
             <?php endif; ?>

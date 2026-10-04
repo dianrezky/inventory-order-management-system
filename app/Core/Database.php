@@ -4,7 +4,7 @@ namespace App\Core;
 
 use PDO;
 use PDOException;
-use RuntimeException;
+use App\Core\Exception\DatabaseException;
 use Throwable;
 
 // The only place in the codebase allowed to instantiate PDO directly (ADR-001 / CLAUDE.md Rule #11).
@@ -28,7 +28,7 @@ class Database implements TransactionManagerInterface
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         } catch (PDOException $e) {
-            throw new RuntimeException('Database connection failed: ' . $e->getMessage(), 0, $e);
+            throw new DatabaseException('Database connection failed: ' . $e->getMessage(), 0, $e);
         }
     }
 

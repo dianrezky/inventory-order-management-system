@@ -134,15 +134,20 @@ class ReportController extends BaseController
         $canViewSalesOrders = $permissionService->roleHasPermission($currentUser->role->value, 'reports.sales_orders.view');
         $canViewPurchaseOrders = $permissionService->roleHasPermission($currentUser->role->value, 'reports.purchase_orders.view');
 
-        if (!$canViewSalesOrders && !$canViewPurchaseOrders) {
-            return $this->forbidden();
-        }
-
         $from = $this->dateParam('from', 'date_from');
         $to = $this->dateParam('to', 'date_to');
 
-        if ($from === '' || $to === '') {
-            return $this->badRequest($this->t(self::MESSAGE_DATE_RANGE_REQUIRED));
+        // Lack of permission takes precedence over a missing date range, matching
+        // the original guard order (403 before 400).
+        $guardError = null;
+        if (!$canViewSalesOrders && !$canViewPurchaseOrders) {
+            $guardError = $this->forbidden();
+        } elseif ($from === '' || $to === '') {
+            $guardError = $this->badRequest($this->t(self::MESSAGE_DATE_RANGE_REQUIRED));
+        }
+
+        if ($guardError !== null) {
+            return $guardError;
         }
 
         // Same Warehouse Location scope as the Reports screen (SO source /

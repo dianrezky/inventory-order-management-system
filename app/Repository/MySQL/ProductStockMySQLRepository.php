@@ -9,6 +9,7 @@ use App\Repository\Interface\ProductStockRepositoryInterface;
 
 class ProductStockMySQLRepository implements ProductStockRepositoryInterface
 {
+    private const JOIN_PRODUCT = 'p.id = ps.product_id';
     private $queryBuilder;
 
     public function __construct(QueryBuilder $queryBuilder)
@@ -130,7 +131,7 @@ class ProductStockMySQLRepository implements ProductStockRepositoryInterface
                 'product_stocks',
                 'ps',
                 'COALESCE(SUM(ps.quantity * p.purchase_price), 0)',
-                [['type' => 'INNER', 'table' => 'products', 'alias' => 'p', 'on' => 'p.id = ps.product_id']],
+                [['type' => 'INNER', 'table' => 'products', 'alias' => 'p', 'on' => self::JOIN_PRODUCT]],
                 ['p.is_active' => 1]
             );
 
@@ -214,7 +215,7 @@ class ProductStockMySQLRepository implements ProductStockRepositoryInterface
                     . 'p.sku, p.name, p.unit, p.reorder_point, p.is_active, '
                     . 'c.name AS category_name',
                 [
-                    ['type' => 'INNER', 'table' => 'products',   'alias' => 'p', 'on' => 'p.id = ps.product_id'],
+                    ['type' => 'INNER', 'table' => 'products',   'alias' => 'p', 'on' => self::JOIN_PRODUCT],
                     ['type' => 'LEFT',  'table' => 'categories', 'alias' => 'c', 'on' => 'c.id = p.category_id'],
                 ],
                 [],
@@ -394,7 +395,7 @@ class ProductStockMySQLRepository implements ProductStockRepositoryInterface
                 'ps',
                 $columns,
                 [
-                    ['type' => 'INNER', 'table' => 'products', 'alias' => 'p', 'on' => 'p.id = ps.product_id'],
+                    ['type' => 'INNER', 'table' => 'products', 'alias' => 'p', 'on' => self::JOIN_PRODUCT],
                     ['type' => 'LEFT',  'table' => 'categories', 'alias' => 'c', 'on' => 'c.id = p.category_id'],
                 ],
                 [],                    // searchColumns

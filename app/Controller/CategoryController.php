@@ -91,12 +91,11 @@ class CategoryController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
-        }
-
         $user = $this->currentUser();
-        $category = $this->container->getCategoryService()->findById($id);
+        $category = null;
+        if ($id !== null) {
+            $category = $this->container->getCategoryService()->findById($id);
+        }
 
         if ($category === null) {
             return $this->notFound();
@@ -188,10 +187,12 @@ class CategoryController extends BaseController
         $result = $this->container->getCategoryService()->deleteCategory($id, $this->currentUser()->id);
 
         if ($result->code !== Result::CODE_SUCCESS) {
-            return $this->json(['ok' => false, 'error' => $this->t($result->info)], $this->statusForResult($result));
+            $response = $this->json(['ok' => false, 'error' => $this->t($result->info)], $this->statusForResult($result));
+        } else {
+            $response = $this->json(['ok' => true, 'message' => $result->info]);
         }
 
-        return $this->json(['ok' => true, 'message' => $result->info]);
+        return $response;
     }
 
     public function deactivateAction($id)
@@ -202,13 +203,13 @@ class CategoryController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $ok = false;
+        if ($id !== null) {
+            $result = $this->container->getCategoryService()->setActive($id, false, $this->currentUser()->id);
+            $ok = $result->code === Result::CODE_SUCCESS;
         }
 
-        $result = $this->container->getCategoryService()->setActive($id, false, $this->currentUser()->id);
-
-        if ($result->code !== Result::CODE_SUCCESS) {
+        if (!$ok) {
             return $this->notFound();
         }
 
@@ -223,13 +224,13 @@ class CategoryController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $ok = false;
+        if ($id !== null) {
+            $result = $this->container->getCategoryService()->setActive($id, true, $this->currentUser()->id);
+            $ok = $result->code === Result::CODE_SUCCESS;
         }
 
-        $result = $this->container->getCategoryService()->setActive($id, true, $this->currentUser()->id);
-
-        if ($result->code !== Result::CODE_SUCCESS) {
+        if (!$ok) {
             return $this->notFound();
         }
 

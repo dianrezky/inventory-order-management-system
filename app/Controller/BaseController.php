@@ -163,10 +163,12 @@ class BaseController
         if (!$this->getPermissionService()->roleHasPermission($this->currentUser->role->value, $key)) {
             // A caller-specific reason (e.g. SOD-01's approve denial) replaces the generic 403 text
             if ($forbiddenMessage !== null) {
-                return $this->forbidden($this->t($forbiddenMessage));
+                $denied = $this->forbidden($this->t($forbiddenMessage));
+            } else {
+                $denied = $this->forbidden();
             }
 
-            return $this->forbidden();
+            return $denied;
         }
 
         return null;
@@ -274,7 +276,7 @@ class BaseController
             $id = filter_var((string) $raw, FILTER_VALIDATE_INT);
             if ($id !== false && $id > 0) { $ids[] = $id; }
         }
-        return count($ids) > 0 ? $ids : null;
+        return !empty($ids) ? $ids : null;
     }
 
     protected function parseItemsFromRequest($productIdKey, $qtyKey, $priceKey)

@@ -11,7 +11,10 @@ if (PHP_SAPI === 'cli-server') {
     }
 }
 
-require __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php'; // NOSONAR
+
+// Content-Type header for JSON responses (reused by the response handlers below).
+const JSON_CONTENT_TYPE = 'Content-Type: application/json; charset=utf-8';
 
 $rootPath = dirname(__DIR__);
 
@@ -35,10 +38,9 @@ if (is_file($rootPath . '/.env')) {
     $dotenv->safeLoad();
 }
 
-// Load constants first (REGEX_PATTERN, REGEX_NUMBER, ROUTE_TYPE_*)
-require $rootPath . '/config/global.php';
-
-$config = require $rootPath . '/config/global.php';
+// Load global config; this also defines constants (REGEX_PATTERN, REGEX_NUMBER,
+// ROUTE_TYPE_*) as a side effect, so a single require_once covers both.
+$config = require_once $rootPath . '/config/global.php'; // NOSONAR
 $config['views.path'] = $rootPath . '/views';
 
 $container = new Container($config);
@@ -61,10 +63,10 @@ if ($method === 'GET' && $path === '/') {
 }
 
 // Load route configuration
-$routes = require $rootPath . '/config/routes.php';
+$routes = require_once $rootPath . '/config/routes.php'; // NOSONAR
 
 $matchRouteAgainstCandidates = function (array $childRoutes, string $method, string $path): ?array {
-    foreach ($childRoutes as $routeName => $routeConfig) {
+    foreach ($childRoutes as $routeConfig) {
         $options = $routeConfig['options'] ?? [];
 
         // Check HTTP method
@@ -99,7 +101,7 @@ $matchRouteAgainstCandidates = function (array $childRoutes, string $method, str
 };
 
 $matchRoute = function (array $routes, string $method, string $path) use ($matchRouteAgainstCandidates): ?array {
-    foreach ($routes as $routeName => $routeConfig) {
+    foreach ($routes as $routeConfig) {
         $options = $routeConfig['options'] ?? [];
         $childRoutes = $routeConfig['child_routes'] ?? [];
 
@@ -279,7 +281,7 @@ function handleResponse($response, Container $container): void
                 exit;
 
             case Response::TYPE_JSON:
-                header('Content-Type: application/json; charset=utf-8');
+                header(JSON_CONTENT_TYPE);
                 echo json_encode($response->getData(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 exit;
 
@@ -302,10 +304,7 @@ function handleResponse($response, Container $container): void
         }
     }
 
-    // null response - nothing to render
-    if ($response === null) {
-        return;
-    }
+    // A null response means there is nothing to render.
 }
 
 // Perform route matching
@@ -314,7 +313,7 @@ $match = $matchRoute($routes, $method, $path);
 if ($match === null) {
     http_response_code(404);
     if (str_starts_with($path, '/api/')) {
-        header('Content-Type: application/json; charset=utf-8');
+        header(JSON_CONTENT_TYPE);
         echo json_encode(['error' => 'not_found']);
         exit;
     }
@@ -350,7 +349,7 @@ try {
     http_response_code(500);
     // API-01: /api/* callers always get JSON, including on failure.
     if (str_starts_with($path, '/api/')) {
-        header('Content-Type: application/json; charset=utf-8');
+        header(JSON_CONTENT_TYPE);
         echo json_encode(['error' => 'internal_error']);
         exit;
     }

@@ -54,3 +54,8 @@ docker-compose.override.yml
 
 # docker/php/entrypoint.sh first-start composer install lock
 /.composer-install.lock
+
+# SonarQube scanner working directory
+.scannerwork/
+coverage.xml
+junit.xml

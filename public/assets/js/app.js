@@ -2,7 +2,7 @@
 (function () {
     'use strict';
 
-    var ALERT_CONTAINER_ID = 'app-alert-container';
+    const ALERT_CONTAINER_ID = 'app-alert-container';
 
     // ─── Utilities ────────────────────────────────────────────────────────────
 
@@ -17,21 +17,21 @@
     function esc(str) {
         // Escapes HTML special characters so callers can safely use innerHTML.
         return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;');
     }
 
     function formatRupiah(num) {
         // Rupiah grouping uses dots as thousand separators: 1234567 becomes "1.234.567".
-        return String(Math.round(Number(num) || 0))
-            .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        // Indonesian locale formatting avoids a hand-rolled grouping regex.
+        return (Math.round(Number(num) || 0)).toLocaleString('id-ID', { maximumFractionDigits: 0 });
     }
 
     function getCsrfToken() {
         // Reads the first CSRF hidden input in the document; empty string when absent.
-        var el = document.querySelector('input[name="_csrf_token"]');
+        const el = document.querySelector('input[name="_csrf_token"]');
         return el ? el.value : '';
     }
 
@@ -57,10 +57,10 @@
 
     async function api(url, opts) {
         // Resolves to {ok, status, data, error}; never rejects on a non-2xx response.
-        var method = (opts.method || 'GET').toUpperCase();
-        var headers = Object.assign({ 'X-Requested-With': 'XMLHttpRequest' }, opts.headers || {});
+        const method = (opts.method || 'GET').toUpperCase();
+        const headers = { 'X-Requested-With': 'XMLHttpRequest', ...opts.headers };
 
-        var body = opts.body;
+        let body = opts.body;
 
         // Inject CSRF token on state-changing requests
         if (method !== 'GET' && method !== 'HEAD') {
@@ -70,7 +70,7 @@
                 // Assume URL-encoded
                 body = body + '&_csrf_token=' + encodeURIComponent(getCsrfToken());
             } else if (!body) {
-                var fd = new FormData();
+                const fd = new FormData();
                 fd.set('_csrf_token', getCsrfToken());
                 body = fd;
             }
@@ -81,16 +81,16 @@
             headers['Content-Type'] = 'application/x-www-form-urlencoded';
         }
 
-        var response = await fetch(url, {
+        const response = await fetch(url, {
             method: method,
             headers: headers,
             body: body || undefined,
             signal: opts.signal,
         });
 
-        var data = null;
-        var error = null;
-        var contentType = response.headers.get('content-type') || '';
+        let data = null;
+        let error = null;
+        const contentType = response.headers.get('content-type') || '';
 
         if (contentType.includes('application/json')) {
             data = await response.json();
@@ -113,7 +113,7 @@
         // duration is in ms; 0 makes the toast persistent, type is success/error/info/warning.
         if (duration === void 0) { duration = 4000; }
 
-        var container = document.getElementById(ALERT_CONTAINER_ID);
+        let container = document.getElementById(ALERT_CONTAINER_ID);
         if (!container) {
             container = document.createElement('div');
             container.id = ALERT_CONTAINER_ID;
@@ -132,21 +132,21 @@
             document.body.appendChild(container);
         }
 
-        var iconMap = {
+        const iconMap = {
             success: '<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>',
             error: '<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>',
             info: '<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>',
             warning: '<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>',
         };
 
-        var typeStyles = {
+        const typeStyles = {
             success: 'background:#059669;color:#fff;border-color:#047857',
             error: 'background:#dc2626;color:#fff;border-color:#b91c1c',
             info: 'background:#2563eb;color:#fff;border-color:#1d4ed8',
             warning: 'background:#d97706;color:#fff;border-color:#b45309',
         };
 
-        var el = document.createElement('div');
+        const el = document.createElement('div');
         el.setAttribute('role', 'alert');
         el.style.cssText = [
             'display:flex',
@@ -194,7 +194,7 @@
         if (cancelLabel === void 0) { cancelLabel = 'Cancel'; }
 
         return new Promise(function (resolve) {
-            var overlay = document.createElement('div');
+            const overlay = document.createElement('div');
             overlay.style.cssText = [
                 'position:fixed',
                 'inset:0',
@@ -235,7 +235,7 @@
 
             document.body.appendChild(overlay);
 
-            var close = function (val) {
+            const close = function (val) {
                 overlay.remove();
                 resolve(val);
             };
@@ -252,7 +252,7 @@
             // 15_CONFIRMATION: initial focus lands on Cancel, never on the
             // destructive action, so Enter/Space on open never confirms by
             // accident.
-            var cancelBtn = $('#__confirmCancel', overlay);
+            const cancelBtn = $('#__confirmCancel', overlay);
             if (cancelBtn) { cancelBtn.focus(); }
         });
     }
@@ -264,7 +264,7 @@
     // (asks a yes/no question). No external library: every page must be able
     // to report a hard failure (e.g. a form's own server-side error) without
     // ever falling back to an unstyled raw response taking over the page.
-    var REPORT_STYLES = {
+    const REPORT_STYLES = {
         success: { bg: '#dcfce7', fg: '#16a34a', icon: '<svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' },
         failure: { bg: '#fee2e2', fg: '#dc2626', icon: '<svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>' },
         warning: { bg: '#fef3c7', fg: '#d97706', icon: '<svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>' },
@@ -274,10 +274,10 @@
     function report(type, title, message, buttonLabel) {
         // Resolves when the user dismisses the report (button, backdrop, or Escape).
         if (buttonLabel === void 0) { buttonLabel = 'OK'; }
-        var style = REPORT_STYLES[type] || REPORT_STYLES.info;
+        const style = REPORT_STYLES[type] || REPORT_STYLES.info;
 
         return new Promise(function (resolve) {
-            var overlay = document.createElement('div');
+            const overlay = document.createElement('div');
             overlay.style.cssText = [
                 'position:fixed',
                 'inset:0',
@@ -312,7 +312,7 @@
 
             document.body.appendChild(overlay);
 
-            var close = function () {
+            const close = function () {
                 overlay.remove();
                 resolve();
             };
@@ -350,9 +350,9 @@
         $$('form[data-confirm]').forEach(function (form) {
             // Read the attributes now: data-confirm is deleted right below, so reading it
             // inside the submit handler always fell back to the generic 'Are you sure?'.
-            var msg = form.dataset.confirm || 'Are you sure?';
-            var okLabel = form.dataset.confirmOk;
-            var cancelLabel = form.dataset.confirmCancel;
+            const msg = form.dataset.confirm || 'Are you sure?';
+            const okLabel = form.dataset.confirmOk;
+            const cancelLabel = form.dataset.confirmCancel;
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
                 confirm(msg, okLabel, cancelLabel).then(function (ok) {
@@ -364,11 +364,11 @@
 
         $$('[data-confirm-standalone]').forEach(function (el) {
             el.addEventListener('click', function (e) {
-                var msg = el.dataset.confirmStandalone || 'Are you sure?';
+                const msg = el.dataset.confirmStandalone || 'Are you sure?';
                 e.preventDefault();
                 confirm(msg).then(function (ok) {
                     if (ok) {
-                        var href = el.getAttribute('href');
+                        const href = el.getAttribute('href');
                         if (href) { window.location.href = href; }
                         else { el.disabled = true; el.click(); }
                     }
@@ -379,7 +379,7 @@
     });
 
     // Inject keyframe for toast/modal animations (one-shot)
-    var style = document.createElement('style');
+    const style = document.createElement('style');
     style.textContent = [
         '@keyframes app-toast-in {from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}',
         '@keyframes app-modal-in {from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}',
@@ -416,7 +416,7 @@
     };
 
     App.MultiSelect.prototype._bindEvents = function () {
-        var self = this;
+        const self = this;
 
         // Click on input → open
         this.input.addEventListener('click', function (e) {
@@ -455,8 +455,8 @@
     };
 
     App.MultiSelect.prototype._syncFromNative = function () {
-        var self = this;
-        var vals  = [];
+        const self = this;
+        const vals  = [];
         this.nativeSelect.querySelectorAll('option:checked').forEach(function (opt) {
             vals.push(opt.value);
         });
@@ -464,10 +464,10 @@
     };
 
     App.MultiSelect.prototype._filter = function () {
-        var self = this;
+        const self = this;
         this.options.forEach(function (opt) {
-            var label = opt.textContent.toLowerCase();
-            opt.style.display = (self._search === '' || label.indexOf(self._search) > -1) ? '' : 'none';
+            const label = opt.textContent.toLowerCase();
+            opt.style.display = (self._search === '' || label.includes(self._search)) ? '' : 'none';
         });
     };
 
@@ -490,7 +490,7 @@
     };
 
     App.MultiSelect.prototype._toggle = function (value) {
-        var idx = this._selected.indexOf(value);
+        const idx = this._selected.indexOf(value);
         if (idx > -1) {
             this._remove(value);
         } else {
@@ -499,37 +499,36 @@
         this._syncNative();
     };
 
-    App.MultiSelect.prototype._add = function (value, doSync) {
-        if (doSync === undefined) { doSync = true; }
-        if (this._selected.indexOf(value) > -1) return;
+    App.MultiSelect.prototype._add = function (value, doSync = true) {
+        if (this._selected.includes(value)) return;
         this._selected.push(value);
 
         // Update option visual
-        var opt = this.dropdown.querySelector('[data-value="' + value + '"]');
+        const opt = this.dropdown.querySelector('[data-value="' + value + '"]');
         if (opt) { opt.classList.add('is-selected'); }
 
         // Render tag
-        var tag = document.createElement('span');
+        const tag = document.createElement('span');
         tag.className = 'ms-tag';
         tag.dataset.value = value;
 
-        var label = opt ? opt.textContent.trim() : value;
+        const label = opt ? opt.textContent.trim() : value;
         tag.innerHTML = App.esc(label) +
             '<button type="button" class="ms-tag__remove" aria-label="Remove ' + App.esc(label) + '">' +
             '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">' +
             '<line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>' +
             '</button>';
 
+        const self = this;
         tag.querySelector('.ms-tag__remove').addEventListener('click', function (e) {
             e.stopPropagation();
             e.preventDefault();
             self._remove(value);
             self._syncNative();
-        }.bind(this));
+        });
 
-        var self = this;
         // Insert before the search input
-        var searchEl = this.input.querySelector('.ms-search');
+        const searchEl = this.input.querySelector('.ms-search');
         if (searchEl) {
             this.input.insertBefore(tag, searchEl);
         } else {
@@ -541,18 +540,18 @@
         this._selected.splice(this._selected.indexOf(value), 1);
 
         // Update option visual
-        var opt = this.dropdown.querySelector('[data-value="' + value + '"]');
+        const opt = this.dropdown.querySelector('[data-value="' + value + '"]');
         if (opt) { opt.classList.remove('is-selected'); }
 
         // Remove tag element
-        var tag = this.input.querySelector('.ms-tag[data-value="' + value + '"]');
-        if (tag) { tag.parentNode.removeChild(tag); }
+        const tag = this.input.querySelector('.ms-tag[data-value="' + value + '"]');
+        if (tag) { tag.remove(); }
     };
 
     App.MultiSelect.prototype._syncNative = function () {
-        var self = this;
+        const self = this;
         this.nativeSelect.querySelectorAll('option').forEach(function (opt) {
-            opt.selected = self._selected.indexOf(opt.value) > -1;
+            opt.selected = self._selected.includes(opt.value);
         });
         // A native <select> fires input/change when the user picks an option
         // directly; setting .selected in JS does not. Pages that live-filter
@@ -566,7 +565,8 @@
     // Auto-init every .ms-wrapper on the page
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.ms-wrapper').forEach(function (wrapper) {
-            new App.MultiSelect(wrapper);
+            // Keep a handle on the element so the instance isn't discarded.
+            wrapper.multiSelect = new App.MultiSelect(wrapper);
         });
     });
 
@@ -588,7 +588,7 @@
     function closeAllExcept(exceptMenu) {
         document.querySelectorAll('.row-actions__menu').forEach(function (menu) {
             if (menu !== exceptMenu && !menu.hidden) {
-                var trigger = menu.previousElementSibling;
+                const trigger = menu.previousElementSibling;
                 if (trigger) { closeMenu(menu, trigger); }
             }
         });
@@ -599,14 +599,14 @@
     // ancestor's clipping — see the CSS comment on .row-actions__menu) and
     // flips above the trigger when there isn't room below.
     function positionMenu(menu, trigger) {
-        var rect = trigger.getBoundingClientRect();
+        const rect = trigger.getBoundingClientRect();
         menu.style.left = 'auto';
         menu.style.top = (rect.bottom + 4) + 'px';
         menu.style.right = (window.innerWidth - rect.right) + 'px';
 
         // Measure once visible, then flip above the trigger if it would
         // overflow the bottom of the viewport.
-        var menuRect = menu.getBoundingClientRect();
+        const menuRect = menu.getBoundingClientRect();
         if (menuRect.bottom > window.innerHeight) {
             menu.style.top = (rect.top - menuRect.height - 4) + 'px';
         }
@@ -614,12 +614,12 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.row-actions__trigger').forEach(function (trigger) {
-            var menu = trigger.nextElementSibling;
-            if (!menu || !menu.classList.contains('row-actions__menu')) { return; }
+            const menu = trigger.nextElementSibling;
+            if (!menu?.classList.contains('row-actions__menu')) { return; }
 
             trigger.addEventListener('click', function (e) {
                 e.stopPropagation();
-                var willOpen = menu.hidden;
+                const willOpen = menu.hidden;
                 closeAllExcept(menu);
                 if (willOpen) {
                     menu.hidden = false;

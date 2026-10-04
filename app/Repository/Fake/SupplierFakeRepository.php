@@ -65,7 +65,7 @@ class SupplierFakeRepository implements SupplierRepositoryInterface
                 if ($s === 'active') { $isActiveValues[] = true; }
                 elseif ($s === 'inactive') { $isActiveValues[] = false; }
             }
-            if (count($isActiveValues) > 0) {
+            if (!empty($isActiveValues)) {
                 $all = array_values(array_filter($all, function ($s) use ($isActiveValues) {
                     return in_array($s->isActive, $isActiveValues, true);
                 }));

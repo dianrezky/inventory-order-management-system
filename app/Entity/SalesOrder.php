@@ -6,6 +6,7 @@ use DateTimeImmutable;
 
 class SalesOrder
 {
+    private const DATETIME_FORMAT = 'Y-m-d H:i:s';
     // Status lifecycle: Draft -> PendingApproval -> Approved -> Fulfilled | Cancelled
     public const STATUS_DRAFT = 'Draft';
     public const STATUS_PENDING_APPROVAL = 'PendingApproval';
@@ -174,12 +175,12 @@ class SalesOrder
             'note' => $this->note,
             'created_by' => $this->createdBy,
             'approved_by' => $this->approvedBy,
-            'approved_at' => $this->approvedAt ? $this->approvedAt->format('Y-m-d H:i:s') : null,
+            'approved_at' => $this->approvedAt ? $this->approvedAt->format(self::DATETIME_FORMAT) : null,
             'issued_by' => $this->issuedBy,
-            'issued_at' => $this->issuedAt ? $this->issuedAt->format('Y-m-d H:i:s') : null,
+            'issued_at' => $this->issuedAt ? $this->issuedAt->format(self::DATETIME_FORMAT) : null,
             'cancellation_reason' => $this->cancellationReason,
-            'created_at' => $this->createdAt ? $this->createdAt->format('Y-m-d H:i:s') : null,
-            'updated_at' => $this->updatedAt ? $this->updatedAt->format('Y-m-d H:i:s') : null,
+            'created_at' => $this->createdAt ? $this->createdAt->format(self::DATETIME_FORMAT) : null,
+            'updated_at' => $this->updatedAt ? $this->updatedAt->format(self::DATETIME_FORMAT) : null,
         ];
     }
 }

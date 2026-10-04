@@ -103,7 +103,7 @@ final class ARCH02ConcurrencyTest extends TestCase
     public function testSecondConcurrentIssueFailsWhenStockExhaustedByFirst(): void
     {
         // ARCH-02: two Approved SOs race the same product+warehouse (stock 5; SO A wants 5, SO B wants 8) - exactly one may succeed and stock must never go negative.
-        [$issueService, $soService, $soRepo] = $this->makeServices();
+        [$issueService, , $soRepo] = $this->makeServices();
         $wawanId = $this->getUserId('warehouse@example.com');
         $beniId = $this->getUserId('sales1@example.com');
         $ritaId = $this->getUserId('admin@example.com');
@@ -147,7 +147,7 @@ final class ARCH02ConcurrencyTest extends TestCase
     public function testBothIssuingFullAmountOnlyOneSucceeds(): void
     {
         // ARCH-02 variant: both requests issue the full stock amount - A drains 5 to 0 first, so B must fail and stock must never go negative.
-        [$issueService, , $soRepo] = $this->makeServices();
+        [$issueService] = $this->makeServices();
         $wawanId = $this->getUserId('warehouse@example.com');
         $beniId = $this->getUserId('sales1@example.com');
         $ritaId = $this->getUserId('admin@example.com');

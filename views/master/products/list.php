@@ -42,28 +42,28 @@ if (count($selectedWarehouses) === 1) {
 // Helper: stock status badge class + label
 $stockBadge = static function (\App\Entity\Product $p, int $totalStock): string {
     if (!$p->isActive) {
-        return 'badge--inactive';
+        $class = 'badge--inactive';
+    } elseif ($totalStock === 0) {
+        $class = 'badge--error';
+    } elseif ($totalStock < (int) $p->reorderPoint) {
+        $class = 'badge--warning';
+    } else {
+        $class = 'badge--success';
     }
-    if ($totalStock === 0) {
-        return 'badge--error';
-    }
-    if ($totalStock < (int) $p->reorderPoint) {
-        return 'badge--warning';
-    }
-    return 'badge--success';
+    return $class;
 };
 
 $stockBadgeLabel = static function (\App\Entity\Product $p, int $totalStock): string {
     if (!$p->isActive) {
-        return 'Inactive';
+        $label = 'Inactive';
+    } elseif ($totalStock === 0) {
+        $label = 'Out of Stock';
+    } elseif ($totalStock < (int) $p->reorderPoint) {
+        $label = 'Low Stock';
+    } else {
+        $label = 'In Stock';
     }
-    if ($totalStock === 0) {
-        return 'Out of Stock';
-    }
-    if ($totalStock < (int) $p->reorderPoint) {
-        return 'Low Stock';
-    }
-    return 'In Stock';
+    return $label;
 };
 
 $stockStatusOptions = [
@@ -296,7 +296,7 @@ $metricCards = [
         </div>
         <nav class="pagination-nav" aria-label="Table pagination">
             <?php if ($page > 1): ?>
-            <button type="submit" form="products-filter-form" name="page" value="<?= $page - 1 ?>" class="btn btn--secondary btn--sm" aria-label="Previous page" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">&laquo; Prev</button>
+            <button type="submit" form="products-filter-form" name="page" value="<?= $page - 1 ?>" class="btn btn--secondary btn--sm" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">&laquo; Prev</button>
             <?php endif; ?>
 
             <?php
@@ -314,7 +314,7 @@ $metricCards = [
             <?php endfor; ?>
 
             <?php if ($page < $totalPages): ?>
-            <button type="submit" form="products-filter-form" name="page" value="<?= $page + 1 ?>" class="btn btn--secondary btn--sm" aria-label="Next page" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">Next &raquo;</button>
+            <button type="submit" form="products-filter-form" name="page" value="<?= $page + 1 ?>" class="btn btn--secondary btn--sm" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">Next &raquo;</button>
             <?php endif; ?>
         </nav>
     </div>

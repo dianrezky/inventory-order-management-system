@@ -109,16 +109,17 @@ class AuthService
         // Idle timeout: the cookie lifetime alone is absolute and client-controlled, so the server also expires a session left unused for longer than SESSION_LIFETIME
         $lastActivity = $this->session->get('last_activity');
         $lifetime = $this->session->getLifetime();
-        if ($lifetime > 0 && is_int($lastActivity) && time() - $lastActivity > $lifetime) {
-            $this->session->destroy();
+        $expired = $lifetime > 0 && is_int($lastActivity) && time() - $lastActivity > $lifetime;
 
-            return null;
+        $user = null;
+        if (!$expired) {
+            $findResult = $this->userRepository->findById($userId);
+            $user = $findResult->code === Result::CODE_SUCCESS ? $findResult->data : null;
         }
 
-        $findResult = $this->userRepository->findById($userId);
-        $user = $findResult->code === Result::CODE_SUCCESS ? $findResult->data : null;
-
-        // Deactivating a user must invalidate any session they still hold, otherwise a revoked account keeps access until session expiry
+        // An expired idle timeout, a missing user, or a deactivated account all
+        // invalidate the session — otherwise a revoked account keeps access until
+        // the cookie lifetime expires.
         if ($user === null || !$user->isActive) {
             $this->session->destroy();
 

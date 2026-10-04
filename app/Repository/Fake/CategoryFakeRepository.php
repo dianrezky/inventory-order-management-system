@@ -331,7 +331,7 @@ class CategoryFakeRepository implements CategoryRepositoryInterface
                 if ($s === 'active') { $isActiveValues[] = true; }
                 elseif ($s === 'inactive') { $isActiveValues[] = false; }
             }
-            if (count($isActiveValues) > 0) {
+            if (!empty($isActiveValues)) {
                 $all = array_values(array_filter($all, function ($c) use ($isActiveValues) {
                     return in_array($c->isActive, $isActiveValues, true);
                 }));

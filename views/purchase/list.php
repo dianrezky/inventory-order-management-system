@@ -158,7 +158,7 @@ $totalPages = max(1, (int) ceil($total / max($perPage, 1)));
         </table>
     </div>
     <?php if ($total > $perPage): ?>
-    <nav class="pagination">
+    <nav class="pagination" aria-label="Pagination">
         <?php if ($page > 1): ?>
             <button type="submit" form="po-filter-form" name="page" value="<?= $page - 1 ?>" class="btn btn--secondary">&laquo; Prev</button>
         <?php endif; ?>

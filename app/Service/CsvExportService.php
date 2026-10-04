@@ -50,12 +50,17 @@ class CsvExportService
         $lines = [$this->csvLine($headers)];
 
         foreach ($rows as $row) {
+            if ($row['is_active']) {
+                $statusLabel = $locale === 'id' ? 'Aktif' : 'Active';
+            } else {
+                $statusLabel = $locale === 'id' ? 'Nonaktif' : 'Inactive';
+            }
             $lines[] = $this->csvLine([
                 (string) $row['code'],
                 (string) $row['name'],
                 (string) ($row['description'] ?? ''),
                 $this->rawNumericField($row['assigned_sku_count'] ?? 0),
-                $row['is_active'] ? ($locale === 'id' ? 'Aktif' : 'Active') : ($locale === 'id' ? 'Nonaktif' : 'Inactive'),
+                $statusLabel,
                 (string) ($row['updated_at'] ?? ''),
             ]);
         }
@@ -76,9 +81,9 @@ class CsvExportService
             $typeLabel,
             $locale === 'id' ? 'No. Pesanan' : 'Order No.',
             $locale === 'id' ? 'Tanggal' : 'Date',
-            $locale === 'id' ? 'Customer/Supplier' : 'Customer/Supplier',
+            'Customer/Supplier',
             $locale === 'id' ? 'Gudang' : 'Warehouse',
-            $locale === 'id' ? 'Status' : 'Status',
+            'Status',
             $locale === 'id' ? 'Jumlah Item' : 'Items Count',
             $locale === 'id' ? 'Nilai Total' : 'Total Value',
             $locale === 'id' ? 'Dibuat Oleh' : 'Created By',
@@ -116,7 +121,7 @@ class CsvExportService
 
         // RFC 4180 injection prevention. Leading spaces are skipped for the test
         // (" =cmd" is still evaluated as a formula by spreadsheets).
-        if ($field !== '' && preg_match('/^[ ]*[=+\-@\t\r\n]/', $field)) {
+        if ($field !== '' && preg_match('/^ *[=+\-@\t\r\n]/', $field)) {
             $field = "'" . $field;
         }
 

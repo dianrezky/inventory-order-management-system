@@ -38,7 +38,8 @@
                         <td>
                             <?php if ($remaining > 0): ?>
                                 <input class="input input--sm" type="number" min="0" max="<?= $remaining ?>" step="1"
-                                       name="qty_now[<?= $item->id ?>]" value="0">
+                                       name="qty_now[<?= $item->id ?>]" value="0"
+                                       aria-label="Quantity to receive">
                             <?php else: ?>
                                 <span class="text--muted" data-i18n="purchase_orders.fully_received">Fully received</span>
                             <?php endif; ?>

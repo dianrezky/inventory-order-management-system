@@ -139,7 +139,12 @@ class SessionManager
         $env = $_SERVER['APP_ENV'] ?? 'local';
         if ($env === 'production') {
             return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || ($_SERVER['SERVER_PORT'] ?? null) === '443';
+                || ($_SERVER['SERVER_PORT'] ?? null) === '443'
+                // Behind the Caddy reverse proxy TLS is terminated at the edge and the
+                // request reaches PHP as plain HTTP, so neither check above fires; Caddy
+                // forwards the original scheme in X-Forwarded-Proto. Caddy is the only
+                // ingress in this deployment, so the header is trustworthy here.
+                || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null) === 'https');
         }
 
         return false;

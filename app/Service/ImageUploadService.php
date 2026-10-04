@@ -18,10 +18,12 @@ class ImageUploadService
     public const WEBP_QUALITY = 82;
 
     private $minioClient;
+    private $fileValidationService;
 
-    public function __construct(MinioClient $minioClient)
+    public function __construct(MinioClient $minioClient, FileValidationService $fileValidationService)
     {
         $this->minioClient = $minioClient;
+        $this->fileValidationService = $fileValidationService;
     }
 
     public function process($uploaded)
@@ -29,44 +31,53 @@ class ImageUploadService
         $result = new Result();
 
         try {
+            // Each stage runs only while the previous ones passed; the first
+            // failing stage's Result is returned, otherwise $result succeeds.
             $tmpName = (string) ($uploaded['tmp_name'] ?? '');
+            $errorResult = null;
 
             $uploadInfo = $this->uploadInvalidInfo($uploaded, $tmpName);
             if ($uploadInfo !== '') {
                 $result->code = Result::CODE_VALIDATION;
                 $result->info = $uploadInfo;
                 $result->data = null;
-
-                return $result;
+                $errorResult = $result;
             }
 
-            [$width, $height] = getimagesize($tmpName);
-            $image = $this->loadGdImage($tmpName);
-
-            if ($image instanceof Result) {
-                return $image;
+            if ($errorResult === null) {
+                [$width, $height] = getimagesize($tmpName);
+                $image = $this->loadGdImage($tmpName);
+                if ($image instanceof Result) {
+                    $errorResult = $image;
+                }
             }
 
-            if ($width > self::MAX_DIMENSION || $height > self::MAX_DIMENSION) {
-                $image = $this->scaleDown($image, $width, $height);
+            if ($errorResult === null) {
+                if ($width > self::MAX_DIMENSION || $height > self::MAX_DIMENSION) {
+                    $image = $this->scaleDown($image, $width, $height);
+                }
+                if ($image instanceof Result) {
+                    $errorResult = $image;
+                }
             }
 
-            if ($image instanceof Result) {
-                return $image;
+            if ($errorResult === null) {
+                $finalWidth = imagesx($image);
+                $finalHeight = imagesy($image);
+                $objectKey = $this->buildObjectKey();
+                $writeCheck = $this->writeWebp($image, $objectKey);
+                if ($writeCheck instanceof Result) {
+                    $errorResult = $writeCheck;
+                } else {
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The image has been uploaded.';
+                    $result->data = $this->buildImageUploadResult($objectKey, $finalWidth, $finalHeight);
+                }
             }
 
-            $finalWidth = imagesx($image);
-            $finalHeight = imagesy($image);
-            $objectKey = $this->buildObjectKey();
-            $writeCheck = $this->writeWebp($image, $objectKey);
-
-            if ($writeCheck instanceof Result) {
-                return $writeCheck;
+            if ($errorResult !== null) {
+                return $errorResult;
             }
-
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'The image has been uploaded.';
-            $result->data = $this->buildImageUploadResult($objectKey, $finalWidth, $finalHeight);
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -95,32 +106,61 @@ class ImageUploadService
     {
         $error = $uploaded['error'] ?? UPLOAD_ERR_NO_FILE;
         $size = (int) ($uploaded['size'] ?? 0);
-        $allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+        $filename = (string) ($uploaded['name'] ?? '');
 
         // PHP rejects an over-limit file before it reaches us (upload_max_filesize / MAX_FILE_SIZE); report that as the size error, not a generic failure
+        $info = '';
         if ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
-            return 'File size exceeds the maximum allowed.';
+            $info = 'File size exceeds the maximum allowed.';
+        } elseif ($error !== UPLOAD_ERR_OK || $tmpName === '' || !is_uploaded_file($tmpName)) {
+            $info = 'The image could not be uploaded. Please try again.';
+        } elseif ($size <= 0 || $size > self::MAX_SIZE_BYTES) {
+            $info = 'File size exceeds the maximum allowed.';
+        } else {
+            $info = $this->invalidContentInfo($filename, $tmpName);
         }
 
-        if ($error !== UPLOAD_ERR_OK || $tmpName === '' || !is_uploaded_file($tmpName)) {
-            return 'The image could not be uploaded. Please try again.';
+        return $info;
+    }
+
+    // Content-level gate layered on top of the upload-error/size checks. First
+    // the DB-backed allow-list (extension + magic-byte header/footer, ported
+    // from the DMS FileValidationTrait concept), then an independent finfo MIME
+    // cross-check and a GD sanity read against the same allow-list.
+    private function invalidContentInfo(string $filename, string $tmpName): string
+    {
+        $rules = $this->fileValidationService->getRules();
+
+        $signatureResult = FileSignatureValidator::validate($filename, (string) file_get_contents($tmpName), $rules);
+        if ($signatureResult->code !== Result::CODE_SUCCESS) {
+            return $signatureResult->info;
         }
 
-        if ($size <= 0 || $size > self::MAX_SIZE_BYTES) {
-            return 'File size exceeds the maximum allowed.';
-        }
-
+        $allowedMimes = $this->allowedMimesFromRules($rules);
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mime = $finfo->file($tmpName);
 
+        $info = '';
         if ($mime === false
             || !in_array($mime, $allowedMimes, true)
             || getimagesize($tmpName) === false
         ) {
-            return self::MESSAGE_INVALID_TYPE;
+            $info = self::MESSAGE_INVALID_TYPE;
         }
 
-        return '';
+        return $info;
+    }
+
+    private function allowedMimesFromRules(array $rules): array
+    {
+        $mimes = [];
+        foreach ($rules as $rule) {
+            if (isset($rule['mime_type']) && !in_array($rule['mime_type'], $mimes, true)) {
+                $mimes[] = $rule['mime_type'];
+            }
+        }
+
+        return $mimes;
     }
 
     private function loadGdImage($tmpName)

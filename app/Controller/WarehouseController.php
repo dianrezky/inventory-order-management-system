@@ -55,12 +55,11 @@ class WarehouseController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
-        }
-
         $user = $this->currentUser();
-        $warehouse = $this->container->getWarehouseService()->findById($id);
+        $warehouse = null;
+        if ($id !== null) {
+            $warehouse = $this->container->getWarehouseService()->findById($id);
+        }
 
         if ($warehouse === null) {
             return $this->notFound();
@@ -131,11 +130,10 @@ class WarehouseController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $warehouse = null;
+        if ($id !== null) {
+            $warehouse = $this->container->getWarehouseService()->findById($id);
         }
-
-        $warehouse = $this->container->getWarehouseService()->findById($id);
 
         if ($warehouse === null) {
             return $this->notFound();
@@ -165,14 +163,16 @@ class WarehouseController extends BaseController
         if ($result->code !== Result::CODE_SUCCESS) {
             // Re-render as an EDIT of this record — passing null here turned the
             // form into a create form, so resubmitting created a duplicate.
-            return $this->view(self::TEMPLATE_FORM, [
+            $response = $this->view(self::TEMPLATE_FORM, [
                 'warehouse' => $this->container->getWarehouseService()->findById($id),
                 'errors' => [$this->t($result->info)],
                 'old' => $_POST,
             ])->setStatusCode($this->formErrorStatus($result));
+        } else {
+            $response = $this->redirect(self::ROUTE_WAREHOUSES);
         }
 
-        return $this->redirect(self::ROUTE_WAREHOUSES);
+        return $response;
     }
 
     public function deactivateAction($id)
@@ -183,13 +183,13 @@ class WarehouseController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $ok = false;
+        if ($id !== null) {
+            $result = $this->container->getWarehouseService()->setActive($id, false, $this->currentUser()->id);
+            $ok = $result->code === Result::CODE_SUCCESS;
         }
 
-        $result = $this->container->getWarehouseService()->setActive($id, false, $this->currentUser()->id);
-
-        if ($result->code !== Result::CODE_SUCCESS) {
+        if (!$ok) {
             return $this->notFound();
         }
 
@@ -204,13 +204,13 @@ class WarehouseController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $ok = false;
+        if ($id !== null) {
+            $result = $this->container->getWarehouseService()->setActive($id, true, $this->currentUser()->id);
+            $ok = $result->code === Result::CODE_SUCCESS;
         }
 
-        $result = $this->container->getWarehouseService()->setActive($id, true, $this->currentUser()->id);
-
-        if ($result->code !== Result::CODE_SUCCESS) {
+        if (!$ok) {
             return $this->notFound();
         }
 

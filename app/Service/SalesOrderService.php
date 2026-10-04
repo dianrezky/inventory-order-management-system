@@ -107,72 +107,81 @@ class SalesOrderService
             $orderDate    = trim((string) ($input['order_date'] ?? ''));
             $note         = trim((string) ($input['note'] ?? ''));
 
+            // The first failing step wins; the atomic persist runs only after
+            // every pre-flight check has passed, and $result is populated on success.
+            $errorResult = null;
             $customerResult = $this->customerRepository->findById($customerId);
             if ($customerResult->code !== Result::CODE_SUCCESS) {
-                return $customerResult;
+                $errorResult = $customerResult;
             }
 
-            $warehouseResult = $this->warehouseRepository->findById($warehouseId);
-            if ($warehouseResult->code !== Result::CODE_SUCCESS) {
-                return $warehouseResult;
+            $warehouseResult = null;
+            if ($errorResult === null) {
+                $warehouseResult = $this->warehouseRepository->findById($warehouseId);
+                if ($warehouseResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $warehouseResult;
+                }
             }
 
-            $headerInfo = $this->headerInvalidInfo($customerResult->data, $warehouseResult->data, $orderDate);
-
-            if ($headerInfo !== '') {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = $headerInfo;
-                $result->data = null;
-
-                return $result;
+            if ($errorResult === null) {
+                $headerInfo = $this->headerInvalidInfo($customerResult->data, $warehouseResult->data, $orderDate);
+                if ($headerInfo !== '') {
+                    $result->code = Result::CODE_VALIDATION;
+                    $result->info = $headerInfo;
+                    $result->data = null;
+                    $errorResult = $result;
+                }
             }
 
-            $normalizedItems = $this->normalizeAndValidateItems($items);
-
-            if ($normalizedItems instanceof Result) {
-                return $normalizedItems;
+            $normalizedItems = null;
+            if ($errorResult === null) {
+                $normalizedItems = $this->normalizeAndValidateItems($items);
+                if ($normalizedItems instanceof Result) {
+                    $errorResult = $normalizedItems;
+                } elseif (count($normalizedItems) === 0) {
+                    $result->code = Result::CODE_VALIDATION;
+                    $result->info = 'A sales order needs at least one line item.';
+                    $result->data = null;
+                    $errorResult = $result;
+                }
             }
 
-            if (count($normalizedItems) === 0) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = 'A sales order needs at least one line item.';
-                $result->data = null;
+            if ($errorResult === null) {
+                // Header + line items must persist atomically: an item insert
+                // failure must not leave a header with partial (or zero) items.
+                $this->transactionManager->beginTransaction();
 
-                return $result;
+                $createResult = $this->salesOrderRepository->create([
+                    'customer_id'           => $customerId,
+                    'source_warehouse_id'   => $warehouseId,
+                    'status'                => SalesOrder::STATUS_DRAFT,
+                    'order_date'            => $orderDate,
+                    'note'                  => $note === '' ? null : $note,
+                    'created_by'            => $createdByUserId,
+                ], $normalizedItems);
+                if ($createResult->code !== Result::CODE_SUCCESS) {
+                    $this->transactionManager->rollBack();
+                    $errorResult = $createResult;
+                } else {
+                    $this->transactionManager->commit();
+
+                    $salesOrder = $this->findById($createResult->data);
+                    if ($salesOrder === null) {
+                        $result->code = Result::CODE_VALIDATION;
+                        $result->info = 'Could not create the record. Please try again.';
+                        $result->data = null;
+                    } else {
+                        $result->code = Result::CODE_SUCCESS;
+                        $result->info = 'The sales order has been created.';
+                        $result->data = $salesOrder;
+
+                        $this->logEvent($createdByUserId, 'create', $salesOrder->id, "Created SO #{$salesOrder->id} (Draft)");
+                    }
+                }
             }
 
-            // Header + line items must persist atomically: an item insert
-            // failure must not leave a header with partial (or zero) items.
-            $this->transactionManager->beginTransaction();
-
-            $createResult = $this->salesOrderRepository->create([
-                'customer_id'           => $customerId,
-                'source_warehouse_id'   => $warehouseId,
-                'status'                => SalesOrder::STATUS_DRAFT,
-                'order_date'            => $orderDate,
-                'note'                  => $note === '' ? null : $note,
-                'created_by'            => $createdByUserId,
-            ], $normalizedItems);
-            if ($createResult->code !== Result::CODE_SUCCESS) {
-                $this->transactionManager->rollBack();
-
-                return $createResult;
-            }
-
-            $this->transactionManager->commit();
-
-            $salesOrder = $this->findById($createResult->data);
-
-            if ($salesOrder === null) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = 'Could not create the record. Please try again.';
-                $result->data = null;
-            } else {
-                $result->code = Result::CODE_SUCCESS;
-                $result->info = 'The sales order has been created.';
-                $result->data = $salesOrder;
-
-                $this->logEvent($createdByUserId, 'create', $salesOrder->id, "Created SO #{$salesOrder->id} (Draft)");
+            if ($errorResult !== null) {
+                return $errorResult;
             }
         } catch (\Throwable $e) {
             // rollBack() is safe even if no transaction is open (Database guards
@@ -192,44 +201,45 @@ class SalesOrderService
         $result = new Result();
 
         try {
+            // The first failing step wins; $result is populated only on success.
+            $errorResult = null;
             $salesOrder = $this->requireExisting($id);
             if ($salesOrder instanceof Result) {
-                return $salesOrder;
-            }
-
-            if ($salesOrder->status !== SalesOrder::STATUS_DRAFT) {
+                $errorResult = $salesOrder;
+            } elseif ($salesOrder->status !== SalesOrder::STATUS_DRAFT) {
                 $result->code = Result::CODE_VALIDATION;
                 $result->info = 'Only a Draft sales order can be submitted for approval.';
                 $result->data = null;
-
-                return $result;
-            }
-
-            if ($salesOrder->createdBy !== $actorId) {
+                $errorResult = $result;
+            } elseif ($salesOrder->createdBy !== $actorId) {
                 $result->code = Result::CODE_VALIDATION;
                 $result->info = 'Only the sales person who created this order can submit it.';
                 $result->data = null;
-
-                return $result;
+                $errorResult = $result;
             }
 
-            $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_PENDING_APPROVAL);
-            if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
+            if ($errorResult === null) {
+                $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_PENDING_APPROVAL);
+                if ($updateResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updateResult;
+                } else {
+                    $refreshed = $this->findById($id);
+                    if ($refreshed === null) {
+                        $result->code = Result::CODE_VALIDATION;
+                        $result->info = self::MESSAGE_NOT_FOUND;
+                        $result->data = null;
+                    } else {
+                        $result->code = Result::CODE_SUCCESS;
+                        $result->info = 'The sales order has been submitted for approval.';
+                        $result->data = $refreshed;
+
+                        $this->logEvent($actorId, 'submit', $id, "Submitted SO #{$id} for approval");
+                    }
+                }
             }
 
-            $refreshed = $this->findById($id);
-
-            if ($refreshed === null) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = self::MESSAGE_NOT_FOUND;
-                $result->data = null;
-            } else {
-                $result->code = Result::CODE_SUCCESS;
-                $result->info = 'The sales order has been submitted for approval.';
-                $result->data = $refreshed;
-
-                $this->logEvent($actorId, 'submit', $id, "Submitted SO #{$id} for approval");
+            if ($errorResult !== null) {
+                return $errorResult;
             }
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
@@ -246,49 +256,58 @@ class SalesOrderService
         $result = new Result();
 
         try {
+            // The first failing step wins; $result is populated only on success.
+            // SOD-01 is enforced by $this->policy->assertCanDecide() before any
+            // status change — an unauthorized actor never reaches the update.
+            $errorResult = null;
             $salesOrder = $this->requireExisting($id);
             if ($salesOrder instanceof Result) {
-                return $salesOrder;
+                $errorResult = $salesOrder;
             }
 
-            try {
-                $this->policy->assertCanDecide($isActorAdmin);
-            } catch (DomainException $ex) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = $ex->getMessage();
-                $result->data = null;
-
-                return $result;
+            if ($errorResult === null) {
+                try {
+                    $this->policy->assertCanDecide($isActorAdmin);
+                } catch (DomainException $ex) {
+                    $result->code = Result::CODE_VALIDATION;
+                    $result->info = $ex->getMessage();
+                    $result->data = null;
+                    $errorResult = $result;
+                }
             }
 
-            if ($salesOrder->status !== SalesOrder::STATUS_PENDING_APPROVAL) {
+            if ($errorResult === null && $salesOrder->status !== SalesOrder::STATUS_PENDING_APPROVAL) {
                 $result->code = Result::CODE_VALIDATION;
                 $result->info = 'Only a Pending Approval sales order can be approved.';
                 $result->data = null;
-
-                return $result;
+                $errorResult = $result;
             }
 
-            $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_APPROVED, [
-                'approved_by' => $actorId,
-                'approved_at' => date('Y-m-d H:i:s'),
-            ]);
-            if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
+            if ($errorResult === null) {
+                $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_APPROVED, [
+                    'approved_by' => $actorId,
+                    'approved_at' => date('Y-m-d H:i:s'),
+                ]);
+                if ($updateResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updateResult;
+                } else {
+                    $refreshed = $this->findById($id);
+                    if ($refreshed === null) {
+                        $result->code = Result::CODE_VALIDATION;
+                        $result->info = self::MESSAGE_NOT_FOUND;
+                        $result->data = null;
+                    } else {
+                        $result->code = Result::CODE_SUCCESS;
+                        $result->info = 'The sales order has been approved.';
+                        $result->data = $refreshed;
+
+                        $this->logEvent($actorId, 'approve', $id, "Approved SO #{$id}");
+                    }
+                }
             }
 
-            $refreshed = $this->findById($id);
-
-            if ($refreshed === null) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = self::MESSAGE_NOT_FOUND;
-                $result->data = null;
-            } else {
-                $result->code = Result::CODE_SUCCESS;
-                $result->info = 'The sales order has been approved.';
-                $result->data = $refreshed;
-
-                $this->logEvent($actorId, 'approve', $id, "Approved SO #{$id}");
+            if ($errorResult !== null) {
+                return $errorResult;
             }
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
@@ -305,51 +324,60 @@ class SalesOrderService
         $result = new Result();
 
         try {
+            // The first failing step wins; $result is populated only on success.
+            // SOD-01 is enforced by $this->policy->assertCanDecide() before any
+            // status change — an unauthorized actor never reaches the update.
+            $errorResult = null;
             $salesOrder = $this->requireExisting($id);
             if ($salesOrder instanceof Result) {
-                return $salesOrder;
+                $errorResult = $salesOrder;
             }
 
-            try {
-                $this->policy->assertCanDecide($isActorAdmin);
-            } catch (DomainException $ex) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = $ex->getMessage();
-                $result->data = null;
-
-                return $result;
+            if ($errorResult === null) {
+                try {
+                    $this->policy->assertCanDecide($isActorAdmin);
+                } catch (DomainException $ex) {
+                    $result->code = Result::CODE_VALIDATION;
+                    $result->info = $ex->getMessage();
+                    $result->data = null;
+                    $errorResult = $result;
+                }
             }
 
-            if ($salesOrder->status !== SalesOrder::STATUS_PENDING_APPROVAL) {
+            if ($errorResult === null && $salesOrder->status !== SalesOrder::STATUS_PENDING_APPROVAL) {
                 $result->code = Result::CODE_VALIDATION;
                 $result->info = 'Only a Pending Approval sales order can be rejected.';
                 $result->data = null;
-
-                return $result;
+                $errorResult = $result;
             }
 
-            $extras = [];
-            if ($reason !== null && $reason !== '') {
-                $extras['cancellation_reason'] = trim($reason);
+            if ($errorResult === null) {
+                $extras = [];
+                if ($reason !== null && $reason !== '') {
+                    $extras['cancellation_reason'] = trim($reason);
+                }
+
+                $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_CANCELLED, $extras);
+                if ($updateResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updateResult;
+                } else {
+                    $refreshed = $this->findById($id);
+                    if ($refreshed === null) {
+                        $result->code = Result::CODE_VALIDATION;
+                        $result->info = self::MESSAGE_NOT_FOUND;
+                        $result->data = null;
+                    } else {
+                        $result->code = Result::CODE_SUCCESS;
+                        $result->info = 'The sales order has been rejected.';
+                        $result->data = $refreshed;
+
+                        $this->logEvent($actorId, 'reject', $id, "Rejected SO #{$id}" . ($reason ? " ({$reason})" : ''));
+                    }
+                }
             }
 
-            $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_CANCELLED, $extras);
-            if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
-            }
-
-            $refreshed = $this->findById($id);
-
-            if ($refreshed === null) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = self::MESSAGE_NOT_FOUND;
-                $result->data = null;
-            } else {
-                $result->code = Result::CODE_SUCCESS;
-                $result->info = 'The sales order has been rejected.';
-                $result->data = $refreshed;
-
-                $this->logEvent($actorId, 'reject', $id, "Rejected SO #{$id}" . ($reason ? " ({$reason})" : ''));
+            if ($errorResult !== null) {
+                return $errorResult;
             }
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
@@ -412,19 +440,16 @@ class SalesOrderService
 
     private function headerInvalidInfo($customer, $warehouse, $orderDate)
     {
+        $info = '';
         if ($customer === null || !$customer->isActive) {
-            return 'Please select a valid, active customer.';
+            $info = 'Please select a valid, active customer.';
+        } elseif ($warehouse === null || !$warehouse->isActive) {
+            $info = 'Please select a valid, active warehouse.';
+        } elseif ($orderDate === '' || \DateTime::createFromFormat('Y-m-d', $orderDate) === false) {
+            $info = 'Please enter a valid order date.';
         }
 
-        if ($warehouse === null || !$warehouse->isActive) {
-            return 'Please select a valid, active warehouse.';
-        }
-
-        if ($orderDate === '' || \DateTime::createFromFormat('Y-m-d', $orderDate) === false) {
-            return 'Please enter a valid order date.';
-        }
-
-        return '';
+        return $info;
     }
 
     private function requireExisting($id)
@@ -446,6 +471,7 @@ class SalesOrderService
     {
         // Returns the normalized items array on success, or a failure Result
         $normalized = [];
+        $errorResult = null;
 
         foreach ($items as $item) {
             $productId = (int) ($item['product_id'] ?? 0);
@@ -458,36 +484,26 @@ class SalesOrderService
 
             $productResult = $this->productRepository->findById($productId);
             if ($productResult->code !== Result::CODE_SUCCESS) {
-                return $productResult;
+                $errorResult = $productResult;
+                break;
             }
 
             $product = $productResult->data;
-
+            $lineError = null;
             if ($product === null || !$product->isActive) {
-                $r = new Result();
-                $r->code = Result::CODE_VALIDATION;
-                $r->info = 'Please select a valid, active product for every line.';
-                $r->data = null;
-
-                return $r;
+                $lineError = 'Please select a valid, active product for every line.';
+            } elseif ($quantity <= 0) {
+                $lineError = 'Ordered quantity must be greater than zero.';
+            } elseif (!is_numeric($salePrice) || (float) $salePrice < 0) {
+                $lineError = 'Please enter a valid, non-negative price.';
             }
 
-            if ($quantity <= 0) {
-                $r = new Result();
-                $r->code = Result::CODE_VALIDATION;
-                $r->info = 'Ordered quantity must be greater than zero.';
-                $r->data = null;
-
-                return $r;
-            }
-
-            if (!is_numeric($salePrice) || (float) $salePrice < 0) {
-                $r = new Result();
-                $r->code = Result::CODE_VALIDATION;
-                $r->info = 'Please enter a valid, non-negative price.';
-                $r->data = null;
-
-                return $r;
+            if ($lineError !== null) {
+                $errorResult = new Result();
+                $errorResult->code = Result::CODE_VALIDATION;
+                $errorResult->info = $lineError;
+                $errorResult->data = null;
+                break;
             }
 
             $normalized[] = [
@@ -495,6 +511,10 @@ class SalesOrderService
                 'qty'        => $quantity,
                 'sale_price' => number_format((float) $salePrice, 2, '.', ''),
             ];
+        }
+
+        if ($errorResult !== null) {
+            return $errorResult;
         }
 
         return $normalized;

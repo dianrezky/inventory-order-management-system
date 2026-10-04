@@ -65,7 +65,7 @@ class WarehouseFakeRepository implements WarehouseRepositoryInterface
                 if ($s === 'active') { $isActiveValues[] = true; }
                 elseif ($s === 'inactive') { $isActiveValues[] = false; }
             }
-            if (count($isActiveValues) > 0) {
+            if (!empty($isActiveValues)) {
                 $all = array_values(array_filter($all, function ($w) use ($isActiveValues) {
                     return in_array($w->isActive, $isActiveValues, true);
                 }));

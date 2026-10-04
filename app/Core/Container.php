@@ -5,6 +5,7 @@ namespace App\Core;
 use App\Repository\Interface\CategoryRepositoryInterface;
 use App\Repository\Interface\CustomerRepositoryInterface;
 use App\Repository\Interface\EventLogRepositoryInterface;
+use App\Repository\Interface\FileValidationRepositoryInterface;
 use App\Repository\Interface\NotificationRepositoryInterface;
 use App\Repository\Interface\ProductRepositoryInterface;
 use App\Repository\Interface\ProductStockRepositoryInterface;
@@ -21,6 +22,7 @@ use App\Repository\Interface\WarehouseRepositoryInterface;
 use App\Repository\MySQL\CategoryMySQLRepository;
 use App\Repository\MySQL\CustomerMySQLRepository;
 use App\Repository\MySQL\EventLogMySQLRepository;
+use App\Repository\MySQL\FileValidationMySQLRepository;
 use App\Repository\MySQL\NotificationMySQLRepository;
 use App\Repository\MySQL\PermissionMySQLRepository;
 use App\Repository\MySQL\ProductMySQLRepository;
@@ -42,6 +44,7 @@ use App\Service\CustomerService;
 use App\Service\CsvExportService;
 use App\Service\DashboardService;
 use App\Service\EventLogService;
+use App\Service\FileValidationService;
 use App\Service\GoodsReceiptService;
 use App\Service\GoodsIssueService;
 use App\Service\ImageUploadService;
@@ -296,10 +299,26 @@ class Container // NOSONAR
         );
     }
 
+    public function getFileValidationRepository()
+    {
+        return $this->instances[FileValidationRepositoryInterface::class] ??= new FileValidationMySQLRepository(
+            $this->getQueryBuilder(),
+        );
+    }
+
+    public function getFileValidationService()
+    {
+        return $this->instances[FileValidationService::class] ??= new FileValidationService(
+            $this->getFileValidationRepository(),
+            $this->getCacheService(),
+        );
+    }
+
     public function getImageUploadService()
     {
         return $this->instances[ImageUploadService::class] ??= new ImageUploadService(
             $this->getMinioClient(),
+            $this->getFileValidationService(),
         );
     }
 

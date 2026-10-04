@@ -42,7 +42,7 @@
                            value="<?= htmlspecialchars($dateFrom, ENT_QUOTES, 'UTF-8') ?>"
                            required style="min-height:44px;" aria-required="true">
                     <span style="color:var(--color-text-secondary);font-size:var(--font-size-body-sm);flex-shrink:0;">to</span>
-                    <input class="input" type="date" id="date_to" name="date_to"
+                    <input class="input" type="date" id="date_to" name="date_to" aria-label="End date"
                            value="<?= htmlspecialchars($dateTo, ENT_QUOTES, 'UTF-8') ?>"
                            required style="min-height:44px;" aria-required="true">
                 </div>

@@ -22,7 +22,7 @@
  * Note: Load global config first for constants (REGEX_PATTERN, REGEX_NUMBER, etc.)
  */
 
-require_once __DIR__ . '/global.php';
+require_once __DIR__ . '/global.php'; // NOSONAR
 
 use App\Controller\AuthController;
 use App\Controller\CategoryController;

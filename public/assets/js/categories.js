@@ -6,12 +6,12 @@
     // still used by the Category detail page (views/master/categories/detail.php).
     // ---------------------------------------------------------------
     async function submitStatusForm(form) {
-        var submitBtn = form.querySelector('button[type="submit"]');
+        const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '…'; }
 
         try {
-            var fd = new FormData(form);
-            var result = await App.api(form.action, { method: 'POST', body: fd });
+            const fd = new FormData(form);
+            const result = await App.api(form.action, { method: 'POST', body: fd });
 
             if (result.ok) {
                 App.toast('Status updated successfully.', 'success');
@@ -29,30 +29,30 @@
     // ---------------------------------------------------------------
     // Categories list: Add/Edit modal + Delete confirmation
     // ---------------------------------------------------------------
-    var FIELD_KEYWORDS = [
+    const FIELD_KEYWORDS = [
         { field: 'name', keywords: ['name'] },
         { field: 'code', keywords: ['code'] },
         { field: 'description', keywords: ['description'] },
     ];
 
     function initCategoriesModal() {
-        var backdrop = document.getElementById('category-modal-backdrop');
+        const backdrop = document.getElementById('category-modal-backdrop');
         if (!backdrop) { return; } // not rendered for non-admin roles
 
-        var panel = document.getElementById('category-modal-panel');
-        var form = document.getElementById('category-form');
-        var title = document.getElementById('modal-category-title');
-        var idField = document.getElementById('category-id');
-        var codeField = document.getElementById('category-code-input');
-        var nameField = document.getElementById('category-name-input');
-        var descField = document.getElementById('category-description-input');
-        var statusField = document.getElementById('category-status-input');
-        var errorBanner = document.getElementById('category-form-error');
-        var saveBtn = document.getElementById('category-modal-save');
-        var saveBtnOriginalText = saveBtn.textContent.trim();
-        var lastFocusedTrigger = null;
+        const panel = document.getElementById('category-modal-panel');
+        const form = document.getElementById('category-form');
+        const title = document.getElementById('modal-category-title');
+        const idField = document.getElementById('category-id');
+        const codeField = document.getElementById('category-code-input');
+        const nameField = document.getElementById('category-name-input');
+        const descField = document.getElementById('category-description-input');
+        const statusField = document.getElementById('category-status-input');
+        const errorBanner = document.getElementById('category-form-error');
+        const saveBtn = document.getElementById('category-modal-save');
+        const saveBtnOriginalText = saveBtn.textContent.trim();
+        let lastFocusedTrigger = null;
 
-        var fieldEls = {
+        const fieldEls = {
             code: codeField,
             name: nameField,
             description: descField,
@@ -62,21 +62,21 @@
             errorBanner.hidden = true;
             errorBanner.textContent = '';
             Object.keys(fieldEls).forEach(function (key) {
-                var el = fieldEls[key];
-                var errEl = document.getElementById('category-' + key + '-error');
+                const el = fieldEls[key];
+                const errEl = document.getElementById('category-' + key + '-error');
                 el.removeAttribute('aria-invalid');
                 if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
             });
         }
 
         function showError(message) {
-            var matched = FIELD_KEYWORDS.find(function (entry) {
-                return entry.keywords.some(function (kw) { return message.toLowerCase().indexOf(kw) !== -1; });
+            const matched = FIELD_KEYWORDS.find(function (entry) {
+                return entry.keywords.some(function (kw) { return message.toLowerCase().includes(kw); });
             });
 
             if (matched && fieldEls[matched.field]) {
-                var el = fieldEls[matched.field];
-                var errEl = document.getElementById('category-' + matched.field + '-error');
+                const el = fieldEls[matched.field];
+                const errEl = document.getElementById('category-' + matched.field + '-error');
                 el.setAttribute('aria-invalid', 'true');
                 if (errEl) {
                     errEl.hidden = false;
@@ -101,10 +101,10 @@
 
         function trapFocus(e) {
             if (e.key !== 'Tab') { return; }
-            var focusable = getFocusable();
+            const focusable = getFocusable();
             if (focusable.length === 0) { return; }
-            var first = focusable[0];
-            var last = focusable[focusable.length - 1];
+            const first = focusable[0];
+            const last = focusable.at(-1);
 
             if (e.shiftKey && document.activeElement === first) {
                 e.preventDefault();
@@ -184,19 +184,19 @@
             saveBtn.disabled = true;
             saveBtn.textContent = 'Saving Category...';
 
-            var id = idField.value;
-            var url = id ? ('/categories/' + id + '/update') : '/categories';
-            var fd = new FormData(form);
+            const id = idField.value;
+            const url = id ? ('/categories/' + id + '/update') : '/categories';
+            const fd = new FormData(form);
 
             try {
-                var result = await App.api(url, { method: 'POST', body: fd });
+                const result = await App.api(url, { method: 'POST', body: fd });
 
-                if (result.ok && result.data && result.data.ok) {
+                if (result.ok && result.data?.ok) {
                     App.toast(result.data.message || 'Category saved.', 'success');
                     closeModal();
                     window.location.reload();
                 } else {
-                    var message = (result.data && result.data.error) || result.error || 'Could not save the category.';
+                    const message = result.data?.error || result.error || 'Could not save the category.';
                     showError(message);
                 }
             } catch (_) {
@@ -208,7 +208,7 @@
         });
 
         // Auto-open after /categories/create or /categories/{id}/edit redirected here (see list.php).
-        var pageData = window.CategoriesPageData || {};
+        const pageData = window.CategoriesPageData || {};
         if (pageData.autoOpenAdd) {
             openModal('add', null);
         } else if (pageData.autoEditCategory) {
@@ -219,14 +219,14 @@
     }
 
     function initDeleteDialog() {
-        var backdrop = document.getElementById('delete-modal-backdrop');
+        const backdrop = document.getElementById('delete-modal-backdrop');
         if (!backdrop) { return; }
 
-        var message = document.getElementById('delete-modal-message');
-        var confirmBtn = document.getElementById('delete-modal-confirm');
-        var cancelBtn = document.getElementById('delete-modal-cancel');
-        var lastFocusedTrigger = null;
-        var pendingId = null;
+        const message = document.getElementById('delete-modal-message');
+        const confirmBtn = document.getElementById('delete-modal-confirm');
+        const cancelBtn = document.getElementById('delete-modal-cancel');
+        let lastFocusedTrigger = null;
+        let pendingId = null;
 
         function open(id, name) {
             pendingId = id;
@@ -273,14 +273,14 @@
             confirmBtn.textContent = 'Deleting...';
 
             try {
-                var result = await App.api('/categories/' + pendingId + '/delete', { method: 'POST' });
+                const result = await App.api('/categories/' + pendingId + '/delete', { method: 'POST' });
 
-                if (result.ok && result.data && result.data.ok) {
+                if (result.ok && result.data?.ok) {
                     App.toast(result.data.message || 'Category deleted.', 'success');
                     close();
                     window.location.reload();
                 } else {
-                    var msg = (result.data && result.data.error) || result.error || 'Could not delete the category.';
+                    const msg = result.data?.error || result.error || 'Could not delete the category.';
                     App.toast(msg, 'error');
                     close();
                 }
@@ -296,7 +296,7 @@
 
     App.ready(function () {
         App.$$('form[data-ajax-status]').forEach(function (form) {
-            var btn = form.querySelector('button[type="submit"]');
+            const btn = form.querySelector('button[type="submit"]');
             if (btn) { btn.dataset.originalText = btn.textContent.trim(); }
 
             form.addEventListener('submit', function (e) {

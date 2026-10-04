@@ -92,59 +92,68 @@ class UserService
         $result = new Result();
 
         try {
+            // Each step runs only while no earlier step has produced a failing
+            // Result; the first failure is returned, otherwise $result is populated.
             $existingResult = $this->userRepository->findById($id);
+            $errorResult = null;
             if ($existingResult->code !== Result::CODE_SUCCESS) {
-                return $existingResult;
+                $errorResult = $existingResult;
+            } elseif ($existingResult->data === null) {
+                $errorResult = $this->notFoundResult();
             }
 
-            if ($existingResult->data === null) {
-                return $this->notFoundResult();
+            if ($errorResult === null) {
+                $v = $this->validateUpdatePayloadWithPassword($id, $input);
+                // Changing your own role would drop the permission to manage users mid-session (and can leave no Admin at all)
+                $currentRole = $existingResult->data->role instanceof \App\Entity\Role ? $existingResult->data->role->value : (string) $existingResult->data->role;
+                if ($v === null && $actorId !== null && (int) $actorId === (int) $id && (string) ($input['role'] ?? '') !== $currentRole) {
+                    $v = new Result();
+                    $v->code = Result::CODE_VALIDATION;
+                    $v->info = 'You cannot change your own role.';
+                    $v->data = ['role' => 'You cannot change your own role.'];
+                }
+                $errorResult = $v;
             }
 
-            $v = $this->validateUpdatePayloadWithPassword($id, $input);
-            // Changing your own role would drop the permission to manage users mid-session (and can leave no Admin at all)
-            $currentRole = $existingResult->data->role instanceof \App\Entity\Role ? $existingResult->data->role->value : (string) $existingResult->data->role;
-            if ($v === null && $actorId !== null && (int) $actorId === (int) $id && (string) ($input['role'] ?? '') !== $currentRole) {
-                $v = new Result();
-                $v->code = Result::CODE_VALIDATION;
-                $v->info = 'You cannot change your own role.';
-                $v->data = ['role' => 'You cannot change your own role.'];
-            }
-            if ($v !== null) {
-                return $v;
-            }
-
-            $name       = trim((string) ($input['name'] ?? ''));
-            $email      = trim((string) ($input['email'] ?? ''));
-            $role       = (string) ($input['role'] ?? '');
             $newPassword = (string) ($input['password'] ?? '');
+            if ($errorResult === null) {
+                $name  = trim((string) ($input['name'] ?? ''));
+                $email = trim((string) ($input['email'] ?? ''));
+                $role  = (string) ($input['role'] ?? '');
 
-            $updateResult = $this->userRepository->update($id, [
-                'name'  => $name,
-                'email' => $email,
-                'role'  => $role,
-            ]);
-            if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
-            }
-
-            if ($newPassword !== '') {
-                $passwordResult = $this->userRepository->updatePassword($id, password_hash($newPassword, PASSWORD_BCRYPT));
-                if ($passwordResult->code !== Result::CODE_SUCCESS) {
-                    return $passwordResult;
+                $updateResult = $this->userRepository->update($id, [
+                    'name'  => $name,
+                    'email' => $email,
+                    'role'  => $role,
+                ]);
+                if ($updateResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updateResult;
                 }
             }
 
-            $updatedResult = $this->userRepository->findById($id);
-            if ($updatedResult->code !== Result::CODE_SUCCESS) {
-                return $updatedResult;
+            if ($errorResult === null && $newPassword !== '') {
+                $passwordResult = $this->userRepository->updatePassword($id, password_hash($newPassword, PASSWORD_BCRYPT));
+                if ($passwordResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $passwordResult;
+                }
             }
 
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'The user account has been updated.';
-            $result->data = $updatedResult->data;
+            if ($errorResult === null) {
+                $updatedResult = $this->userRepository->findById($id);
+                if ($updatedResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updatedResult;
+                } else {
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The user account has been updated.';
+                    $result->data = $updatedResult->data;
 
-            $this->logEvent($actorId, 'update', $id, "Updated user \"{$name}\"" . ($newPassword !== '' ? ' (password changed)' : ''));
+                    $this->logEvent($actorId, 'update', $id, "Updated user \"{$name}\"" . ($newPassword !== '' ? ' (password changed)' : ''));
+                }
+            }
+
+            if ($errorResult !== null) {
+                return $errorResult;
+            }
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -204,39 +213,47 @@ class UserService
         $result = new Result();
 
         try {
+            // Each step runs only while no earlier step has produced a failing
+            // Result; the first failure is returned, otherwise $result is populated.
             $existingResult = $this->userRepository->findById($id);
+            $errorResult = null;
             if ($existingResult->code !== Result::CODE_SUCCESS) {
-                return $existingResult;
+                $errorResult = $existingResult;
+            } elseif ($existingResult->data === null) {
+                $errorResult = $this->notFoundResult();
             }
 
-            if ($existingResult->data === null) {
-                return $this->notFoundResult();
+            if ($errorResult === null) {
+                $errorResult = $this->validateProfilePayload($id, $name, $email);
             }
 
-            $validation = $this->validateProfilePayload($id, $name, $email);
-            if ($validation !== null) {
-                return $validation;
+            if ($errorResult === null) {
+                $updateResult = $this->userRepository->update($id, [
+                    'name'  => $name,
+                    'email' => $email,
+                    'role'  => $existingResult->data->role->value,
+                ]);
+                if ($updateResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updateResult;
+                }
             }
 
-            $updateResult = $this->userRepository->update($id, [
-                'name'  => $name,
-                'email' => $email,
-                'role'  => $existingResult->data->role->value,
-            ]);
-            if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
+            if ($errorResult === null) {
+                $updatedResult = $this->userRepository->findById($id);
+                if ($updatedResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updatedResult;
+                } else {
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'Your profile has been updated.';
+                    $result->data = $updatedResult->data;
+
+                    $this->logEvent($id, 'update', $id, "Updated own profile");
+                }
             }
 
-            $updatedResult = $this->userRepository->findById($id);
-            if ($updatedResult->code !== Result::CODE_SUCCESS) {
-                return $updatedResult;
+            if ($errorResult !== null) {
+                return $errorResult;
             }
-
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'Your profile has been updated.';
-            $result->data = $updatedResult->data;
-
-            $this->logEvent($id, 'update', $id, "Updated own profile");
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -255,44 +272,40 @@ class UserService
         $email = trim((string) ($input['email'] ?? ''));
         $role  = (string) ($input['role'] ?? '');
 
+        $errorResult = null;
         if ($name === '') {
-            return $this->validationResult('Name is required.');
+            $errorResult = $this->validationResult('Name is required.');
+        } elseif ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $errorResult = $this->validationResult('Please enter a valid email address.');
+        } elseif (Role::tryFrom($role) === null) {
+            $errorResult = $this->validationResult('Please select a valid role.');
         }
 
-        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            return $this->validationResult('Please enter a valid email address.');
-        }
-
-        if (Role::tryFrom($role) === null) {
-            return $this->validationResult('Please select a valid role.');
-        }
-
-        return null;
+        return $errorResult;
     }
 
     private function validateCreatePayloadWithPassword($input)
     {
-        $v = $this->validateCreatePayload($input);
-        if ($v !== null) {
-            return $v;
+        $errorResult = $this->validateCreatePayload($input);
+
+        if ($errorResult === null) {
+            $password = (string) ($input['password'] ?? '');
+            if ($password === '' || strlen($password) < 6) {
+                $errorResult = $this->validationResult('Password must be at least 6 characters.');
+            }
         }
 
-        $password = (string) ($input['password'] ?? '');
-        if ($password === '' || strlen($password) < 6) {
-            return $this->validationResult('Password must be at least 6 characters.');
+        if ($errorResult === null) {
+            $email = trim((string) ($input['email'] ?? ''));
+            $existsResult = $this->userRepository->emailExists($email);
+            if ($existsResult->code !== Result::CODE_SUCCESS) {
+                $errorResult = $existsResult;
+            } elseif ($existsResult->data) {
+                $errorResult = $this->validationResult(self::MESSAGE_EMAIL_TAKEN);
+            }
         }
 
-        $email = trim((string) ($input['email'] ?? ''));
-        $existsResult = $this->userRepository->emailExists($email);
-        if ($existsResult->code !== Result::CODE_SUCCESS) {
-            return $existsResult;
-        }
-
-        if ($existsResult->data) {
-            return $this->validationResult(self::MESSAGE_EMAIL_TAKEN);
-        }
-
-        return null;
+        return $errorResult;
     }
 
     private function validateUpdatePayload($id, $input)
@@ -301,65 +314,60 @@ class UserService
         $email = trim((string) ($input['email'] ?? ''));
         $role  = (string) ($input['role'] ?? '');
 
+        $errorResult = null;
         if ($name === '') {
-            return $this->validationResult('Name is required.');
+            $errorResult = $this->validationResult('Name is required.');
+        } elseif ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $errorResult = $this->validationResult('Please enter a valid email address.');
+        } elseif (Role::tryFrom($role) === null) {
+            $errorResult = $this->validationResult('Please select a valid role.');
         }
 
-        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            return $this->validationResult('Please enter a valid email address.');
+        if ($errorResult === null) {
+            $existsResult = $this->userRepository->emailExists($email, $id);
+            if ($existsResult->code !== Result::CODE_SUCCESS) {
+                $errorResult = $existsResult;
+            } elseif ($existsResult->data) {
+                $errorResult = $this->validationResult(self::MESSAGE_EMAIL_TAKEN);
+            }
         }
 
-        if (Role::tryFrom($role) === null) {
-            return $this->validationResult('Please select a valid role.');
-        }
-
-        $existsResult = $this->userRepository->emailExists($email, $id);
-        if ($existsResult->code !== Result::CODE_SUCCESS) {
-            return $existsResult;
-        }
-
-        if ($existsResult->data) {
-            return $this->validationResult(self::MESSAGE_EMAIL_TAKEN);
-        }
-
-        return null;
+        return $errorResult;
     }
 
     private function validateUpdatePayloadWithPassword($id, $input)
     {
-        $v = $this->validateUpdatePayload($id, $input);
-        if ($v !== null) {
-            return $v;
+        $errorResult = $this->validateUpdatePayload($id, $input);
+
+        if ($errorResult === null) {
+            $newPassword = (string) ($input['password'] ?? '');
+            if ($newPassword !== '' && strlen($newPassword) < 6) {
+                $errorResult = $this->validationResult('Password must be at least 6 characters.');
+            }
         }
 
-        $newPassword = (string) ($input['password'] ?? '');
-        if ($newPassword !== '' && strlen($newPassword) < 6) {
-            return $this->validationResult('Password must be at least 6 characters.');
-        }
-
-        return null;
+        return $errorResult;
     }
 
     private function validateProfilePayload($id, $name, $email)
     {
+        $errorResult = null;
         if ($name === '') {
-            return $this->validationResult('Name is required.');
+            $errorResult = $this->validationResult('Name is required.');
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errorResult = $this->validationResult('Please enter a valid email address.');
         }
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return $this->validationResult('Please enter a valid email address.');
+        if ($errorResult === null) {
+            $existsResult = $this->userRepository->emailExists($email, $id);
+            if ($existsResult->code !== Result::CODE_SUCCESS) {
+                $errorResult = $existsResult;
+            } elseif ($existsResult->data) {
+                $errorResult = $this->validationResult(self::MESSAGE_EMAIL_TAKEN);
+            }
         }
 
-        $existsResult = $this->userRepository->emailExists($email, $id);
-        if ($existsResult->code !== Result::CODE_SUCCESS) {
-            return $existsResult;
-        }
-
-        if ($existsResult->data) {
-            return $this->validationResult(self::MESSAGE_EMAIL_TAKEN);
-        }
-
-        return null;
+        return $errorResult;
     }
 
     private function notFoundResult()

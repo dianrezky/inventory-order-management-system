@@ -177,26 +177,24 @@ class SupplierService
     private function validateUpdatePayload($id, $input)
     {
         $existingResult = $this->supplierRepository->findById($id);
+        $errorResult = null;
         if ($existingResult->code !== Result::CODE_SUCCESS) {
-            return $existingResult;
+            $errorResult = $existingResult;
+        } elseif ($existingResult->data === null) {
+            $errorResult = $this->notFoundResult();
         }
 
-        if ($existingResult->data === null) {
-            return $this->notFoundResult();
+        if ($errorResult === null) {
+            $name = trim((string) ($input['name'] ?? ''));
+            $email = $this->nullableTrim($input['email'] ?? null);
+            if ($name === '') {
+                $errorResult = $this->validationResult('Name is required.');
+            } elseif ($email !== null && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                $errorResult = $this->validationResult('Please enter a valid email address.');
+            }
         }
 
-        $name = trim((string) ($input['name'] ?? ''));
-
-        if ($name === '') {
-            return $this->validationResult('Name is required.');
-        }
-
-        $email = $this->nullableTrim($input['email'] ?? null);
-        if ($email !== null && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            return $this->validationResult('Please enter a valid email address.');
-        }
-
-        return null;
+        return $errorResult;
     }
 
     private function buildCreateData($input)

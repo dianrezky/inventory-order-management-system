@@ -15,6 +15,7 @@ use App\Repository\Interface\ReportRepositoryInterface;
 // (EMULATE_PREPARES=false) reject a placeholder used twice.
 class ReportMySQLRepository implements ReportRepositoryInterface
 {
+    private const SQL_AND = ' AND ';
     private $db;
 
     public function __construct(Database $db)
@@ -568,7 +569,7 @@ class ReportMySQLRepository implements ReportRepositoryInterface
                 $params['q1'] = '%' . $search . '%';
                 $params['q2'] = '%' . $search . '%';
             }
-            $whereSql = implode(' AND ', $where);
+            $whereSql = implode(self::SQL_AND, $where);
 
             $total = (int) ($this->fetchOne("
                 SELECT COUNT(*) AS cnt
@@ -623,7 +624,7 @@ class ReportMySQLRepository implements ReportRepositoryInterface
             $params["{$prefix}_wid"] = (int) $warehouseId;
         }
 
-        return [implode(' AND ', $where), $params];
+        return [implode(self::SQL_AND, $where), $params];
     }
 
     // Product-level WHERE for the line-item tables: active, category, search.
@@ -643,7 +644,7 @@ class ReportMySQLRepository implements ReportRepositoryInterface
             $params['q2'] = '%' . $search . '%';
         }
 
-        return [implode(' AND ', $where), $params];
+        return [implode(self::SQL_AND, $where), $params];
     }
 
     private function limitSql($limit, $offset)

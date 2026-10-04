@@ -299,6 +299,12 @@ textarea.input {
     justify-content: center;
     width: 16px;
     height: 16px;
+    /* Rendered as a <button> for keyboard accessibility; reset the UA button chrome. */
+    border: none;
+    padding: 0;
+    margin: 0;
+    -webkit-appearance: none;
+    appearance: none;
     border-radius: 50%;
     background: var(--color-border);
     color: var(--color-text-secondary);
@@ -692,9 +698,6 @@ textarea.input {
 
 .row-actions__item:disabled:hover {
     filter: none;
-}
-
-.row-actions__item:disabled:hover {
     background: none;
 }
 

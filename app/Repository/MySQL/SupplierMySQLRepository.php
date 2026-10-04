@@ -9,6 +9,7 @@ use App\Repository\Interface\SupplierRepositoryInterface;
 
 class SupplierMySQLRepository implements SupplierRepositoryInterface
 {
+    private const COLUMNS = 'id, name, contact_person, phone, email, address, is_active, created_at, updated_at';
     private $queryBuilder;
 
     public function __construct(QueryBuilder $queryBuilder)
@@ -24,7 +25,7 @@ class SupplierMySQLRepository implements SupplierRepositoryInterface
             $row = $this->queryBuilder->findOne(
                 'suppliers',
                 null,
-                'id, name, contact_person, phone, email, address, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 ['id' => $id]
             );
@@ -53,7 +54,7 @@ class SupplierMySQLRepository implements SupplierRepositoryInterface
                 if ($s === 'active') { $isActiveValues[] = 1; }
                 elseif ($s === 'inactive') { $isActiveValues[] = 0; }
             }
-            if (count($isActiveValues) > 0) {
+            if (!empty($isActiveValues)) {
                 $inFilters['is_active'] = $isActiveValues;
             }
         }
@@ -73,7 +74,7 @@ class SupplierMySQLRepository implements SupplierRepositoryInterface
             $rows = $this->queryBuilder->findAll(
                 'suppliers',
                 null,
-                'id, name, contact_person, phone, email, address, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 $searchColumns,
                 $searchTerm,
@@ -110,7 +111,7 @@ class SupplierMySQLRepository implements SupplierRepositoryInterface
             $rows = $this->queryBuilder->findAll(
                 'suppliers',
                 null,
-                'id, name, contact_person, phone, email, address, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 [],
                 null,

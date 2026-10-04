@@ -248,41 +248,46 @@ class ProductService
         $result = new Result();
 
         try {
+            // The first failing step wins; $result is populated only when all pass.
             $existingResult = $this->productRepository->findById($id);
+            $errorResult = null;
             if ($existingResult->code !== Result::CODE_SUCCESS) {
-                return $existingResult;
+                $errorResult = $existingResult;
+            } elseif ($existingResult->data === null) {
+                $errorResult = $this->notFoundResult();
             }
 
-            if ($existingResult->data === null) {
-                return $this->notFoundResult();
+            if ($errorResult === null) {
+                $errorResult = $this->validateUpdatePayload($id, $input);
             }
 
-            $validation = $this->validateUpdatePayload($id, $input);
-            if ($validation !== null) {
-                return $validation;
+            if ($errorResult === null) {
+                $updateResult = $this->productRepository->update($id, $this->buildCreateData($input));
+                if ($updateResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updateResult;
+                }
             }
 
-            $data = $this->buildCreateData($input);
+            if ($errorResult === null) {
+                $findResult = $this->productRepository->findById($id);
+                if ($findResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $findResult;
+                } else {
+                    // Invalidate both the old SKU (in case it changed) and the current one.
+                    $this->invalidateSkuCache($existingResult->data->sku);
+                    $this->invalidateSkuCache($findResult->data->sku);
 
-            $updateResult = $this->productRepository->update($id, $data);
-            if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The product has been updated.';
+                    $result->data = $findResult->data;
+
+                    $this->logEvent($actorId, 'update', $id, "Updated product \"{$findResult->data->sku}\" — {$findResult->data->name}");
+                }
             }
 
-            $findResult = $this->productRepository->findById($id);
-            if ($findResult->code !== Result::CODE_SUCCESS) {
-                return $findResult;
+            if ($errorResult !== null) {
+                return $errorResult;
             }
-
-            // Invalidate both the old SKU (in case it changed) and the current one.
-            $this->invalidateSkuCache($existingResult->data->sku);
-            $this->invalidateSkuCache($findResult->data->sku);
-
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'The product has been updated.';
-            $result->data = $findResult->data;
-
-            $this->logEvent($actorId, 'update', $id, "Updated product \"{$findResult->data->sku}\" — {$findResult->data->name}");
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -298,25 +303,31 @@ class ProductService
         $result = new Result();
 
         try {
+            // The first failing step wins; $result is populated only when all pass.
             $existingResult = $this->productRepository->findById($id);
+            $errorResult = null;
             if ($existingResult->code !== Result::CODE_SUCCESS) {
-                return $existingResult;
+                $errorResult = $existingResult;
+            } elseif ($existingResult->data === null) {
+                $errorResult = $this->notFoundResult();
             }
 
-            if ($existingResult->data === null) {
-                return $this->notFoundResult();
+            if ($errorResult === null) {
+                $updateResult = $this->productRepository->updateImagePath($id, $imagePath);
+                if ($updateResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updateResult;
+                } else {
+                    $this->invalidateSkuCache($existingResult->data->sku);
+
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The product image has been updated.';
+                    $result->data = null;
+                }
             }
 
-            $updateResult = $this->productRepository->updateImagePath($id, $imagePath);
-            if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
+            if ($errorResult !== null) {
+                return $errorResult;
             }
-
-            $this->invalidateSkuCache($existingResult->data->sku);
-
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'The product image has been updated.';
-            $result->data = null;
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -377,70 +388,27 @@ class ProductService
         $salePrice    = (string) ($input['sale_price'] ?? '0');
         $reorderPoint = (int) ($input['reorder_point'] ?? 0);
 
-        if ($sku === '') {
-            return $this->validationResult('SKU is required.');
+        $error = $this->invalidProductFieldInfo($sku, $name, $unit, $description, $categoryId, $purchasePrice, $salePrice, $reorderPoint);
+
+        $errorResult = null;
+        if ($error !== null) {
+            $errorResult = $this->validationResult($error);
         }
 
-        if (strlen($sku) > 30) {
-            return $this->validationResult('SKU must be 30 characters or fewer.');
+        if ($errorResult === null) {
+            $skuExistsResult = $this->productRepository->skuExists($sku);
+            if ($skuExistsResult->code !== Result::CODE_SUCCESS) {
+                $errorResult = $skuExistsResult;
+            } elseif ($skuExistsResult->data) {
+                $errorResult = $this->validationResult('This SKU is already in use.');
+            }
         }
 
-        if ($name === '') {
-            return $this->validationResult('Product name is required.');
+        if ($errorResult === null) {
+            $errorResult = $this->invalidCategoryResult($categoryId);
         }
 
-        if (strlen($name) < 3 || strlen($name) > 150) {
-            return $this->validationResult('Product name must be between 3 and 150 characters.');
-        }
-
-        if (strlen($description) > 500) {
-            return $this->validationResult('Description must be 500 characters or fewer.');
-        }
-
-        if ($unit === '') {
-            return $this->validationResult('Unit of measure is required.');
-        }
-
-        if ($categoryId <= 0) {
-            return $this->validationResult('Please select a category.');
-        }
-
-        if (!is_numeric($purchasePrice) || (float) $purchasePrice < 0) {
-            return $this->validationResult('Please enter a valid, non-negative purchase price.');
-        }
-
-        if (!is_numeric($salePrice) || (float) $salePrice < 0) {
-            return $this->validationResult('Please enter a valid, non-negative selling price.');
-        }
-
-        if ((float) $salePrice < (float) $purchasePrice) {
-            return $this->validationResult('Selling price must be greater than or equal to purchase price.');
-        }
-
-        // PRD-01.04: reorder point >= 0 (0 disables the low-stock alert)
-        if ($reorderPoint < 0) {
-            return $this->validationResult('Minimum stock threshold cannot be negative.');
-        }
-
-        $skuExistsResult = $this->productRepository->skuExists($sku);
-        if ($skuExistsResult->code !== Result::CODE_SUCCESS) {
-            return $skuExistsResult;
-        }
-
-        if ($skuExistsResult->data) {
-            return $this->validationResult('This SKU is already in use.');
-        }
-
-        $categoryResult = $this->categoryRepository->findById($categoryId);
-        if ($categoryResult->code !== Result::CODE_SUCCESS) {
-            return $categoryResult;
-        }
-
-        if ($categoryResult->data === null) {
-            return $this->validationResult('Selected category does not exist.');
-        }
-
-        return null;
+        return $errorResult;
     }
 
     private function validateUpdatePayload($id, $input)
@@ -454,70 +422,76 @@ class ProductService
         $salePrice    = (string) ($input['sale_price'] ?? '0');
         $reorderPoint = (int) ($input['reorder_point'] ?? 0);
 
+        $error = $this->invalidProductFieldInfo($sku, $name, $unit, $description, $categoryId, $purchasePrice, $salePrice, $reorderPoint);
+
+        $errorResult = null;
+        if ($error !== null) {
+            $errorResult = $this->validationResult($error);
+        }
+
+        if ($errorResult === null) {
+            $skuExistsResult = $this->productRepository->skuExists($sku, $id);
+            if ($skuExistsResult->code !== Result::CODE_SUCCESS) {
+                $errorResult = $skuExistsResult;
+            } elseif ($skuExistsResult->data) {
+                $errorResult = $this->validationResult('This SKU is already in use.');
+            }
+        }
+
+        if ($errorResult === null) {
+            $errorResult = $this->invalidCategoryResult($categoryId);
+        }
+
+        return $errorResult;
+    }
+
+    // Shared field-level checks for create/update: returns the first failing
+    // message, or null when every field is valid. Repository-dependent checks
+    // (SKU uniqueness, category existence) are handled separately by the caller.
+    private function invalidProductFieldInfo($sku, $name, $unit, $description, $categoryId, $purchasePrice, $salePrice, $reorderPoint): ?string
+    {
+        $info = null;
         if ($sku === '') {
-            return $this->validationResult('SKU is required.');
+            $info = 'SKU is required.';
+        } elseif (strlen($sku) > 30) {
+            $info = 'SKU must be 30 characters or fewer.';
+        } elseif ($name === '') {
+            $info = 'Product name is required.';
+        } elseif (strlen($name) < 3 || strlen($name) > 150) {
+            $info = 'Product name must be between 3 and 150 characters.';
+        } elseif (strlen($description) > 500) {
+            $info = 'Description must be 500 characters or fewer.';
+        } elseif ($unit === '') {
+            $info = 'Unit of measure is required.';
+        } elseif ($categoryId <= 0) {
+            $info = 'Please select a category.';
+        } elseif (!is_numeric($purchasePrice) || (float) $purchasePrice < 0) {
+            $info = 'Please enter a valid, non-negative purchase price.';
+        } elseif (!is_numeric($salePrice) || (float) $salePrice < 0) {
+            $info = 'Please enter a valid, non-negative selling price.';
+        } elseif ((float) $salePrice < (float) $purchasePrice) {
+            $info = 'Selling price must be greater than or equal to purchase price.';
+        } elseif ($reorderPoint < 0) {
+            // PRD-01.04: reorder point >= 0 (0 disables the low-stock alert)
+            $info = 'Minimum stock threshold cannot be negative.';
         }
 
-        if (strlen($sku) > 30) {
-            return $this->validationResult('SKU must be 30 characters or fewer.');
-        }
+        return $info;
+    }
 
-        if ($name === '') {
-            return $this->validationResult('Product name is required.');
-        }
-
-        if (strlen($name) < 3 || strlen($name) > 150) {
-            return $this->validationResult('Product name must be between 3 and 150 characters.');
-        }
-
-        if (strlen($description) > 500) {
-            return $this->validationResult('Description must be 500 characters or fewer.');
-        }
-
-        if ($unit === '') {
-            return $this->validationResult('Unit of measure is required.');
-        }
-
-        if ($categoryId <= 0) {
-            return $this->validationResult('Please select a category.');
-        }
-
-        if (!is_numeric($purchasePrice) || (float) $purchasePrice < 0) {
-            return $this->validationResult('Please enter a valid, non-negative purchase price.');
-        }
-
-        if (!is_numeric($salePrice) || (float) $salePrice < 0) {
-            return $this->validationResult('Please enter a valid, non-negative selling price.');
-        }
-
-        if ((float) $salePrice < (float) $purchasePrice) {
-            return $this->validationResult('Selling price must be greater than or equal to purchase price.');
-        }
-
-        // PRD-01.04: reorder point >= 0 (0 disables the low-stock alert)
-        if ($reorderPoint < 0) {
-            return $this->validationResult('Minimum stock threshold cannot be negative.');
-        }
-
-        $skuExistsResult = $this->productRepository->skuExists($sku, $id);
-        if ($skuExistsResult->code !== Result::CODE_SUCCESS) {
-            return $skuExistsResult;
-        }
-
-        if ($skuExistsResult->data) {
-            return $this->validationResult('This SKU is already in use.');
-        }
-
+    // Confirms the chosen category exists: returns a failure Result, or null when valid.
+    private function invalidCategoryResult($categoryId)
+    {
         $categoryResult = $this->categoryRepository->findById($categoryId);
+
+        $errorResult = null;
         if ($categoryResult->code !== Result::CODE_SUCCESS) {
-            return $categoryResult;
+            $errorResult = $categoryResult;
+        } elseif ($categoryResult->data === null) {
+            $errorResult = $this->validationResult('Selected category does not exist.');
         }
 
-        if ($categoryResult->data === null) {
-            return $this->validationResult('Selected category does not exist.');
-        }
-
-        return null;
+        return $errorResult;
     }
 
     private function buildCreateData($input)

@@ -91,12 +91,11 @@ class SalesOrderController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
-        }
-
         $currentUser = $this->currentUser();
-        $salesOrder = $this->container->getSalesOrderService()->findById($id);
+        $salesOrder = null;
+        if ($id !== null) {
+            $salesOrder = $this->container->getSalesOrderService()->findById($id);
+        }
 
         $guardError = null;
         if ($salesOrder === null) {
@@ -189,10 +188,12 @@ class SalesOrderController extends BaseController
         $result = $this->container->getSalesOrderService()->submitForApproval($id, $currentUser->id);
 
         if ($result->code !== Result::CODE_SUCCESS) {
-            return $this->badRequest($this->t($result->info));
+            $response = $this->badRequest($this->t($result->info));
+        } else {
+            $response = $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
         }
 
-        return $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
+        return $response;
     }
 
     public function approveAction($id)
@@ -213,10 +214,12 @@ class SalesOrderController extends BaseController
         $result = $this->container->getSalesOrderService()->approve($id, $currentUser->id, $userIsAdmin);
 
         if ($result->code !== Result::CODE_SUCCESS) {
-            return $this->badRequest($this->t($result->info));
+            $response = $this->badRequest($this->t($result->info));
+        } else {
+            $response = $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
         }
 
-        return $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
+        return $response;
     }
 
     public function rejectAction($id)
@@ -242,10 +245,12 @@ class SalesOrderController extends BaseController
         $result = $this->container->getSalesOrderService()->reject($id, $currentUser->id, $userIsAdmin, $reason);
 
         if ($result->code !== Result::CODE_SUCCESS) {
-            return $this->badRequest($this->t($result->info));
+            $response = $this->badRequest($this->t($result->info));
+        } else {
+            $response = $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
         }
 
-        return $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
+        return $response;
     }
 
     public function cancelAction($id)
@@ -265,10 +270,12 @@ class SalesOrderController extends BaseController
         $result = $this->container->getSalesOrderService()->cancel($id, $currentUser->id, $userIsAdmin);
 
         if ($result->code !== Result::CODE_SUCCESS) {
-            return $this->badRequest($this->t($result->info));
+            $response = $this->badRequest($this->t($result->info));
+        } else {
+            $response = $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
         }
 
-        return $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
+        return $response;
     }
 
     public function issueAction($id)
@@ -287,10 +294,12 @@ class SalesOrderController extends BaseController
         $result = $this->container->getGoodsIssueService()->issue($id, $currentUser->id);
 
         if ($result->code !== Result::CODE_SUCCESS) {
-            return $this->badRequest($this->t($result->info));
+            $response = $this->badRequest($this->t($result->info));
+        } else {
+            $response = $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
         }
 
-        return $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
+        return $response;
     }
 
     private function orderStatusFilter()

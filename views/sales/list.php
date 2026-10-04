@@ -155,7 +155,7 @@ $canCreate = $currentUser->role !== \App\Entity\Role::WarehouseStaff;
         </table>
     </div>
     <?php if ($total > $perPage): ?>
-    <nav class="pagination">
+    <nav class="pagination" aria-label="Pagination">
         <?php if ($page > 1): ?>
             <button type="submit" form="so-filter-form" name="page" value="<?= $page - 1 ?>" class="btn btn--secondary">&laquo; Prev</button>
         <?php endif; ?>

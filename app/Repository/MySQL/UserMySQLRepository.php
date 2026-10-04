@@ -70,7 +70,7 @@ class UserMySQLRepository implements UserRepositoryInterface
                 if ($s === 'active') { $isActiveValues[] = 1; }
                 elseif ($s === 'inactive') { $isActiveValues[] = 0; }
             }
-            if (count($isActiveValues) > 0) {
+            if (!empty($isActiveValues)) {
                 $inFilters['is_active'] = $isActiveValues;
             }
         }

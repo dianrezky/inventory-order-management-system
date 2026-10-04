@@ -252,8 +252,8 @@ $totalUnits = (int) $so->itemsQty > 0 ? (int) $so->itemsQty : $totalQty;
 <?php endif; ?>
 
 <!-- Action Bar -->
+<?php if (!in_array($so->status, ['Fulfilled', 'Cancelled'], true)): ?>
 <div class="action-bar">
-<?php if ($so->status !== 'Fulfilled' && $so->status !== 'Cancelled'): ?>
     <?php if ($canSubmit): ?>
         <form class="action-bar__form" method="post" action="/sales-orders/<?= $idObfuscator->encode($so->id) ?>/submit">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
@@ -271,7 +271,7 @@ $totalUnits = (int) $so->itemsQty > 0 ? (int) $so->itemsQty : $totalQty;
     <?php if ($canReject): ?>
         <form class="action-bar__form" method="post" action="/sales-orders/<?= $idObfuscator->encode($so->id) ?>/reject">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-            <input type="text" name="reason" class="input input--lg" placeholder="Reason (optional)">
+            <input type="text" name="reason" class="input input--lg" placeholder="Reason (optional)" aria-label="Rejection reason">
             <button type="submit" class="btn btn--secondary" data-i18n="sales_orders.reject">Reject</button>
         </form>
     <?php endif; ?>
@@ -294,7 +294,11 @@ $totalUnits = (int) $so->itemsQty > 0 ? (int) $so->itemsQty : $totalQty;
             <button type="submit" class="btn btn--destructive">Cancel Order</button>
         </form>
     <?php endif; ?>
-<?php endif; ?>
 
     <a class="btn btn--tertiary" href="/sales-orders">Back</a>
 </div>
+<?php else: ?>
+<div class="action-bar__back">
+    <a class="btn btn--tertiary" href="/sales-orders">Back</a>
+</div>
+<?php endif; ?>

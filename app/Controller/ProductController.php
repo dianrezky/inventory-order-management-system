@@ -110,12 +110,11 @@ class ProductController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
-        }
-
         $currentUser = $this->currentUser();
-        $product = $this->container->getProductService()->findById($id);
+        $product = null;
+        if ($id !== null) {
+            $product = $this->container->getProductService()->findById($id);
+        }
 
         if ($product === null) {
             return $this->notFound();
@@ -186,27 +185,29 @@ class ProductController extends BaseController
                 $this->container->getImageUploadService()->delete($imagePath);
             }
 
-            return $this->view(self::TEMPLATE_FORM, [
+            $response = $this->view(self::TEMPLATE_FORM, [
                 'product' => null,
                 'categories' => $this->container->getCategoryService()->listActiveCategories(),
                 'warehouses' => $this->container->getWarehouseService()->listActiveWarehouses(),
                 'errors' => [$this->t($result->info)],
                 'old' => $_POST,
             ])->setStatusCode($this->formErrorStatus($result));
-        }
-
-        // Optional opening stock: product_stocks row + Adjustment ledger entry
-        // in one transaction (StockLedgerService::recordInitialStock).
-        $initialWarehouseId = (int) ($_POST['initial_warehouse_id'] ?? 0);
-        $initialQty = (int) ($_POST['initial_qty'] ?? 0);
-        if ($initialWarehouseId > 0 && $initialQty > 0) {
-            $stockResult = $this->container->getStockLedgerService()->recordInitialStock($result->data->id, $initialWarehouseId, $initialQty, $actorId);
-            if ($stockResult->code !== Result::CODE_SUCCESS) {
-                $this->getSessionManager()->set(self::FLASH_ERROR, 'The product was created, but its initial stock could not be recorded. Receive it through a purchase order instead.');
+        } else {
+            // Optional opening stock: product_stocks row + Adjustment ledger entry
+            // in one transaction (StockLedgerService::recordInitialStock).
+            $initialWarehouseId = (int) ($_POST['initial_warehouse_id'] ?? 0);
+            $initialQty = (int) ($_POST['initial_qty'] ?? 0);
+            if ($initialWarehouseId > 0 && $initialQty > 0) {
+                $stockResult = $this->container->getStockLedgerService()->recordInitialStock($result->data->id, $initialWarehouseId, $initialQty, $actorId);
+                if ($stockResult->code !== Result::CODE_SUCCESS) {
+                    $this->getSessionManager()->set(self::FLASH_ERROR, 'The product was created, but its initial stock could not be recorded. Receive it through a purchase order instead.');
+                }
             }
+
+            $response = $this->redirect(self::ROUTE_PRODUCTS);
         }
 
-        return $this->redirect(self::ROUTE_PRODUCTS);
+        return $response;
     }
 
     public function editFormAction($id)
@@ -217,11 +218,10 @@ class ProductController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $product = null;
+        if ($id !== null) {
+            $product = $this->container->getProductService()->findById($id);
         }
-
-        $product = $this->container->getProductService()->findById($id);
 
         if ($product === null) {
             return $this->notFound();
@@ -250,50 +250,52 @@ class ProductController extends BaseController
 
         // Failed saves re-render as an EDIT of this product — passing null here turned
         // the form into "New Product" posting to /products, so resubmitting created a duplicate.
+        // Both the image-upload step and the update step can fail; the first failing
+        // Result is captured in $errorResult and the form is re-rendered once below.
         $imageUploadResult = $this->processImageUpload();
+        $errorResult = null;
         if ($imageUploadResult->code !== Result::CODE_SUCCESS) {
-            return $this->view(self::TEMPLATE_FORM, [
-                'product' => $this->container->getProductService()->findById($id),
-                'categories' => $this->container->getCategoryService()->listActiveCategories(),
-                'warehouses' => $this->container->getWarehouseService()->listActiveWarehouses(),
-                'errors' => [$this->t($imageUploadResult->info)],
-                'old' => $_POST,
-            ])->setStatusCode($this->formErrorStatus($imageUploadResult));
-        }
-        $imagePath = $imageUploadResult->data;
+            $errorResult = $imageUploadResult;
+        } else {
+            $imagePath = $imageUploadResult->data;
 
-        // Keep a reference to the old image path in case we need to delete it
-        $oldImagePath = null;
-        if ($imagePath !== null) {
-            $product = $this->container->getProductService()->findById($id);
-            $oldImagePath = $product?->imagePath;
-        }
-
-        $result = $this->container->getProductService()->updateProduct($id, $_POST, $this->currentUser()->id);
-
-        if ($result->code !== Result::CODE_SUCCESS) {
-            // The new image was uploaded before validation ran; don't leave it orphaned.
+            // Keep a reference to the old image path in case we need to delete it
+            $oldImagePath = null;
             if ($imagePath !== null) {
-                $this->container->getImageUploadService()->delete($imagePath);
+                $product = $this->container->getProductService()->findById($id);
+                $oldImagePath = $product?->imagePath;
             }
 
-            return $this->view(self::TEMPLATE_FORM, [
+            $result = $this->container->getProductService()->updateProduct($id, $_POST, $this->currentUser()->id);
+
+            if ($result->code !== Result::CODE_SUCCESS) {
+                // The new image was uploaded before validation ran; don't leave it orphaned.
+                if ($imagePath !== null) {
+                    $this->container->getImageUploadService()->delete($imagePath);
+                }
+
+                $errorResult = $result;
+            } elseif ($imagePath !== null) {
+                $this->container->getProductService()->updateImagePath($id, $imagePath);
+                if ($oldImagePath !== null) {
+                    $this->container->getImageUploadService()->delete($oldImagePath);
+                }
+            }
+        }
+
+        if ($errorResult !== null) {
+            $response = $this->view(self::TEMPLATE_FORM, [
                 'product' => $this->container->getProductService()->findById($id),
                 'categories' => $this->container->getCategoryService()->listActiveCategories(),
                 'warehouses' => $this->container->getWarehouseService()->listActiveWarehouses(),
-                'errors' => [$this->t($result->info)],
+                'errors' => [$this->t($errorResult->info)],
                 'old' => $_POST,
-            ])->setStatusCode($this->formErrorStatus($result));
+            ])->setStatusCode($this->formErrorStatus($errorResult));
+        } else {
+            $response = $this->redirect(self::ROUTE_PRODUCTS);
         }
 
-        if ($imagePath !== null) {
-            $this->container->getProductService()->updateImagePath($id, $imagePath);
-            if ($oldImagePath !== null) {
-                $this->container->getImageUploadService()->delete($oldImagePath);
-            }
-        }
-
-        return $this->redirect(self::ROUTE_PRODUCTS);
+        return $response;
     }
 
     public function deactivateAction($id)
@@ -304,13 +306,13 @@ class ProductController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $ok = false;
+        if ($id !== null) {
+            $result = $this->container->getProductService()->setActive($id, false, $this->currentUser()->id);
+            $ok = $result->code === Result::CODE_SUCCESS;
         }
 
-        $result = $this->container->getProductService()->setActive($id, false, $this->currentUser()->id);
-
-        if ($result->code !== Result::CODE_SUCCESS) {
+        if (!$ok) {
             return $this->notFound();
         }
 
@@ -325,13 +327,13 @@ class ProductController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $ok = false;
+        if ($id !== null) {
+            $result = $this->container->getProductService()->setActive($id, true, $this->currentUser()->id);
+            $ok = $result->code === Result::CODE_SUCCESS;
         }
 
-        $result = $this->container->getProductService()->setActive($id, true, $this->currentUser()->id);
-
-        if ($result->code !== Result::CODE_SUCCESS) {
+        if (!$ok) {
             return $this->notFound();
         }
 
@@ -352,7 +354,7 @@ class ProductController extends BaseController
             $id = filter_var((string) $raw, FILTER_VALIDATE_INT);
             if ($id !== false && $id > 0) { $ids[] = $id; }
         }
-        return count($ids) > 0 ? $ids : null;
+        return !empty($ids) ? $ids : null;
     }
 
     private function warehouseFilter()
@@ -369,7 +371,7 @@ class ProductController extends BaseController
             $id = filter_var((string) $raw, FILTER_VALIDATE_INT);
             if ($id !== false && $id > 0) { $ids[] = $id; }
         }
-        return count($ids) > 0 ? $ids : null;
+        return !empty($ids) ? $ids : null;
     }
 
     private function stockStatusFilter(): ?string

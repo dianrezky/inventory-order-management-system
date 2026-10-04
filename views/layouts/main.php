@@ -71,8 +71,7 @@ $assetVersion = static function(): string {
             }
         }
     }
-    $version = (string) ($latest ?: time());
-    return $version;
+    return (string) ($latest ?: time());
 };
 $assetVer = $assetVersion();
 ?>
@@ -132,7 +131,7 @@ $assetVer = $assetVersion();
         </div>
 
         <!-- Navigation -->
-        <nav class="app-sidebar__nav">
+        <nav class="app-sidebar__nav" aria-label="Primary">
 
             <!-- Dashboard -->
             <div class="nav-group">
@@ -231,7 +230,7 @@ $assetVer = $assetVersion();
     </aside>
 
     <!-- Mobile scrim -->
-    <div class="app-sidebar-scrim" id="sidebar-scrim" onclick="toggleSidebar()"></div>
+    <div class="app-sidebar-scrim" id="sidebar-scrim" role="button" tabindex="0" aria-label="Close menu" onclick="toggleSidebar()" onkeydown="if(event.key==='Enter'||event.key===' '||event.key==='Escape'){event.preventDefault();toggleSidebar();}"></div>
 
     <!-- MAIN AREA -->
     <div class="app-main">
@@ -262,7 +261,7 @@ $assetVer = $assetVersion();
                         <?php endif; ?>
                     </button>
 
-                    <div class="notif-menu__dropdown" id="notif-menu-dropdown" role="menu" aria-labelledby="notif-menu-btn" hidden>
+                    <div class="notif-menu__dropdown" id="notif-menu-dropdown" aria-labelledby="notif-menu-btn" hidden>
                         <div class="notif-menu__header">
                             <span class="notif-menu__title">Notifications</span>
                             <?php if ($notificationsUnreadCount > 0): ?>
@@ -271,9 +270,9 @@ $assetVer = $assetVersion();
                         </div>
 
                         <?php if (count($notificationsUnread) > 0): ?>
-                            <ul class="notification-list notif-menu__list" role="none">
+                            <ul class="notification-list notif-menu__list">
                                 <?php foreach ($notificationsUnread as $n): ?>
-                                    <li class="notification-list__item" role="menuitem">
+                                    <li class="notification-list__item">
                                         <span class="notification-list__icon">
                                             <svg width="14" height="14" aria-hidden="true"><use href="/assets/img/icons.svg#icon-alert-triangle"></use></svg>
                                         </span>
@@ -314,7 +313,7 @@ $assetVer = $assetVersion();
                             <span>Edit Profile</span>
                         </a>
                         <div class="account-menu__divider" role="separator"></div>
-                        <form class="account-menu__item-form" method="post" action="/logout" role="none">
+                        <form class="account-menu__item-form" method="post" action="/logout" role="presentation">
                             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
                             <button type="submit" class="account-menu__item account-menu__item--danger" role="menuitem">
                                 <span class="account-menu__item-icon account-menu__item-icon--danger"><svg aria-hidden="true"><use href="/assets/img/icons.svg#icon-log-out"></use></svg></span>

@@ -1,0 +1,206 @@
+# IOMS E2E — ISOLATED stack. Standalone file (no `-f base.yaml -f this.yaml`
+# merge with the developer's docker-compose.yaml): that merge was rejected in
+# the design spec (IOMS-E2E-SPEC.md §2 C1/C2) because the base file hardcodes
+# `container_name`, `ports` lists would append rather than replace, and the
+# base `app` service bind-mounts the developer's working tree + `.env`.
+#
+# This file is ALWAYS invoked through support/compose.ts, which pins
+# `-p ioms-e2e` and refuses to accept a different project name or an extra
+# `-f`. Do not add `container_name:` to any service here — a fixed name is
+# exactly the collision risk this stack exists to avoid.
+#
+# No service here publishes a port the developer's stack also uses (8090,
+# 3307, 11211) and nothing here is named iom_* or iom-*.
+
+name: ioms-e2e
+
+services:
+  db:
+    image: mysql:8.0
+    restart: "no"
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-ioms_e2e}
+      MYSQL_USER: ${DB_USER:-ioms_e2e_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in env/e2e.env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD must be set in env/e2e.env}
+    volumes:
+      - db_data:/var/lib/mysql
+      # Read-only: the E2E stack never writes back into the repo's schema/seed
+      # files, and reseeding is "destroy the e2e-only volume and recreate it",
+      # never "edit these files in place".
+      - ../../../database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../../../database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 10s
+    networks: [e2e_net]
+    # Not published to the host — reached only from other containers in this
+    # project, or by `compose.ts` via `docker compose exec` for the DB oracle.
+
+  redis:
+    image: redis:7-alpine
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks: [e2e_net]
+
+  memcached:
+    image: memcached:1.6-alpine
+    restart: "no"
+    command: memcached -m 64
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "11211"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks: [e2e_net]
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: "no"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY must be set in env/e2e.env}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY must be set in env/e2e.env}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      # Loopback only. Distinct from the dev MinIO (127.0.0.1:9000/9001).
+      - "127.0.0.1:${MINIO_HOST_PORT:-19000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_HOST_PORT:-19001}:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks: [e2e_net]
+
+  # One-shot: creates the dedicated e2e bucket with anonymous-download so the
+  # app's public_base_url (browser-facing) can load product images without
+  # the browser needing MinIO credentials. Exits 0 and stays exited; compose
+  # `--wait` does not wait on it (it has no healthcheck), so app's
+  # depends_on below waits on `service_completed_successfully` instead.
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-22T18-50-56Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?}
+      MINIO_BUCKET: ${MINIO_BUCKET:-ioms-e2e}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set e2e http://minio:9000 \"$$MINIO_ACCESS_KEY\" \"$$MINIO_SECRET_KEY\" &&
+      mc mb --ignore-existing e2e/$$MINIO_BUCKET &&
+      mc anonymous set download e2e/$$MINIO_BUCKET
+      "
+    networks: [e2e_net]
+
+  app:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    restart: "no"
+    # NO bind mount: the image under test is the built image, not the
+    # developer's working tree — keeps E2E hermetic and immune to dirty
+    # local state (design spec §2 C2).
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-ioms_e2e}
+      DB_USER: ${DB_USER:-ioms_e2e_app}
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DEFAULT_LOCALE: en
+      SESSION_NAME: ${SESSION_NAME:-ioms_e2e_session}
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-28800}
+      PHP_CLI_SERVER_WORKERS: ${PHP_CLI_SERVER_WORKERS:-8}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: "11211"
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_REGION: us-east-1
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?}
+      MINIO_BUCKET: ${MINIO_BUCKET:-ioms-e2e}
+      MINIO_PUBLIC_URL: http://127.0.0.1:${MINIO_HOST_PORT:-19000}
+      ID_OBFUSCATION_KEY: ${ID_OBFUSCATION_KEY:?ID_OBFUSCATION_KEY must be set in env/e2e.env}
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      memcached: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+    ports:
+      - "127.0.0.1:${APP_HOST_PORT:-18090}:8080"
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/login') === false ? 1 : 0);"]
+      interval: 2s
+      timeout: 5s
+      retries: 40
+      start_period: 10s
+    networks: [e2e_net]
+
+  # Opt-in profile: a second app instance with a short session lifetime, for
+  # the idle-session-expiry spec (design spec §C13 / exclusive/auth). Same
+  # image, same DB/Redis/Memcached, a distinct SESSION_NAME so it never
+  # collides with the main app's Redis session keys.
+  app-shortsession:
+    profiles: ["session-expiry"]
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    restart: "no"
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-ioms_e2e}
+      DB_USER: ${DB_USER:-ioms_e2e_app}
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DEFAULT_LOCALE: en
+      SESSION_NAME: ${SHORT_SESSION_NAME:-ioms_e2e_short_session}
+      SESSION_LIFETIME: ${SHORT_SESSION_LIFETIME:-3}
+      PHP_CLI_SERVER_WORKERS: "2"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: "11211"
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_REGION: us-east-1
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?}
+      MINIO_BUCKET: ${MINIO_BUCKET:-ioms-e2e}
+      MINIO_PUBLIC_URL: http://127.0.0.1:${MINIO_HOST_PORT:-19000}
+      ID_OBFUSCATION_KEY: ${ID_OBFUSCATION_KEY:?}
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      memcached: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+    ports:
+      - "127.0.0.1:${SHORT_SESSION_HOST_PORT:-18091}:8080"
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/login') === false ? 1 : 0);"]
+      interval: 2s
+      timeout: 5s
+      retries: 40
+      start_period: 10s
+    networks: [e2e_net]
+
+networks:
+  e2e_net:
+    driver: bridge
+
+volumes:
+  db_data:
+  minio_data:

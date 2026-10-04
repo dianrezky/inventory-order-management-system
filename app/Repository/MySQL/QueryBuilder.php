@@ -9,6 +9,13 @@ class QueryBuilder
 {
     private $db;
 
+    // Non-identifier characters are replaced with "_" when deriving a safe PDO
+    // placeholder name from a column. \W === [^A-Za-z0-9_] in non-unicode PCRE.
+    private const PLACEHOLDER_SANITIZER = '/\W/';
+
+    // SQL glue for combining WHERE conditions.
+    private const SQL_AND = ' AND ';
+
     public function __construct(Database $db)
     {
         $this->db = $db;
@@ -142,7 +149,7 @@ class QueryBuilder
         $params = [];
 
         foreach ($columnNames as $column) {
-            $placeholder = 'ins_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
+            $placeholder = 'ins_' . preg_replace(self::PLACEHOLDER_SANITIZER, '_', $column);
             $placeholders[] = ":{$placeholder}";
             $params[$placeholder] = $columns[$column];
         }
@@ -166,19 +173,19 @@ class QueryBuilder
         $params = [];
 
         foreach ($columns as $column => $value) {
-            $placeholder = 'set_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
+            $placeholder = 'set_' . preg_replace(self::PLACEHOLDER_SANITIZER, '_', $column);
             $sets[] = "{$column} = :{$placeholder}";
             $params[$placeholder] = $value;
         }
 
         $wheres = [];
         foreach ($filters as $column => $value) {
-            $placeholder = 'where_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
+            $placeholder = 'where_' . preg_replace(self::PLACEHOLDER_SANITIZER, '_', $column);
             $wheres[] = "{$column} = :{$placeholder}";
             $params[$placeholder] = $value;
         }
 
-        $sql = "UPDATE {$table} SET " . implode(', ', $sets) . ' WHERE ' . implode(' AND ', $wheres);
+        $sql = "UPDATE {$table} SET " . implode(', ', $sets) . ' WHERE ' . implode(self::SQL_AND, $wheres);
 
         $stmt = $this->db->pdo()->prepare($sql);
         $stmt->execute($params);
@@ -195,7 +202,7 @@ class QueryBuilder
     // exception, not a general-purpose replacement for it.
     public function delete($table, array $filters)
     {
-        if (count($filters) === 0) {
+        if (empty($filters)) {
             // Guard against an unfiltered DELETE FROM $table wiping the whole
             // table because a caller forgot to pass a WHERE condition.
             throw new \InvalidArgumentException('delete() requires at least one filter');
@@ -205,12 +212,12 @@ class QueryBuilder
         $params = [];
 
         foreach ($filters as $column => $value) {
-            $placeholder = 'where_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
+            $placeholder = 'where_' . preg_replace(self::PLACEHOLDER_SANITIZER, '_', $column);
             $wheres[] = "{$column} = :{$placeholder}";
             $params[$placeholder] = $value;
         }
 
-        $sql = "DELETE FROM {$table} WHERE " . implode(' AND ', $wheres);
+        $sql = "DELETE FROM {$table} WHERE " . implode(self::SQL_AND, $wheres);
 
         $stmt = $this->db->pdo()->prepare($sql);
         $stmt->execute($params);
@@ -224,7 +231,7 @@ class QueryBuilder
     // not a bound value, and must stay that way to remain race-free.
     public function incrementColumn($table, $column, $delta, array $filters)
     {
-        $safeColumn = preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
+        $safeColumn = preg_replace(self::PLACEHOLDER_SANITIZER, '_', $column);
         if ($safeColumn !== $column) {
             throw new \InvalidArgumentException("Unsupported column: $column");
         }
@@ -233,12 +240,12 @@ class QueryBuilder
 
         $wheres = [];
         foreach ($filters as $filterColumn => $value) {
-            $placeholder = 'where_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $filterColumn);
+            $placeholder = 'where_' . preg_replace(self::PLACEHOLDER_SANITIZER, '_', $filterColumn);
             $wheres[] = "{$filterColumn} = :{$placeholder}";
             $params[$placeholder] = $value;
         }
 
-        $sql = "UPDATE {$table} SET {$column} = {$column} + :delta WHERE " . implode(' AND ', $wheres);
+        $sql = "UPDATE {$table} SET {$column} = {$column} + :delta WHERE " . implode(self::SQL_AND, $wheres);
 
         $stmt = $this->db->pdo()->prepare($sql);
         $stmt->execute($params);
@@ -275,13 +282,13 @@ class QueryBuilder
         // together) — distinct from $search/$searchColumns above, which OR
         // one shared term across several columns.
         foreach ($likeFilters as $column => $value) {
-            $placeholder = 'like_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
+            $placeholder = 'like_' . preg_replace(self::PLACEHOLDER_SANITIZER, '_', $column);
             $conditions[] = "{$column} LIKE :{$placeholder}";
             $params[$placeholder] = '%' . $value . '%';
         }
 
         foreach ($filters as $column => $value) {
-            $placeholder = 'filter_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
+            $placeholder = 'filter_' . preg_replace(self::PLACEHOLDER_SANITIZER, '_', $column);
             $conditions[] = "{$column} = :{$placeholder}";
             $params[$placeholder] = $value;
         }
@@ -290,7 +297,7 @@ class QueryBuilder
         // $filters but with the != operator; useful for "duplicate except me"
         // checks during edit.
         foreach ($notEqualsFilters as $column => $value) {
-            $placeholder = 'neq_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
+            $placeholder = 'neq_' . preg_replace(self::PLACEHOLDER_SANITIZER, '_', $column);
             $conditions[] = "{$column} != :{$placeholder}";
             $params[$placeholder] = $value;
         }
@@ -305,7 +312,7 @@ class QueryBuilder
             if (!in_array($op, $allowedOps, true)) {
                 throw new \InvalidArgumentException("Unsupported operator: $op");
             }
-            $placeholder = 'op_' . $i . '_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
+            $placeholder = 'op_' . $i . '_' . preg_replace(self::PLACEHOLDER_SANITIZER, '_', $column);
             $conditions[] = "{$column} {$op} :{$placeholder}";
             $params[$placeholder] = $value;
         }
@@ -315,7 +322,7 @@ class QueryBuilder
             if (!is_array($values) || count($values) === 0) { continue; }
             $placeholders = [];
             foreach ($values as $i => $v) {
-                $ph = 'in_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column) . '_' . $i;
+                $ph = 'in_' . preg_replace(self::PLACEHOLDER_SANITIZER, '_', $column) . '_' . $i;
                 $placeholders[] = ':' . $ph;
                 $params[$ph] = $v;
             }
@@ -323,7 +330,7 @@ class QueryBuilder
         }
 
         if ($conditions !== []) {
-            $sql .= ' WHERE ' . implode(' AND ', $conditions);
+            $sql .= ' WHERE ' . implode(self::SQL_AND, $conditions);
         }
 
         return [$sql, $params];

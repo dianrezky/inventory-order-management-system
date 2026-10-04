@@ -8,21 +8,21 @@
     function today() { return toIsoDate(new Date()); }
 
     function firstDayOfMonth() {
-        var d = new Date();
+        const d = new Date();
         // Day 2 is used because toISOString() shifts to UTC and could roll back to the previous month.
         return toIsoDate(new Date(d.getFullYear(), d.getMonth(), 2));
     }
 
     App.ready(function () {
         // ─── Auto-fill date defaults ───────────────────────────────────────────
-        var dateInputs = [
+        const dateInputs = [
             { from: '#ledger-from', to: '#ledger-to' },
             { from: '#order-from',   to: '#order-to'   },
         ];
 
         dateInputs.forEach(function (pair) {
-            var fromEl = App.$(pair.from);
-            var toEl   = App.$(pair.to);
+            const fromEl = App.$(pair.from);
+            const toEl   = App.$(pair.to);
             if (!fromEl || !toEl) return;
 
             if (!fromEl.value) fromEl.value = firstDayOfMonth();
@@ -48,10 +48,10 @@
         // ─── Loading state on submit ─────────────────────────────────────────
         App.$$('.report-form').forEach(function (form) {
             form.addEventListener('submit', function () {
-                var btn = form.querySelector('button[type="submit"]');
+                const btn = form.querySelector('button[type="submit"]');
                 if (!btn) return;
                 btn.disabled = true;
-                var orig = btn.textContent.trim();
+                const orig = btn.textContent.trim();
                 btn.textContent = 'Generating CSV…';
                 // Re-enable after 30s as fallback (e.g. download didn't trigger)
                 setTimeout(function () {

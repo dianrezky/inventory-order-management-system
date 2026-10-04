@@ -211,7 +211,10 @@ $badgeClass = static fn (string $s): string => match ($s) {
                     <dd>
                         <?php
                         $fulfilled = 0;
-                        foreach ($pipeline as $s) { if ($s['status'] === 'Fulfilled') $fulfilled = $s['count'];
+                        foreach ($pipeline as $s) {
+                            if ($s['status'] === 'Fulfilled') {
+                                $fulfilled = $s['count'];
+                            }
                         }
                         echo $totalOrders > 0 ? round(($fulfilled / $totalOrders) * 100, 1) . '%' : '0%';
                         ?>
@@ -222,7 +225,10 @@ $badgeClass = static fn (string $s): string => match ($s) {
                     <dd>
                         <?php
                         $cancelled = 0;
-                        foreach ($pipeline as $s) { if ($s['status'] === 'Cancelled') $cancelled = $s['count'];
+                        foreach ($pipeline as $s) {
+                            if ($s['status'] === 'Cancelled') {
+                                $cancelled = $s['count'];
+                            }
                         }
                         echo $totalOrders > 0 ? round(($cancelled / $totalOrders) * 100, 1) . '%' : '0%';
                         ?>

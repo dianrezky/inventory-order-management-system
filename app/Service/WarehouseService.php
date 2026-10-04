@@ -52,42 +52,49 @@ class WarehouseService
         $result = new Result();
 
         try {
-            $validation = $this->validateCreatePayload($input);
-            if ($validation !== null) {
-                return $validation;
-            }
-
+            // The first failing step wins; $result is populated only when all pass.
             $code = strtoupper(trim((string) ($input['code'] ?? '')));
             $name = trim((string) ($input['name'] ?? ''));
 
-            $codeExistsResult = $this->warehouseRepository->codeExists($code);
-            if ($codeExistsResult->code !== Result::CODE_SUCCESS) {
-                return $codeExistsResult;
+            $errorResult = $this->validateCreatePayload($input);
+
+            if ($errorResult === null) {
+                $codeExistsResult = $this->warehouseRepository->codeExists($code);
+                if ($codeExistsResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $codeExistsResult;
+                } elseif ($codeExistsResult->data) {
+                    $errorResult = $this->validationResult('This code is already in use.');
+                }
             }
 
-            if ($codeExistsResult->data) {
-                return $this->validationResult('This code is already in use.');
+            $createResult = null;
+            if ($errorResult === null) {
+                $createResult = $this->warehouseRepository->create([
+                    'code'     => $code,
+                    'name'     => $name,
+                    'location' => $this->nullableTrim($input['location'] ?? null),
+                ]);
+                if ($createResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $createResult;
+                }
             }
 
-            $createResult = $this->warehouseRepository->create([
-                'code'     => $code,
-                'name'     => $name,
-                'location' => $this->nullableTrim($input['location'] ?? null),
-            ]);
-            if ($createResult->code !== Result::CODE_SUCCESS) {
-                return $createResult;
+            if ($errorResult === null) {
+                $findResult = $this->warehouseRepository->findById($createResult->data);
+                if ($findResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $findResult;
+                } else {
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The warehouse has been created.';
+                    $result->data = $findResult->data;
+
+                    $this->logEvent($actorId, 'create', $findResult->data->id, "Created warehouse \"{$findResult->data->name}\"");
+                }
             }
 
-            $findResult = $this->warehouseRepository->findById($createResult->data);
-            if ($findResult->code !== Result::CODE_SUCCESS) {
-                return $findResult;
+            if ($errorResult !== null) {
+                return $errorResult;
             }
-
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'The warehouse has been created.';
-            $result->data = $findResult->data;
-
-            $this->logEvent($actorId, 'create', $findResult->data->id, "Created warehouse \"{$findResult->data->name}\"");
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -196,35 +203,32 @@ class WarehouseService
     private function validateUpdatePayload($id, $input)
     {
         $existingResult = $this->warehouseRepository->findById($id);
+        $errorResult = null;
         if ($existingResult->code !== Result::CODE_SUCCESS) {
-            return $existingResult;
+            $errorResult = $existingResult;
+        } elseif ($existingResult->data === null) {
+            $errorResult = $this->notFoundResult();
         }
 
-        if ($existingResult->data === null) {
-            return $this->notFoundResult();
+        if ($errorResult === null) {
+            $code = strtoupper(trim((string) ($input['code'] ?? '')));
+            $name = trim((string) ($input['name'] ?? ''));
+
+            if ($code === '') {
+                $errorResult = $this->validationResult('Code is required.');
+            } elseif ($name === '') {
+                $errorResult = $this->validationResult('Name is required.');
+            } else {
+                $codeExistsResult = $this->warehouseRepository->codeExists($code, $id);
+                if ($codeExistsResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $codeExistsResult;
+                } elseif ($codeExistsResult->data) {
+                    $errorResult = $this->validationResult('This code is already in use.');
+                }
+            }
         }
 
-        $code = strtoupper(trim((string) ($input['code'] ?? '')));
-        $name = trim((string) ($input['name'] ?? ''));
-
-        if ($code === '') {
-            return $this->validationResult('Code is required.');
-        }
-
-        if ($name === '') {
-            return $this->validationResult('Name is required.');
-        }
-
-        $codeExistsResult = $this->warehouseRepository->codeExists($code, $id);
-        if ($codeExistsResult->code !== Result::CODE_SUCCESS) {
-            return $codeExistsResult;
-        }
-
-        if ($codeExistsResult->data) {
-            return $this->validationResult('This code is already in use.');
-        }
-
-        return null;
+        return $errorResult;
     }
 
     private function notFoundResult()

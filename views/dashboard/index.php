@@ -344,7 +344,9 @@ $auditTrail = $stats['audit_trail'] ?? [];
     </div>
     <?php foreach (['Draft', 'PendingApproval', 'Approved', 'Fulfilled', 'Cancelled'] as $s):
         $cnt = (int) ($stats[$s] ?? 0);
-        if ($cnt === 0) continue;
+        if ($cnt === 0) {
+            continue;
+        }
     ?>
     <div class="stat-card">
         <div class="stat-card__header">

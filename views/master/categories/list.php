@@ -250,7 +250,7 @@ $autoOpenAdd = !empty($autoOpenAdd);
             </div>
             <nav class="pagination-nav" aria-label="Table pagination">
                 <?php if ($page > 1): ?>
-                <button type="submit" form="category-filter-form" name="page" value="<?= $page - 1 ?>" class="btn btn--secondary btn--sm" aria-label="Previous page" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">&laquo; Prev</button>
+                <button type="submit" form="category-filter-form" name="page" value="<?= $page - 1 ?>" class="btn btn--secondary btn--sm" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">&laquo; Prev</button>
                 <?php endif; ?>
                 <?php
                 $start = max(1, $page - 2);
@@ -266,7 +266,7 @@ $autoOpenAdd = !empty($autoOpenAdd);
                 </button>
                 <?php endfor; ?>
                 <?php if ($page < $totalPages): ?>
-                <button type="submit" form="category-filter-form" name="page" value="<?= $page + 1 ?>" class="btn btn--secondary btn--sm" aria-label="Next page" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">Next &raquo;</button>
+                <button type="submit" form="category-filter-form" name="page" value="<?= $page + 1 ?>" class="btn btn--secondary btn--sm" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">Next &raquo;</button>
                 <?php endif; ?>
             </nav>
         </div>

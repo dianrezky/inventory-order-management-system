@@ -2,12 +2,12 @@
     'use strict';
 
     async function submitStatusForm(form) {
-        var submitBtn = form.querySelector('button[type="submit"]');
+        const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '…'; }
 
         try {
-            var fd = new FormData(form);
-            var result = await App.api(form.action, { method: 'POST', body: fd });
+            const fd = new FormData(form);
+            const result = await App.api(form.action, { method: 'POST', body: fd });
 
             if (result.ok) {
                 App.toast('Status updated successfully.', 'success');
@@ -24,7 +24,7 @@
 
     App.ready(function () {
         App.$$('form[data-ajax-status]').forEach(function (form) {
-            var btn = form.querySelector('button[type="submit"]');
+            const btn = form.querySelector('button[type="submit"]');
             if (btn) { btn.dataset.originalText = btn.textContent.trim(); }
 
             form.addEventListener('submit', function (e) {

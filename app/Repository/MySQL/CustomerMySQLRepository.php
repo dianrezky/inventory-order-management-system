@@ -9,6 +9,7 @@ use App\Repository\Interface\CustomerRepositoryInterface;
 
 class CustomerMySQLRepository implements CustomerRepositoryInterface
 {
+    private const COLUMNS = 'id, name, contact_person, phone, email, address, is_active, created_at, updated_at';
     private $queryBuilder;
 
     public function __construct(QueryBuilder $queryBuilder)
@@ -24,7 +25,7 @@ class CustomerMySQLRepository implements CustomerRepositoryInterface
             $row = $this->queryBuilder->findOne(
                 'customers',
                 null,
-                'id, name, contact_person, phone, email, address, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 ['id' => $id]
             );
@@ -54,7 +55,7 @@ class CustomerMySQLRepository implements CustomerRepositoryInterface
                 if ($s === 'active') { $isActiveValues[] = 1; }
                 elseif ($s === 'inactive') { $isActiveValues[] = 0; }
             }
-            if (count($isActiveValues) > 0) {
+            if (!empty($isActiveValues)) {
                 $inFilters['is_active'] = $isActiveValues;
             }
         }
@@ -75,7 +76,7 @@ class CustomerMySQLRepository implements CustomerRepositoryInterface
             $rows = $this->queryBuilder->findAll(
                 'customers',
                 null,
-                'id, name, contact_person, phone, email, address, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 $searchColumns,
                 $searchTerm,
@@ -112,7 +113,7 @@ class CustomerMySQLRepository implements CustomerRepositoryInterface
             $rows = $this->queryBuilder->findAll(
                 'customers',
                 null,
-                'id, name, contact_person, phone, email, address, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 [],
                 null,
@@ -146,7 +147,7 @@ class CustomerMySQLRepository implements CustomerRepositoryInterface
             $rows = $this->queryBuilder->findAll(
                 'customers',
                 null,
-                'id, name, contact_person, phone, email, address, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 ['name', 'email', 'phone', 'contact_person'],
                 $search,

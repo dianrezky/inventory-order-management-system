@@ -9,6 +9,7 @@ use App\Repository\Interface\WarehouseRepositoryInterface;
 
 class WarehouseMySQLRepository implements WarehouseRepositoryInterface
 {
+    private const COLUMNS = 'id, code, name, location, is_active, created_at, updated_at';
     private $queryBuilder;
 
     public function __construct(QueryBuilder $queryBuilder)
@@ -24,7 +25,7 @@ class WarehouseMySQLRepository implements WarehouseRepositoryInterface
             $row = $this->queryBuilder->findOne(
                 'warehouses',
                 null,
-                'id, code, name, location, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 ['id' => $id]
             );
@@ -53,7 +54,7 @@ class WarehouseMySQLRepository implements WarehouseRepositoryInterface
                 if ($s === 'active') { $isActiveValues[] = 1; }
                 elseif ($s === 'inactive') { $isActiveValues[] = 0; }
             }
-            if (count($isActiveValues) > 0) {
+            if (!empty($isActiveValues)) {
                 $inFilters['is_active'] = $isActiveValues;
             }
         }
@@ -73,7 +74,7 @@ class WarehouseMySQLRepository implements WarehouseRepositoryInterface
             $rows = $this->queryBuilder->findAll(
                 'warehouses',
                 null,
-                'id, code, name, location, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 $searchColumns,
                 $searchTerm,
@@ -110,7 +111,7 @@ class WarehouseMySQLRepository implements WarehouseRepositoryInterface
             $rows = $this->queryBuilder->findAll(
                 'warehouses',
                 null,
-                'id, code, name, location, is_active, created_at, updated_at',
+                self::COLUMNS,
                 [],
                 [],
                 null,

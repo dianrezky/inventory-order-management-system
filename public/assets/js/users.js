@@ -1,13 +1,13 @@
 (function () {
     'use strict';
 
-    var USER = {};
+    const USER = {};
 
     async function submitStatusForm(form) {
         // A full reload on success is intentional: the row markup is rendered server-side.
-        var action = form.action;
-        var submitBtn = form.querySelector('button[type="submit"]');
-        var originalText = submitBtn ? submitBtn.textContent.trim() : '';
+        const action = form.action;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn ? submitBtn.textContent.trim() : '';
 
         if (submitBtn) {
             submitBtn.disabled = true;
@@ -15,8 +15,8 @@
         }
 
         try {
-            var fd = new FormData(form);
-            var result = await App.api(action, { method: 'POST', body: fd });
+            const fd = new FormData(form);
+            const result = await App.api(action, { method: 'POST', body: fd });
 
             if (result.ok) {
                 App.toast('Status updated successfully.', 'success');

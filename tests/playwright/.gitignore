@@ -1,0 +1,8 @@
+node_modules/
+.auth/
+.run/
+.cache/
+playwright-report/
+test-results/
+blob-report/
+*.log

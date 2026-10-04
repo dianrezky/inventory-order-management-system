@@ -87,7 +87,7 @@ class UserFakeRepository implements UserRepositoryInterface
                 if ($s === 'active') { $isActiveValues[] = true; }
                 elseif ($s === 'inactive') { $isActiveValues[] = false; }
             }
-            if (count($isActiveValues) > 0) {
+            if (!empty($isActiveValues)) {
                 $all = array_values(array_filter($all, function ($u) use ($isActiveValues) {
                     return in_array($u->isActive, $isActiveValues, true);
                 }));

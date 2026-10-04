@@ -35,21 +35,19 @@ class IdObfuscator
      */
     public function decode(string $token): ?int
     {
-        if ($token === '' || !ctype_xdigit($token)) {
-            return null;
+        $decoded = false;
+        if ($token !== '' && ctype_xdigit($token)) {
+            $decoded = @hex2bin($token);
         }
-
-        $decoded = @hex2bin($token);
         if ($decoded === false || !str_starts_with($decoded, $this->key)) {
             return null;
         }
 
         $idHex = substr($decoded, strlen($this->key));
-        if ($idHex === '' || !ctype_xdigit($idHex)) {
-            return null;
+        $idString = false;
+        if ($idHex !== '' && ctype_xdigit($idHex)) {
+            $idString = @hex2bin($idHex);
         }
-
-        $idString = @hex2bin($idHex);
         if ($idString === false || $idString === '' || !ctype_digit($idString)) {
             return null;
         }

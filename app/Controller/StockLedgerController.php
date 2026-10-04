@@ -56,7 +56,7 @@ class StockLedgerController extends BaseController
                 $id = filter_var($v, FILTER_VALIDATE_INT);
                 if ($id !== false && $id > 0) { $ids[] = $id; }
             }
-            $warehouseIds = count($ids) > 0 ? $ids : null;
+            $warehouseIds = !empty($ids) ? $ids : null;
         } elseif (is_string($whRaw) && $whRaw !== '') {
             $id = filter_var($whRaw, FILTER_VALIDATE_INT);
             if ($id !== false && $id > 0) { $warehouseIds = [$id]; }
@@ -82,19 +82,21 @@ class StockLedgerController extends BaseController
             // controller must never produce. Render the normal page with an
             // error banner and an empty table instead.
             if ($this->isXhr()) {
-                return $this->json(['error' => self::MESSAGE_QUERY_FAILED, 'message' => $this->t($result->info)], 500);
+                $response = $this->json(['error' => self::MESSAGE_QUERY_FAILED, 'message' => $this->t($result->info)], 500);
+            } else {
+                $response = $this->view(self::TEMPLATE_STOCK_LEDGER, [
+                    'entries' => [],
+                    'total' => 0,
+                    'page' => 1,
+                    'totalPages' => 1,
+                    'perPage' => self::PER_PAGE,
+                    'filters' => $filters,
+                    'warehouses' => $this->container->getWarehouseService()->listActiveWarehouses(),
+                    'queryError' => $this->t($result->info),
+                ]);
             }
 
-            return $this->view(self::TEMPLATE_STOCK_LEDGER, [
-                'entries' => [],
-                'total' => 0,
-                'page' => 1,
-                'totalPages' => 1,
-                'perPage' => self::PER_PAGE,
-                'filters' => $filters,
-                'warehouses' => $this->container->getWarehouseService()->listActiveWarehouses(),
-                'queryError' => $this->t($result->info),
-            ]);
+            return $response;
         }
 
         $entries = $result->data['entries'];

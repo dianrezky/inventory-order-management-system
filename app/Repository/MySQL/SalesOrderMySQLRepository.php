@@ -9,6 +9,8 @@ use App\Repository\Interface\SalesOrderRepositoryInterface;
 
 class SalesOrderMySQLRepository implements SalesOrderRepositoryInterface
 {
+    private const JOIN_ITEMS = 'soi.sales_order_id = so.id';
+    private const JOIN_CUSTOMER = 'c.id = so.customer_id';
     private $queryBuilder;
 
     public function __construct(QueryBuilder $queryBuilder)
@@ -59,7 +61,7 @@ class SalesOrderMySQLRepository implements SalesOrderRepositoryInterface
             // "Items / Qty" and "Total Value" columns (Stitch §12.6 sales-order list)
             // without N+1 queries.
             $joins = array_merge($this->joins(), [
-                ['type' => 'LEFT', 'table' => 'sales_order_items', 'alias' => 'soi', 'on' => 'soi.sales_order_id = so.id'],
+                ['type' => 'LEFT', 'table' => 'sales_order_items', 'alias' => 'soi', 'on' => self::JOIN_ITEMS],
             ]);
 
             $operatorFilters = [];
@@ -292,10 +294,10 @@ class SalesOrderMySQLRepository implements SalesOrderRepositoryInterface
                     . "c.name AS party_name, w.name AS warehouse_name, u.name AS creator, "
                     . "COUNT(soi.id) AS items_count, SUM(soi.qty * soi.sale_price) AS total_value",
                 [
-                    ['type' => 'INNER', 'table' => 'customers', 'alias' => 'c', 'on' => 'c.id = so.customer_id'],
+                    ['type' => 'INNER', 'table' => 'customers', 'alias' => 'c', 'on' => self::JOIN_CUSTOMER],
                     ['type' => 'INNER', 'table' => 'warehouses', 'alias' => 'w', 'on' => 'w.id = so.source_warehouse_id'],
                     ['type' => 'INNER', 'table' => 'users', 'alias' => 'u', 'on' => 'u.id = so.created_by'],
-                    ['type' => 'LEFT', 'table' => 'sales_order_items', 'alias' => 'soi', 'on' => 'soi.sales_order_id = so.id'],
+                    ['type' => 'LEFT', 'table' => 'sales_order_items', 'alias' => 'soi', 'on' => self::JOIN_ITEMS],
                 ],
                 [],
                 null,
@@ -353,7 +355,7 @@ class SalesOrderMySQLRepository implements SalesOrderRepositoryInterface
     private function joins()
     {
         return [
-            ['table' => 'customers', 'alias' => 'c', 'on' => 'c.id = so.customer_id'],
+            ['table' => 'customers', 'alias' => 'c', 'on' => self::JOIN_CUSTOMER],
             ['table' => 'warehouses', 'alias' => 'w', 'on' => 'w.id = so.source_warehouse_id'],
             ['table' => 'users', 'alias' => 'uc', 'on' => 'uc.id = so.created_by'],
             ['table' => 'users', 'alias' => 'ua', 'on' => 'ua.id = so.approved_by'],
@@ -382,7 +384,7 @@ class SalesOrderMySQLRepository implements SalesOrderRepositoryInterface
                 'so',
                 'COALESCE(SUM(soi.qty * soi.sale_price), 0) AS total_revenue',
                 [
-                    ['type' => 'LEFT', 'table' => 'sales_order_items', 'alias' => 'soi', 'on' => 'soi.sales_order_id = so.id'],
+                    ['type' => 'LEFT', 'table' => 'sales_order_items', 'alias' => 'soi', 'on' => self::JOIN_ITEMS],
                 ],
                 [],
                 null,
@@ -433,8 +435,8 @@ class SalesOrderMySQLRepository implements SalesOrderRepositoryInterface
                 'so',
                 'c.name AS customer_name, COALESCE(SUM(soi.qty * soi.sale_price), 0) AS total_value, COUNT(DISTINCT so.id) AS order_count',
                 [
-                    ['type' => 'INNER', 'table' => 'customers', 'alias' => 'c', 'on' => 'c.id = so.customer_id'],
-                    ['type' => 'LEFT', 'table' => 'sales_order_items', 'alias' => 'soi', 'on' => 'soi.sales_order_id = so.id'],
+                    ['type' => 'INNER', 'table' => 'customers', 'alias' => 'c', 'on' => self::JOIN_CUSTOMER],
+                    ['type' => 'LEFT', 'table' => 'sales_order_items', 'alias' => 'soi', 'on' => self::JOIN_ITEMS],
                 ],
                 [],
                 null,

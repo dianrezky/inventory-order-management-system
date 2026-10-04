@@ -109,79 +109,89 @@ class PurchaseOrderService
             $orderDate     = trim((string) ($input['order_date'] ?? ''));
             $note          = trim((string) ($input['note'] ?? ''));
 
+            // The first failing step wins; the atomic persist runs only after
+            // every pre-flight check has passed, and $result is populated on success.
+            $errorResult = null;
             $supplierResult = $this->supplierRepository->findById($supplierId);
             if ($supplierResult->code !== Result::CODE_SUCCESS) {
-                return $supplierResult;
+                $errorResult = $supplierResult;
             }
 
-            $warehouseResult = $this->warehouseRepository->findById($warehouseId);
-            if ($warehouseResult->code !== Result::CODE_SUCCESS) {
-                return $warehouseResult;
+            $warehouseResult = null;
+            if ($errorResult === null) {
+                $warehouseResult = $this->warehouseRepository->findById($warehouseId);
+                if ($warehouseResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $warehouseResult;
+                }
             }
 
-            $headerInfo = $this->headerInvalidInfo($supplierResult->data, $warehouseResult->data, $orderDate);
-
-            if ($headerInfo !== '') {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = $headerInfo;
-                $result->data = null;
-
-                return $result;
+            if ($errorResult === null) {
+                $headerInfo = $this->headerInvalidInfo($supplierResult->data, $warehouseResult->data, $orderDate);
+                if ($headerInfo !== '') {
+                    $result->code = Result::CODE_VALIDATION;
+                    $result->info = $headerInfo;
+                    $result->data = null;
+                    $errorResult = $result;
+                }
             }
 
-            $normalizedItems = $this->normalizeAndValidateItems($items);
-
-            if ($normalizedItems instanceof Result) {
-                return $normalizedItems;
+            $normalizedItems = null;
+            if ($errorResult === null) {
+                $normalizedItems = $this->normalizeAndValidateItems($items);
+                if ($normalizedItems instanceof Result) {
+                    $errorResult = $normalizedItems;
+                } elseif (count($normalizedItems) === 0) {
+                    $result->code = Result::CODE_VALIDATION;
+                    $result->info = 'A purchase order needs at least one line item.';
+                    $result->data = null;
+                    $errorResult = $result;
+                }
             }
 
-            if (count($normalizedItems) === 0) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = 'A purchase order needs at least one line item.';
-                $result->data = null;
+            if ($errorResult === null) {
+                // Header + line items must persist atomically: a mid-loop item
+                // insert failure must not leave a header with partial items.
+                $this->transactionManager->beginTransaction();
 
-                return $result;
+                $createResult = $this->purchaseOrderRepository->create([
+                    'supplier_id'              => $supplierId,
+                    'destination_warehouse_id' => $warehouseId,
+                    'status'                  => PurchaseOrder::STATUS_DRAFT,
+                    'order_date'              => $orderDate,
+                    'note'                    => $note === '' ? null : $note,
+                    'created_by'              => $createdByUserId,
+                ]);
+                $itemsResult = null;
+                if ($createResult->code !== Result::CODE_SUCCESS) {
+                    $this->transactionManager->rollBack();
+                    $errorResult = $createResult;
+                } else {
+                    $itemsResult = $this->createItems($createResult->data, $normalizedItems);
+                }
+
+                if ($errorResult === null && $itemsResult instanceof Result) {
+                    $this->transactionManager->rollBack();
+                    $errorResult = $itemsResult;
+                } elseif ($errorResult === null) {
+                    $this->transactionManager->commit();
+
+                    $purchaseOrder = $this->findById($createResult->data);
+                    if ($purchaseOrder === null) {
+                        $result->code = Result::CODE_VALIDATION;
+                        $result->info = 'Could not create the record. Please try again.';
+                        $result->data = null;
+                    } else {
+                        $result->code = Result::CODE_SUCCESS;
+                        $result->info = 'The purchase order has been created.';
+                        $result->data = $purchaseOrder;
+
+                        $this->logEvent($createdByUserId, 'create', $purchaseOrder->id, "Created PO #{$purchaseOrder->id} (Draft)");
+                    }
+                }
             }
 
-            // Header + line items must persist atomically: a mid-loop item
-            // insert failure must not leave a header with partial items.
-            $this->transactionManager->beginTransaction();
-
-            $createResult = $this->purchaseOrderRepository->create([
-                'supplier_id'              => $supplierId,
-                'destination_warehouse_id' => $warehouseId,
-                'status'                  => PurchaseOrder::STATUS_DRAFT,
-                'order_date'              => $orderDate,
-                'note'                    => $note === '' ? null : $note,
-                'created_by'              => $createdByUserId,
-            ]);
-            if ($createResult->code !== Result::CODE_SUCCESS) {
-                $this->transactionManager->rollBack();
-
-                return $createResult;
-            }
-
-            $itemsResult = $this->createItems($createResult->data, $normalizedItems);
-            if ($itemsResult instanceof Result) {
-                $this->transactionManager->rollBack();
-
-                return $itemsResult;
-            }
-
-            $this->transactionManager->commit();
-
-            $purchaseOrder = $this->findById($createResult->data);
-
-            if ($purchaseOrder === null) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = 'Could not create the record. Please try again.';
-                $result->data = null;
-            } else {
-                $result->code = Result::CODE_SUCCESS;
-                $result->info = 'The purchase order has been created.';
-                $result->data = $purchaseOrder;
-
-                $this->logEvent($createdByUserId, 'create', $purchaseOrder->id, "Created PO #{$purchaseOrder->id} (Draft)");
+            if ($errorResult !== null) {
+                return $errorResult;
             }
         } catch (\Throwable $e) {
             // rollBack() is safe even if no transaction is open (Database guards
@@ -201,44 +211,45 @@ class PurchaseOrderService
         $result = new Result();
 
         try {
+            // The first failing step wins; $result is populated only on success.
+            $errorResult = null;
             $purchaseOrder = $this->requireExisting($id);
             if ($purchaseOrder instanceof Result) {
-                return $purchaseOrder;
-            }
-
-            if ($purchaseOrder->status !== PurchaseOrder::STATUS_DRAFT) {
+                $errorResult = $purchaseOrder;
+            } elseif ($purchaseOrder->status !== PurchaseOrder::STATUS_DRAFT) {
                 $result->code = Result::CODE_VALIDATION;
                 $result->info = 'Only a Draft purchase order can be submitted.';
                 $result->data = null;
-
-                return $result;
-            }
-
-            if (count($purchaseOrder->items) === 0) {
+                $errorResult = $result;
+            } elseif (count($purchaseOrder->items) === 0) {
                 $result->code = Result::CODE_VALIDATION;
                 $result->info = 'A purchase order needs at least one line item.';
                 $result->data = null;
-
-                return $result;
+                $errorResult = $result;
             }
 
-            $updateResult = $this->purchaseOrderRepository->updateStatus($id, PurchaseOrder::STATUS_ORDERED);
-            if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
+            if ($errorResult === null) {
+                $updateResult = $this->purchaseOrderRepository->updateStatus($id, PurchaseOrder::STATUS_ORDERED);
+                if ($updateResult->code !== Result::CODE_SUCCESS) {
+                    $errorResult = $updateResult;
+                } else {
+                    $refreshed = $this->findById($id);
+                    if ($refreshed === null) {
+                        $result->code = Result::CODE_VALIDATION;
+                        $result->info = self::MESSAGE_NOT_FOUND;
+                        $result->data = null;
+                    } else {
+                        $result->code = Result::CODE_SUCCESS;
+                        $result->info = 'The purchase order has been submitted to the supplier.';
+                        $result->data = $refreshed;
+
+                        $this->logEvent($actorId, 'submit', $id, "Submitted PO #{$id} to supplier");
+                    }
+                }
             }
 
-            $refreshed = $this->findById($id);
-
-            if ($refreshed === null) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = self::MESSAGE_NOT_FOUND;
-                $result->data = null;
-            } else {
-                $result->code = Result::CODE_SUCCESS;
-                $result->info = 'The purchase order has been submitted to the supplier.';
-                $result->data = $refreshed;
-
-                $this->logEvent($actorId, 'submit', $id, "Submitted PO #{$id} to supplier");
+            if ($errorResult !== null) {
+                return $errorResult;
             }
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
@@ -331,19 +342,16 @@ class PurchaseOrderService
 
     private function headerInvalidInfo($supplier, $warehouse, $orderDate)
     {
+        $info = '';
         if ($supplier === null || !$supplier->isActive) {
-            return 'Please select a valid, active supplier.';
+            $info = 'Please select a valid, active supplier.';
+        } elseif ($warehouse === null || !$warehouse->isActive) {
+            $info = 'Please select a valid, active warehouse.';
+        } elseif ($orderDate === '' || \DateTime::createFromFormat('Y-m-d', $orderDate) === false) {
+            $info = 'Please enter a valid order date.';
         }
 
-        if ($warehouse === null || !$warehouse->isActive) {
-            return 'Please select a valid, active warehouse.';
-        }
-
-        if ($orderDate === '' || \DateTime::createFromFormat('Y-m-d', $orderDate) === false) {
-            return 'Please enter a valid order date.';
-        }
-
-        return '';
+        return $info;
     }
 
     private function requireExisting($id)
@@ -412,6 +420,7 @@ class PurchaseOrderService
     {
         // Returns the normalized items array on success, or a failure Result
         $normalized = [];
+        $errorResult = null;
 
         foreach ($items as $item) {
             $productId        = (int) ($item['product_id'] ?? 0);
@@ -424,36 +433,26 @@ class PurchaseOrderService
 
             $productResult = $this->productRepository->findById($productId);
             if ($productResult->code !== Result::CODE_SUCCESS) {
-                return $productResult;
+                $errorResult = $productResult;
+                break;
             }
 
             $product = $productResult->data;
-
+            $lineError = null;
             if ($product === null || !$product->isActive) {
-                $r = new Result();
-                $r->code = Result::CODE_VALIDATION;
-                $r->info = 'Please select a valid, active product for every line.';
-                $r->data = null;
-
-                return $r;
+                $lineError = 'Please select a valid, active product for every line.';
+            } elseif ($quantityOrdered <= 0) {
+                $lineError = 'Ordered quantity must be greater than zero.';
+            } elseif (!is_numeric($purchasePrice) || (float) $purchasePrice < 0) {
+                $lineError = 'Please enter a valid, non-negative price.';
             }
 
-            if ($quantityOrdered <= 0) {
-                $r = new Result();
-                $r->code = Result::CODE_VALIDATION;
-                $r->info = 'Ordered quantity must be greater than zero.';
-                $r->data = null;
-
-                return $r;
-            }
-
-            if (!is_numeric($purchasePrice) || (float) $purchasePrice < 0) {
-                $r = new Result();
-                $r->code = Result::CODE_VALIDATION;
-                $r->info = 'Please enter a valid, non-negative price.';
-                $r->data = null;
-
-                return $r;
+            if ($lineError !== null) {
+                $errorResult = new Result();
+                $errorResult->code = Result::CODE_VALIDATION;
+                $errorResult->info = $lineError;
+                $errorResult->data = null;
+                break;
             }
 
             $normalized[] = [
@@ -461,6 +460,10 @@ class PurchaseOrderService
                 'qty_ordered'     => $quantityOrdered,
                 'purchase_price' => number_format((float) $purchasePrice, 2, '.', ''),
             ];
+        }
+
+        if ($errorResult !== null) {
+            return $errorResult;
         }
 
         return $normalized;

@@ -4,7 +4,7 @@
     // ─── Product list (injected by server in form.php via json_encode) ────────
 
     // Each entry: {id, name, sku, unit, sale_price}.
-    var productList = window._soProductList || [];
+    const productList = window._soProductList || [];
 
     // ─── HTML Helpers ────────────────────────────────────────────────────────
 
@@ -14,7 +14,7 @@
 
     function buildRow(selectedId) {
         // selectedId pre-selects a product; pass '' for an empty row.
-        var tr = document.createElement('tr');
+        const tr = document.createElement('tr');
         tr.innerHTML =
             '<td>' +
                 '<select name="item_product_id[]" class="input" required>' +
@@ -40,32 +40,32 @@
     }
 
     function onProductChange(select) {
-        var tr = select.closest('tr');
+        const tr = select.closest('tr');
         if (!tr) return;
-        var opt = select.options[select.selectedIndex];
-        var skuCell = tr.querySelector('.item-sku');
-        var unitCell = tr.querySelector('.item-unit');
-        var priceInput = tr.querySelector('input[name="item_sale_price[]"]');
+        const opt = select.options[select.selectedIndex];
+        const skuCell = tr.querySelector('.item-sku');
+        const unitCell = tr.querySelector('.item-unit');
+        const priceInput = tr.querySelector('input[name="item_sale_price[]"]');
 
-        if (skuCell) skuCell.textContent = opt && opt.dataset.sku ? opt.dataset.sku : '';
-        if (unitCell) unitCell.textContent = opt && opt.dataset.unit ? opt.dataset.unit : '';
-        if (priceInput && opt && opt.dataset.price && !priceInput.value) {
+        if (skuCell) skuCell.textContent = opt?.dataset.sku ? opt.dataset.sku : '';
+        if (unitCell) unitCell.textContent = opt?.dataset.unit ? opt.dataset.unit : '';
+        if (priceInput && opt?.dataset.price && !priceInput.value) {
             priceInput.value = opt.dataset.price;
         }
     }
 
     function addItemRow() {
-        var tbody = document.getElementById('items-body');
+        const tbody = document.getElementById('items-body');
         if (!tbody) return;
         tbody.appendChild(buildRow(''));
         // Focus the new select
-        var newRow = tbody.lastElementChild;
-        var sel = newRow && newRow.querySelector('select');
+        const newRow = tbody.lastElementChild;
+        const sel = newRow?.querySelector('select');
         if (sel) sel.focus();
     }
 
     function removeItemRow(tr) {
-        var tbody = document.getElementById('items-body');
+        const tbody = document.getElementById('items-body');
         if (!tbody) return;
         // The form must always keep at least one line-item row.
         if (tbody.querySelectorAll('tr').length <= 1) {
@@ -78,14 +78,14 @@
     // ─── Form Validation ─────────────────────────────────────────────────────
 
     function validateForm() {
-        var tbody = document.getElementById('items-body');
+        const tbody = document.getElementById('items-body');
         if (!tbody) return true;
 
-        var valid = false;
+        let valid = false;
         tbody.querySelectorAll('tr').forEach(function (row) {
-            var sel = row.querySelector('select[name="item_product_id[]"]');
-            var qty = row.querySelector('input[name="item_qty[]"]');
-            if (sel && sel.value && qty && parseFloat(qty.value) > 0) {
+            const sel = row.querySelector('select[name="item_product_id[]"]');
+            const qty = row.querySelector('input[name="item_qty[]"]');
+            if (sel?.value && qty && Number.parseFloat(qty.value) > 0) {
                 valid = true;
             }
         });
@@ -100,9 +100,9 @@
     // ─── Init ─────────────────────────────────────────────────────────────────
 
     App.ready(function () {
-        var tbody = document.getElementById('items-body');
-        var addBtn = document.getElementById('add-item-btn');
-        var form = document.getElementById('so-form');
+        const tbody = document.getElementById('items-body');
+        const addBtn = document.getElementById('add-item-btn');
+        const form = document.getElementById('so-form');
 
         // Add row button
         if (addBtn) {
@@ -111,11 +111,11 @@
 
         // Initial rows: re-create what the user entered when the server re-rendered
         // the form after a validation error (window._soOldItems), else one blank row.
-        var oldItems = window._soOldItems || [];
-        if (tbody && tbody.children.length === 0) {
+        const oldItems = window._soOldItems || [];
+        if (tbody?.children.length === 0) {
             if (oldItems.length > 0) {
                 oldItems.forEach(function (item) {
-                    var tr = buildRow(item.product_id);
+                    const tr = buildRow(item.product_id);
                     tr.querySelector('input[name="item_qty[]"]').value = item.qty;
                     tr.querySelector('input[name="item_sale_price[]"]').value = item.sale_price;
                     tbody.appendChild(tr);
@@ -136,7 +136,7 @@
 
             // Delegated click: remove row
             tbody.addEventListener('click', function (e) {
-                var removeBtn = e.target.closest('.so-item-remove');
+                const removeBtn = e.target.closest('.so-item-remove');
                 if (removeBtn) {
                     removeItemRow(e.target);
                 }
@@ -148,11 +148,11 @@
             form.addEventListener('submit', function (e) {
                 if (!validateForm()) {
                     e.preventDefault();
-                    var btn = form.querySelector('button[type="submit"]');
+                    const btn = form.querySelector('button[type="submit"]');
                     if (btn) { btn.disabled = false; }
                     return;
                 }
-                var btn = form.querySelector('button[type="submit"]');
+                const btn = form.querySelector('button[type="submit"]');
                 if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
             });
         }
@@ -161,12 +161,12 @@
         document.querySelectorAll('[data-so-action]').forEach(function (btn) {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
-                var action = btn.dataset.soAction;
-                var msg = btn.dataset.soConfirm ||
+                const action = btn.dataset.soAction;
+                const msg = btn.dataset.soConfirm ||
                     ('Are you sure you want to ' + action + ' this sales order?');
                 App.confirm(msg, action.charAt(0).toUpperCase() + action.slice(1)).then(function (ok) {
                     if (!ok) return;
-                    var form = document.createElement('form');
+                    const form = document.createElement('form');
                     form.method = 'POST';
                     form.action = btn.href || btn.dataset.soHref;
                     document.body.appendChild(form);

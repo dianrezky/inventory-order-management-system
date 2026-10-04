@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     <!-- Pagination -->
     <?php // Always rendered (hidden when single-page) so an AJAX filter that grows the result can reveal it. ?>
-    <nav class="pagination" id="ledger-pagination" style="margin-top:var(--space-4);" <?= $totalPages <= 1 ? 'hidden' : '' ?>>
+    <nav class="pagination" id="ledger-pagination" aria-label="Stock ledger pagination" style="margin-top:var(--space-4);" <?= $totalPages <= 1 ? 'hidden' : '' ?>>
         <button type="button" class="btn btn--secondary" id="ledger-prev"
                 data-page="<?= (int) $page ?>" <?= $page <= 1 ? 'disabled' : '' ?>>
             &laquo; Prev

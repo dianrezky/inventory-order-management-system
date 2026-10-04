@@ -113,7 +113,7 @@ $isAdmin = $currentUserRole === 'Admin';
         <div class="pagination-footer__controls">
             <form method="post" action="/warehouses/<?= $idObfuscator->encode($warehouse->id) ?>/stock" class="pagination-nav" aria-label="Stock by product pagination">
                 <?php if ($stockPage > 1): ?>
-                <button type="submit" name="stock_page" value="<?= $stockPage - 1 ?>" class="btn btn--secondary btn--sm" aria-label="Previous page" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">&laquo; Prev</button>
+                <button type="submit" name="stock_page" value="<?= $stockPage - 1 ?>" class="btn btn--secondary btn--sm" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">&laquo; Prev</button>
                 <?php endif; ?>
 
                 <?php
@@ -131,7 +131,7 @@ $isAdmin = $currentUserRole === 'Admin';
                 <?php endfor; ?>
 
                 <?php if ($stockPage < $stockTotalPages): ?>
-                <button type="submit" name="stock_page" value="<?= $stockPage + 1 ?>" class="btn btn--secondary btn--sm" aria-label="Next page" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">Next &raquo;</button>
+                <button type="submit" name="stock_page" value="<?= $stockPage + 1 ?>" class="btn btn--secondary btn--sm" style="min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;">Next &raquo;</button>
                 <?php endif; ?>
             </form>
         </div>

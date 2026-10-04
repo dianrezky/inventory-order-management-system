@@ -58,10 +58,9 @@ $rowCount = max(count($oldItemProductIds), 1);
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="supplier_id">Supplier <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Supplier information">
+                    <button type="button" class="field-info-icon" aria-label="Supplier information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The supplier from whom the products will be purchased. The supplier must be created first in Master Data &rarr; Suppliers before they can be selected here. Selecting the correct supplier ensures that the purchase order is linked to the right vendor for tracking and reporting purposes.</span>
-                    </span>
+                        <span class="field-tooltip">The supplier from whom the products will be purchased. The supplier must be created first in Master Data &rarr; Suppliers before they can be selected here. Selecting the correct supplier ensures that the purchase order is linked to the right vendor for tracking and reporting purposes.</span></button>
                 </div>
                 <select class="input" id="supplier_id" name="supplier_id" required style="min-height:44px;" aria-required="true">
                     <option value="">— Please Select A Supplier —</option>
@@ -76,10 +75,9 @@ $rowCount = max(count($oldItemProductIds), 1);
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="destination_warehouse_id">Destination Warehouse <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Destination warehouse information">
+                    <button type="button" class="field-info-icon" aria-label="Destination warehouse information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The warehouse where the ordered products will be received and stored upon arrival. When a Goods Receipt (GR) is created for this purchase order, the stock will be added to the warehouse specified here. The warehouse must be created first in Master Data &rarr; Warehouses.</span>
-                    </span>
+                        <span class="field-tooltip">The warehouse where the ordered products will be received and stored upon arrival. When a Goods Receipt (GR) is created for this purchase order, the stock will be added to the warehouse specified here. The warehouse must be created first in Master Data &rarr; Warehouses.</span></button>
                 </div>
                 <select class="input" id="destination_warehouse_id" name="destination_warehouse_id" required style="min-height:44px;" aria-required="true">
                     <option value="">— Please Select A Destination Warehouse —</option>
@@ -95,10 +93,9 @@ $rowCount = max(count($oldItemProductIds), 1);
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="order_date">Order Date <span aria-hidden="true" style="color:#DC2626;">*</span></label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Order date information">
+                    <button type="button" class="field-info-icon" aria-label="Order date information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">The date when this purchase order is issued or recorded in the system. This date will be used as the official PO date for all related documents and reports. Defaults to today's date. The date must be in a valid YYYY-MM-DD format.</span>
-                    </span>
+                        <span class="field-tooltip">The date when this purchase order is issued or recorded in the system. This date will be used as the official PO date for all related documents and reports. Defaults to today's date. The date must be in a valid YYYY-MM-DD format.</span></button>
                 </div>
                 <input class="input" type="date" id="order_date" name="order_date" required
                        value="<?= htmlspecialchars((string) ($old['order_date'] ?? date('Y-m-d')), ENT_QUOTES, 'UTF-8') ?>"
@@ -108,10 +105,9 @@ $rowCount = max(count($oldItemProductIds), 1);
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="note">Note</label>
-                    <span class="field-info-icon" tabindex="0" role="note" aria-label="Note information">
+                    <button type="button" class="field-info-icon" aria-label="Note information">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <span class="field-tooltip">An optional field to add any additional notes, special instructions, or remarks related to this purchase order. For example: delivery instructions, payment terms, or any specific requirements for the supplier. Maximum 500 characters.</span>
-                    </span>
+                        <span class="field-tooltip">An optional field to add any additional notes, special instructions, or remarks related to this purchase order. For example: delivery instructions, payment terms, or any specific requirements for the supplier. Maximum 500 characters.</span></button>
                 </div>
                 <textarea class="input" id="note" name="note" rows="3" maxlength="500"
                           placeholder="Please Enter Any Additional Notes Or Special Instructions Here..."><?= htmlspecialchars((string) ($old['note'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
@@ -127,24 +123,21 @@ $rowCount = max(count($oldItemProductIds), 1);
                     <tr>
                         <th style="min-width:240px;">
                             Product
-                            <span class="field-info-icon" tabindex="0" role="note" aria-label="Product column information" style="margin-left:4px;">
+                            <button type="button" class="field-info-icon" aria-label="Product column information" style="margin-left:4px;">
                                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                                <span class="field-tooltip">The product being ordered. Select the product from the dropdown list. Each product row will automatically inherit its default purchase price from the product master data, but the price can be overridden manually for this specific order if needed.</span>
-                            </span>
+                                <span class="field-tooltip">The product being ordered. Select the product from the dropdown list. Each product row will automatically inherit its default purchase price from the product master data, but the price can be overridden manually for this specific order if needed.</span></button>
                         </th>
                         <th style="min-width:140px;">
                             Qty Ordered
-                            <span class="field-info-icon" tabindex="0" role="note" aria-label="Quantity ordered information" style="margin-left:4px;">
+                            <button type="button" class="field-info-icon" aria-label="Quantity ordered information" style="margin-left:4px;">
                                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                                <span class="field-tooltip">The quantity of the selected product being ordered. Must be a whole number greater than or equal to 1. This quantity will be compared against the received quantity when creating a Goods Receipt (GR) to track partial deliveries.</span>
-                            </span>
+                                <span class="field-tooltip">The quantity of the selected product being ordered. Must be a whole number greater than or equal to 1. This quantity will be compared against the received quantity when creating a Goods Receipt (GR) to track partial deliveries.</span></button>
                         </th>
                         <th style="min-width:160px;">
                             Purchase Price (Rp)
-                            <span class="field-info-icon" tabindex="0" role="note" aria-label="Purchase price column information" style="margin-left:4px;">
+                            <button type="button" class="field-info-icon" aria-label="Purchase price column information" style="margin-left:4px;">
                                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                                <span class="field-tooltip">The purchase price per unit in Indonesian Rupiah (Rp) for this specific order. If left blank, the system will automatically use the default purchase price from the product master data. This price is used to calculate the total value of the purchase order.</span>
-                            </span>
+                                <span class="field-tooltip">The purchase price per unit in Indonesian Rupiah (Rp) for this specific order. If left blank, the system will automatically use the default purchase price from the product master data. This price is used to calculate the total value of the purchase order.</span></button>
                         </th>
                         <th style="width:80px;"></th>
                     </tr>

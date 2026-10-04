@@ -1,0 +1,35 @@
+# Production overlay — deploy IOMS behind the shared Caddy reverse proxy.
+#
+#   docker compose -f docker-compose.yaml -f docker-compose.prod.yml up -d --build
+#
+# What it changes versus the base file (which stays the local-dev default):
+#   1. The app container also joins Caddy's `internal` network, so the proxy can
+#      reach it as `iom_app:8080` (see deploy/Caddyfile). db/redis/memcached stay
+#      on iom_net, private to this stack.
+#   2. The published host port is removed — Caddy is the only ingress, so nothing
+#      needs to listen on the VPS host.
+#
+# Local dev is unaffected: `docker compose up` with the base file alone keeps the
+# host port (8090) and needs no external network.
+services:
+  app:
+    # A service `networks:` list is REPLACED (not merged) across compose files, so
+    # both networks are relisted here: iom_net (db/redis/memcached) + the Caddy net.
+    networks:
+      - iom_net
+      - caddy_ingress
+    # TLS terminates at Caddy and traffic is proxied over the network; no host port.
+    # `!reset` CLEARS the base `ports` (a plain `[]` would merge-append and leave 8090
+    # published). Requires Docker Compose >= 2.24.4; on older Compose, drop the `!reset`
+    # tag — the only effect is that port 8090 also stays published on the host.
+    ports: !reset []
+
+networks:
+  # The network the shared Caddy stack (deploy/docker-compose.yml) already created.
+  # Compose names a network <project>_<name>; the deploy/ stack's default project
+  # makes its `internal` network `deploy_internal`. If your stack runs under a
+  # different project name, set CADDY_NETWORK in this app's .env — confirm the real
+  # name with:  docker network ls | grep internal
+  caddy_ingress:
+    external: true
+    name: ${CADDY_NETWORK:-deploy_internal}

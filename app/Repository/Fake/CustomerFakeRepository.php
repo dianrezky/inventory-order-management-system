@@ -72,7 +72,7 @@ class CustomerFakeRepository implements CustomerRepositoryInterface
                 if ($s === 'active') { $isActiveValues[] = true; }
                 elseif ($s === 'inactive') { $isActiveValues[] = false; }
             }
-            if (count($isActiveValues) > 0) {
+            if (!empty($isActiveValues)) {
                 $all = array_values(array_filter($all, function ($c) use ($isActiveValues) {
                     return in_array($c->isActive, $isActiveValues, true);
                 }));
@@ -257,25 +257,16 @@ class CustomerFakeRepository implements CustomerRepositoryInterface
 
     private function getSortColumn($customer, $sortBy)
     {
-        switch ($sortBy) {
-            case 'id':
-                return $customer->id;
-            case 'name':
-                return $customer->name;
-            case 'email':
-                return $customer->email ?? '';
-            case 'phone':
-                return $customer->phone ?? '';
-            case 'contact_person':
-                return $customer->contactPerson ?? '';
-            case 'is_active':
-                return $customer->isActive ? 1 : 0;
-            case 'created_at':
-                return $customer->createdAt ? $customer->createdAt->format('Y-m-d H:i:s') : '';
-            case 'updated_at':
-                return $customer->updatedAt ? $customer->updatedAt->format('Y-m-d H:i:s') : '';
-            default:
-                return $customer->name;
-        }
+        // 'name' falls through to default, which also sorts by name.
+        return match ($sortBy) {
+            'id' => $customer->id,
+            'email' => $customer->email ?? '',
+            'phone' => $customer->phone ?? '',
+            'contact_person' => $customer->contactPerson ?? '',
+            'is_active' => $customer->isActive ? 1 : 0,
+            'created_at' => $customer->createdAt ? $customer->createdAt->format('Y-m-d H:i:s') : '',
+            'updated_at' => $customer->updatedAt ? $customer->updatedAt->format('Y-m-d H:i:s') : '',
+            default => $customer->name,
+        };
     }
 }

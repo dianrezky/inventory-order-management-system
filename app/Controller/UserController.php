@@ -49,11 +49,10 @@ class UserController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $user = null;
+        if ($id !== null) {
+            $user = $this->container->getUserService()->findById($id);
         }
-
-        $user = $this->container->getUserService()->findById($id);
 
         if ($user === null) {
             return $this->notFound();
@@ -104,11 +103,10 @@ class UserController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $user = null;
+        if ($id !== null) {
+            $user = $this->container->getUserService()->findById($id);
         }
-
-        $user = $this->container->getUserService()->findById($id);
 
         if ($user === null) {
             return $this->notFound();
@@ -138,14 +136,16 @@ class UserController extends BaseController
         if ($result->code !== Result::CODE_SUCCESS) {
             // Re-render as an EDIT of this record — passing null here turned the
             // form into "New User" posting to /users, so resubmitting created a duplicate.
-            return $this->view(self::TEMPLATE_FORM, [
+            $response = $this->view(self::TEMPLATE_FORM, [
                 'user' => $this->container->getUserService()->findById($id),
                 'errors' => [$this->t($result->info)],
                 'old' => $_POST,
             ])->setStatusCode($this->formErrorStatus($result));
+        } else {
+            $response = $this->redirect(self::ROUTE_USERS);
         }
 
-        return $this->redirect(self::ROUTE_USERS);
+        return $response;
     }
 
     public function deactivateAction($id)
@@ -162,16 +162,16 @@ class UserController extends BaseController
 
         $result = $this->container->getUserService()->setActive($id, false, $this->currentUser()->id);
 
-        // A refused self-deactivation is a rule violation, not a missing record
         if ($result->code === Result::CODE_VALIDATION) {
-            return $this->badRequest($this->t($result->info));
+            // A refused self-deactivation is a rule violation, not a missing record
+            $response = $this->badRequest($this->t($result->info));
+        } elseif ($result->code !== Result::CODE_SUCCESS) {
+            $response = $this->notFound();
+        } else {
+            $response = $this->redirect(self::ROUTE_USERS);
         }
 
-        if ($result->code !== Result::CODE_SUCCESS) {
-            return $this->notFound();
-        }
-
-        return $this->redirect(self::ROUTE_USERS);
+        return $response;
     }
 
     public function activateAction($id)
@@ -182,13 +182,13 @@ class UserController extends BaseController
         }
 
         $id = $this->decodeId($id);
-        if ($id === null) {
-            return $this->notFound();
+        $ok = false;
+        if ($id !== null) {
+            $result = $this->container->getUserService()->setActive($id, true, $this->currentUser()->id);
+            $ok = $result->code === Result::CODE_SUCCESS;
         }
 
-        $result = $this->container->getUserService()->setActive($id, true, $this->currentUser()->id);
-
-        if ($result->code !== Result::CODE_SUCCESS) {
+        if (!$ok) {
             return $this->notFound();
         }
 

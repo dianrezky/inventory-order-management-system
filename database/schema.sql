@@ -436,3 +436,28 @@ CREATE TABLE IF NOT EXISTS event_logs (
     KEY idx_event_logs_created_at (created_at),
     CONSTRAINT fk_event_logs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 16. file_validation_rules — DB-backed upload allow-list (mirrors the DMS
+-- FileValidationTrait concept). ImageUploadService reads this once per cache
+-- TTL via FileValidationService (Memcached) and rejects any product image
+-- whose extension is not listed or whose magic bytes do not match. Reference/
+-- near-static data: no UPDATE/DELETE path in the application, managed via
+-- migrations/seed only (same convention as role_permissions).
+--   header_hex/footer_hex: uppercase hex; NULL skips that check.
+--   read_bytes:            leading bytes to read for the header comparison.
+--   is_active:             0 disables a rule without deleting the row.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS file_validation_rules (
+    id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    extension   VARCHAR(10)       NOT NULL,   -- lowercase, no dot (e.g. 'jpg')
+    mime_type   VARCHAR(100)      NOT NULL,   -- expected finfo MIME (e.g. 'image/jpeg')
+    header_hex  VARCHAR(32)       NULL,       -- magic-bytes prefix, uppercase hex; NULL = skip
+    footer_hex  VARCHAR(32)       NULL,       -- magic-bytes suffix, uppercase hex; NULL = skip
+    read_bytes  SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    is_active   TINYINT(1)        NOT NULL DEFAULT 1,
+    created_at  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uniq_file_validation_extension (extension)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

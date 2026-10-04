@@ -1,0 +1,36 @@
+{
+  "name": "ioms-e2e-playwright",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deep E2E Playwright suite for IOMS. See docs/testing/e2e-playwright/IOMS-E2E-SPEC.md for architecture. Isolated by default (E2E_MODE=isolated) against the ioms-e2e Docker Compose stack; never touches the developer's iom_* containers/volumes.",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "e2e": "cross-env E2E_MODE=isolated E2E_RESET=always playwright test",
+    "e2e:smoke": "cross-env E2E_MODE=isolated playwright test --grep @smoke",
+    "e2e:rbac": "cross-env E2E_MODE=isolated playwright test --grep @rbac",
+    "e2e:security": "cross-env E2E_MODE=isolated playwright test --grep @security",
+    "e2e:master": "cross-env E2E_MODE=isolated playwright test specs/products specs/categories specs/warehouses specs/customers specs/suppliers specs/users",
+    "e2e:po": "cross-env E2E_MODE=isolated playwright test specs/purchase-orders",
+    "e2e:so": "cross-env E2E_MODE=isolated playwright test specs/sales-orders",
+    "e2e:reports": "cross-env E2E_MODE=isolated playwright test specs/stock-ledger specs/reports specs/exclusive/reports",
+    "e2e:a11y": "cross-env E2E_MODE=isolated playwright test --grep @a11y",
+    "e2e:concurrency": "cross-env E2E_MODE=isolated playwright test --grep @concurrency --repeat-each=5",
+    "e2e:existing": "cross-env E2E_MODE=existing E2E_I_UNDERSTAND_NO_DETERMINISM=1 playwright test --grep-invert \"@needs-isolated|@seed-dependent\"",
+    "e2e:env:up": "cross-env E2E_MODE=isolated tsx support/cli-env-up.ts",
+    "e2e:env:down": "cross-env E2E_MODE=isolated tsx support/cli-env-down.ts",
+    "e2e:list": "playwright test --list",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@axe-core/playwright": "4.13.0",
+    "@types/node": "^22.10.0",
+    "cross-env": "^7.0.3",
+    "typescript": "5.9.3",
+    "eslint": "^9.14.0",
+    "typescript-eslint": "^8.14.0",
+    "tsx": "^4.19.0"
+  }
+}
