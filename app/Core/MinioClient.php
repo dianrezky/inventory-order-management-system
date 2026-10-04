@@ -328,6 +328,9 @@ class MinioClient
         $ch = curl_init($this->endpoint . $canonicalUri);
         curl_setopt_array($ch, [
             CURLOPT_CUSTOMREQUEST  => $method,
+            // A HEAD response carries Content-Length but no body; without NOBODY curl
+            // waits for that body until CURLOPT_TIMEOUT fires.
+            CURLOPT_NOBODY        => $method === 'HEAD',
             CURLOPT_HTTPHEADER    => $curlHeaders,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POSTFIELDS    => $method === 'PUT' ? $body : null,
