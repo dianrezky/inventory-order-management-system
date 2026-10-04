@@ -169,10 +169,14 @@ async function crudEntity({ folder, feature, role = 'admin', createFields, creat
 
     await go(pg, `/${feature}/${token}/edit`);
     await ss(pg, `${folder}/edit`, '01-form-empty');
-    const firstTextField = pg.locator('input[type="text"]').first();
-    if (await firstTextField.isVisible({ timeout: 2000 }).catch(() => false)) {
-      const val = await firstTextField.inputValue().catch(() => '');
-      await firstTextField.fill(val + ' (edited)');
+    // Prefer name field over the first text field (to avoid editing code/sku)
+    let editTarget = pg.locator('input[type="text"][name="name"]').first();
+    if (!await editTarget.isVisible({ timeout: 2000 }).catch(() => false)) {
+      editTarget = pg.locator('input[type="text"]').first();
+    }
+    if (await editTarget.isVisible({ timeout: 2000 }).catch(() => false)) {
+      const val = await editTarget.inputValue().catch(() => '');
+      await editTarget.fill(val + ' (edited)');
     }
     await ss(pg, `${folder}/edit`, '02-form-filled');
     await submit(pg, editSubmit);
@@ -270,10 +274,13 @@ await crudEntity({
 
     await go(pg, `/categories/${catId}/edit`);
     await ss(pg, '04-categories/edit', '01-form-empty');
-    const firstTextField = pg.locator('input[type="text"]').first();
-    if (await firstTextField.isVisible({ timeout: 2000 }).catch(() => false)) {
-      const val = await firstTextField.inputValue().catch(() => '');
-      await firstTextField.fill(val + ' (edited)');
+    let catNameField = pg.locator('input[type="text"][name="name"]').first();
+    if (!await catNameField.isVisible({ timeout: 2000 }).catch(() => false)) {
+      catNameField = pg.locator('input[type="text"]').first();
+    }
+    if (await catNameField.isVisible({ timeout: 2000 }).catch(() => false)) {
+      const val = await catNameField.inputValue().catch(() => '');
+      await catNameField.fill(val + ' (edited)');
     }
     await ss(pg, '04-categories/edit', '02-form-filled');
     await submit(pg, 'Save changes');
