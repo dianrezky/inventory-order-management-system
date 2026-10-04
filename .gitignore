@@ -21,6 +21,9 @@ composer.phar
 .DS_Store
 Thumbs.db
 
+# Linux temp files (fuse/editor artifacts)
+.fuse_hidden*
+
 # Logs
 *.log
 /logs/*
