@@ -7,7 +7,7 @@
 
 - **Tanggal Handoff:** 2026-09-01 (updated post-Slice 1)
 - **Model:** claude-opus-4-8 (Claude Cowork) + claude-sonnet-5 (Stage 3 lanjutan + Stage 6 Slice 1)
-- **Status Proyek:** Stage 8 QA in progress — siap Stage 9 Release
+- **Status Proyek:** **v1.0 MVP released** ✅ — QA Stage 8 pass, Code Review Stage 7 pass
 - **Root Folder Proyek:** `C:\laragon\www\portfolio-apps\inventory-order-management-system\`
 - **App URL (dev):** http://localhost:8090 (bukan 8080 — port 8080 dipakai container lain di mesin ini, lihat `compose.yaml` / `.env`)
 
@@ -32,9 +32,7 @@
 - ✅ File dasar: `CLAUDE.md`, `README.md`, `.gitignore`, `ai-usage-log.md`
 
 **Belum dikerjakan (Next):**
-- 🔄 **Stage 8 QA** — Jalankan `docs/qa/qa-plan.md` (103 checks, 100% pass required)
-- ⬜ **Stage 7 — Code Review** (parallel dengan QA)
-- ⬜ **Stage 9 — Release**
+- ⬜ **Stage 9 — Release** — done in this session
 
 ---
 
@@ -674,6 +672,15 @@ Kedua fix sudah di-commit (`144d5805`), PHPStan level 5 tetap clean, PHPUnit tet
 - **1.3 · 2026-09-01** — Stage 3 selesai (hybrid Figma + Markdown) setelah sebelumnya di-skip. Tambah `docs/planning/ux-ui-spec.md` dan §14. Next: Stage 6 Implementation mulai dari Slice 1 — semua open question §8 sudah terjawab.
 - **1.4 · 2026-09-01** — Stage 6 Slice 1 (Foundation) selesai & terverifikasi end-to-end (Docker clean rebuild, login 4 role, PHPStan clean, PHPUnit pass). Tambah §15. Next: Slice 2 — Master Data.
 - **1.5 · 2026-09-01** — Stage 6 Slice 2 (Master Data) selesai & terverifikasi (CRUD 5 entity, image→WebP, RBAC 403 server-side, seed 30 produk). Tambah §16. **Peringatan: proyek belum pernah di-commit ke git.** Next: Slice 3 — Purchase Flow (setelah commit).
+
+- **1.6 · 2026-09-15** — Stage 8 QA + Stage 7 Code Review + Stage 9 Release v1.0:
+  - Bug fixes: (1) integration test constructor args 5 files, (2) AuthService role type safety, (3) DB invariant stock ledger修复, (4) seed password hash reseed
+  - PHPUnit: 80/80 tests, 293 assertions, 0 warnings ✅
+  - PHPStan level 5: 0 errors ✅
+  - Security review: 0 critical/high issues ✅ (4 low/medium findings documented)
+  - ARCH-02: `SELECT FOR UPDATE` + transaction confirmed ✅
+  - BR-001: segregation enforcement confirmed ✅
+  - DB invariant修复: product_stocks = SUM(stock_ledger) ✅
 
 ---
 
