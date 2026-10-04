@@ -2,8 +2,10 @@
 
 namespace App\Service;
 
+use App\Core\ClockInterface;
 use App\Core\Result;
 use App\Core\SessionManager;
+use App\Core\SystemClock;
 use App\Entity\Role;
 use App\Repository\Interface\UserRepositoryInterface;
 
@@ -13,18 +15,20 @@ class AuthService
     private $userRepository;
     private $session;
     private $eventLogService;
+    private $clock;
 
-    // $eventLogService is optional (nullable, default null) rather than a
-    // required dependency: many existing Unit/Integration tests construct
-    // this Service directly with only (repository, session). Making it
-    // required would mean touching every one of those construction sites.
-    // When Container wires this Service in production it always passes a
-    // real EventLogService, so logging still runs on every real request.
-    public function __construct(UserRepositoryInterface $userRepository, SessionManager $session, EventLogService $eventLogService = null)
+    // $eventLogService and $clock are optional (nullable, default null)
+    // rather than required dependencies: many existing Unit/Integration
+    // tests construct this Service directly with only (repository,
+    // session). Making them required would mean touching every one of
+    // those construction sites. When Container wires this Service in
+    // production it always passes a real EventLogService and SystemClock.
+    public function __construct(UserRepositoryInterface $userRepository, SessionManager $session, EventLogService $eventLogService = null, ClockInterface $clock = null)
     {
         $this->userRepository = $userRepository;
         $this->session = $session;
         $this->eventLogService = $eventLogService;
+        $this->clock = $clock ?? new SystemClock();
     }
 
     public function login($email, $password)
@@ -62,7 +66,7 @@ class AuthService
                 $this->session->set('user_id', $user->id);
                 $this->session->set('role', $user->role instanceof Role ? $user->role->value : (string) $user->role);
                 $this->session->set('user_name', $user->name);
-                $this->session->set('last_activity', time());
+                $this->session->set('last_activity', $this->clock->now()->getTimestamp());
 
                 $result->code = 0;
                 $result->info = 'You have been signed in.';
@@ -109,7 +113,7 @@ class AuthService
         // Idle timeout: the cookie lifetime alone is absolute and client-controlled, so the server also expires a session left unused for longer than SESSION_LIFETIME
         $lastActivity = $this->session->get('last_activity');
         $lifetime = $this->session->getLifetime();
-        $expired = $lifetime > 0 && is_int($lastActivity) && time() - $lastActivity > $lifetime;
+        $expired = $lifetime > 0 && is_int($lastActivity) && $this->clock->now()->getTimestamp() - $lastActivity > $lifetime;
 
         $user = null;
         if (!$expired) {
@@ -128,7 +132,7 @@ class AuthService
 
         // Sync session role with the authoritative DB value (handles role changes made while the user was logged in)
         $this->session->set('role', $user->role instanceof Role ? $user->role->value : (string) $user->role);
-        $this->session->set('last_activity', time());
+        $this->session->set('last_activity', $this->clock->now()->getTimestamp());
 
         return $user;
     }

@@ -236,47 +236,21 @@ class BaseController
     // or null when none are selected.
     protected function statusFilter()
     {
-        $raw = $this->requestParam('status');
-        if ($raw === null) { return null; }
-        if (is_array($raw)) {
-            $valid = array_filter($raw, static fn ($v) => in_array($v, ['active', 'inactive'], true));
-            return count($valid) > 0 ? array_values($valid) : null;
-        }
-        $s = trim((string) $raw);
-        return in_array($s, ['active', 'inactive'], true) ? [$s] : null;
+        return \App\Support\ListFilters::status($this->requestParam('status'));
     }
 
     // Reads the "role" filter (role[]=Admin&role[]=Sales) on the Users list
     // page's filter panel. Returns an array of valid Role enum values.
     protected function roleFilter()
     {
-        $raw = $this->requestParam('role');
-        if ($raw === null) { return null; }
-        if (is_array($raw)) {
-            $valid = array_filter($raw, static fn ($v) => \App\Entity\Role::tryFrom((string) $v) !== null);
-            return count($valid) > 0 ? array_values($valid) : null;
-        }
-        $r = trim((string) $raw);
-        return \App\Entity\Role::tryFrom($r) !== null ? [$r] : null;
+        return \App\Support\ListFilters::role($this->requestParam('role'));
     }
 
     // Reads the "warehouse_id" filter (warehouse_id[]=1&warehouse_id[]=2). Returns an
     // array of positive int ids, or null when none are selected.
     protected function warehouseIdFilter()
     {
-        $raw = $this->requestParam('warehouse_id');
-        if ($raw === null) { return null; }
-        $ids = [];
-        if (is_array($raw)) {
-            foreach ($raw as $v) {
-                $id = filter_var($v, FILTER_VALIDATE_INT);
-                if ($id !== false && $id > 0) { $ids[] = $id; }
-            }
-        } else {
-            $id = filter_var((string) $raw, FILTER_VALIDATE_INT);
-            if ($id !== false && $id > 0) { $ids[] = $id; }
-        }
-        return !empty($ids) ? $ids : null;
+        return \App\Support\ListFilters::positiveIntIds($this->requestParam('warehouse_id'));
     }
 
     protected function parseItemsFromRequest($productIdKey, $qtyKey, $priceKey)

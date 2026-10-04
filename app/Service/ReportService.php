@@ -2,7 +2,9 @@
 
 namespace App\Service;
 
+use App\Core\ClockInterface;
 use App\Core\Result;
+use App\Core\SystemClock;
 use App\Repository\Interface\ReportRepositoryInterface;
 
 // Business rules behind the /reports dashboard: which report types and sorts
@@ -57,10 +59,14 @@ class ReportService
     private const AGING_DAYS_AGING = 30;
 
     private $reportRepository;
+    private $clock;
 
-    public function __construct(ReportRepositoryInterface $reportRepository)
+    // $clock is optional (nullable, default null) — see AuthService for why:
+    // existing tests construct this Service directly without it.
+    public function __construct(ReportRepositoryInterface $reportRepository, ClockInterface $clock = null)
     {
         $this->reportRepository = $reportRepository;
+        $this->clock = $clock ?? new SystemClock();
     }
 
     // Normalises the raw POSTed filter form into a safe, allowlisted set.
@@ -73,8 +79,9 @@ class ReportService
             $reportType = self::DEFAULT_REPORT_TYPE;
         }
 
-        $dateFrom = $this->validDate($raw['date_from'] ?? null, date('Y-m-d', strtotime('-29 days')));
-        $dateTo = $this->validDate($raw['date_to'] ?? null, date('Y-m-d'));
+        $now = $this->clock->now();
+        $dateFrom = $this->validDate($raw['date_from'] ?? null, $now->modify('-29 days')->format('Y-m-d'));
+        $dateTo = $this->validDate($raw['date_to'] ?? null, $now->format('Y-m-d'));
         if ($dateFrom > $dateTo) {
             [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
         }
@@ -193,10 +200,11 @@ class ReportService
     // (stock now − net movements after the month end), not a repeated snapshot.
     private function trend($categoryId, $warehouseId)
     {
+        $now = $this->clock->now();
         $trendData = [];
         for ($i = 5; $i >= 0; $i--) {
-            $monthStart = strtotime(date('Y-m-01', strtotime("-$i month")));
-            $monthEnd = $i === 0 ? date('Y-m-d H:i:s') : date('Y-m-t 23:59:59', $monthStart);
+            $monthStart = strtotime($now->modify("-$i month")->format('Y-m-01'));
+            $monthEnd = $i === 0 ? $now->format('Y-m-d H:i:s') : date('Y-m-t 23:59:59', $monthStart);
 
             $valuationResult = $this->reportRepository->valuationAt($categoryId, $warehouseId, $monthEnd);
             $movementResult = $this->reportRepository->monthMovements($categoryId, $warehouseId, (int) date('Y', $monthStart), (int) date('m', $monthStart));
@@ -307,7 +315,7 @@ class ReportService
         $agingDays = null;
         $agingLabel = 'N/A';
         if ($referenceDate !== null) {
-            $agingDays = (int) floor((time() - strtotime($referenceDate)) / 86400);
+            $agingDays = (int) floor(($this->clock->now()->getTimestamp() - strtotime($referenceDate)) / 86400);
             $agingLabel = $agingDays . ' days';
         }
 
