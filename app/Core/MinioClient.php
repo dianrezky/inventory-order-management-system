@@ -392,7 +392,8 @@ class MinioClient
         $signature = hash_hmac(self::HASH_ALGO, $stringToSign, $signingKey);
 
         return sprintf(
-            'AWS4-HMAC-SHA256 Credential=%s/%s, SignedHeaders=%s, Signature=%s',
+            '%s Credential=%s/%s, SignedHeaders=%s, Signature=%s',
+            self::SIGV4_ALGORITHM,
             $this->accessKey,
             $credentialScope,
             $signedHeadersList,
