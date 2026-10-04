@@ -126,3 +126,92 @@ One exception worth noting: `notifications.read_at` is set manually via
 ([`NotificationMySQLRepository.php:130`](../../app/Repository/MySQL/NotificationMySQLRepository.php#L130))
 — this is a different column (`read_at`, not `updated_at`) and is the only place the app sets
 a timestamp column explicitly in SQL.
+
+---
+
+## Reconciliation Queries & Index Evidence
+
+### Stock Ledger Reconciliation
+
+ADR-002 §Context menetapkan invariant:
+
+```
+product_stocks.quantity == initial_seed_quantity + SUM(stock_ledger.qty)
+    WHERE product_id = ? AND warehouse_id = ?
+```
+
+Query berikut menemukan **semua baris `product_stocks` yang tidak sesuai** dengan akumulasi ledger
+(hasil seharusnya 0 baris):
+
+```sql
+-- Rekonsiliasi: product_stocks vs stock_ledger
+-- Harus mengembalikan 0 baris. Jika ada baris, berarti ada inkonsistensi data.
+SELECT
+    ps.product_id,
+    ps.warehouse_id,
+    ps.quantity            AS stock_qty,
+    COALESCE(SUM(sl.qty), 0) AS ledger_sum,
+    ps.quantity - COALESCE(SUM(sl.qty), 0) AS drift
+FROM product_stocks ps
+LEFT JOIN stock_ledger sl
+    ON sl.product_id   = ps.product_id
+   AND sl.warehouse_id = ps.warehouse_id
+GROUP BY ps.product_id, ps.warehouse_id
+HAVING ps.quantity <> COALESCE(SUM(sl.qty), 0);
+```
+
+> **Catatan:** Query ini mengasumsikan `initial_seed_quantity = 0` (stok awal sebelum ada ledger entry
+> adalah nol). Jika ada seed stock lewat INSERT langsung ke `product_stocks`, tambahkan kolom seed
+> atau tambahkan ledger entry awal bertipe `Adjustment`.
+
+Verifikasi setelah setiap migrasi atau operasi maintenance:
+
+```sql
+-- Jumlah baris inkonsisten (harus = 0)
+SELECT COUNT(*) AS inconsistent_rows
+FROM (
+    SELECT ps.product_id, ps.warehouse_id
+    FROM product_stocks ps
+    LEFT JOIN stock_ledger sl
+        ON sl.product_id   = ps.product_id
+       AND sl.warehouse_id = ps.warehouse_id
+    GROUP BY ps.product_id, ps.warehouse_id
+    HAVING ps.quantity <> COALESCE(SUM(sl.qty), 0)
+) t;
+```
+
+---
+
+### Index Evidence (EXPLAIN)
+
+Composite index `idx_stock_ledger_product_warehouse` pada tabel `stock_ledger(product_id, warehouse_id)`:
+
+```sql
+EXPLAIN
+SELECT SUM(qty)
+FROM stock_ledger
+WHERE product_id = 1 AND warehouse_id = 1;
+```
+
+Output yang diharapkan (`type = ref`, bukan `ALL`):
+
+```
++----+-------------+--------------+------+----------------------------------------+----------------------------------------+---------+-------+------+-----------+
+| id | select_type | table        | type | possible_keys                          | key                                    | key_len | ref   | rows | Extra     |
++----+-------------+--------------+------+----------------------------------------+----------------------------------------+---------+-------+------+-----------+
+|  1 | SIMPLE      | stock_ledger | ref  | idx_stock_ledger_product_warehouse     | idx_stock_ledger_product_warehouse     | 8       | const |   ~N | Using index |
++----+-------------+--------------+------+----------------------------------------+----------------------------------------+---------+-------+------+-----------+
+```
+
+`type = ref` dan `key = idx_stock_ledger_product_warehouse` mengkonfirmasi bahwa query menggunakan
+index komposit, bukan full table scan.
+
+Index yang relevan di `database/schema.sql`:
+
+```sql
+-- stock_ledger
+CREATE INDEX idx_stock_ledger_product_warehouse ON stock_ledger (product_id, warehouse_id);
+
+-- product_stocks (composite PK juga berfungsi sebagai index)
+PRIMARY KEY (product_id, warehouse_id)
+```

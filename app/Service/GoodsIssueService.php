@@ -185,6 +185,12 @@ class GoodsIssueService
     {
         $failure = null;
 
+        // Sort ascending by productId before acquiring locks so that two concurrent
+        // transactions touching the same set of products always lock in the same
+        // order, eliminating the circular-wait condition that causes InnoDB deadlocks
+        // on multi-item orders. See ADR-002 §Multi-item deadlock prevention.
+        usort($items, static fn($a, $b) => $a->productId <=> $b->productId);
+
         foreach ($items as $item) {
             // ARCH-02: row lock per product/warehouse before the check-then-deduct, so two concurrent issues cannot oversell
             $stockResult = $this->productStockRepository->lockForUpdate(

@@ -113,6 +113,41 @@ product_stocks.quantity ==
     + SUM(stock_ledger.qty WHERE product_id = ? AND warehouse_id = ?)
 ```
 
+### Multi-item deadlock prevention
+
+Setiap SO / PO bisa punya **lebih dari satu item** (produk berbeda). Kalau dua transaksi bersamaan mengunci produk yang sama-sama mereka butuhkan tapi dalam **urutan terbalik**, InnoDB akan mendeteksi *circular wait* dan membunuh salah satu transaksi dengan `SQLSTATE[40001]: Deadlock found`.
+
+**Skenario:**
+
+```
+Transaksi A (SO-100): kunci produk 5 → minta kunci produk 3 → tunggu...
+Transaksi B (SO-101): kunci produk 3 → minta kunci produk 5 → tunggu...
+              ↑ DEADLOCK: keduanya saling tunggu selamanya
+```
+
+**Solusi:** Sebelum loop `lockForUpdate`, sort item secara **deterministik ascending by `productId`**. Selama semua transaksi mengunci dalam urutan yang sama, *circular wait* tidak bisa terbentuk.
+
+```php
+// GoodsIssueService::applyIssuanceLines()
+usort($items, static fn($a, $b) => $a->productId <=> $b->productId);
+
+foreach ($items as $item) {
+    $this->productStockRepository->lockForUpdate($item->productId, $warehouseId);
+    // ...
+}
+
+// GoodsReceiptService::applyLinesInTransaction()
+usort($lines, static fn($a, $b) => $a['item']->productId <=> $b['item']->productId);
+
+foreach ($lines as $line) {
+    // applyReceiptLine() calls lockForUpdate($item->productId, ...)
+}
+```
+
+Ini adalah **lock-ordering convention** standar untuk mencegah deadlock di sistem multi-resource — setara dengan Coffman condition: menghilangkan *circular wait* dengan total ordering pada resource acquisition.
+
+> **Catatan:** Skenario single-product per SO (studi kasus §Context) tidak terpengaruh deadlock — ini hanya berlaku untuk SO/PO dengan ≥ 2 produk berbeda yang diproses bersamaan dan overlap item-nya.
+
 ---
 
 ## Why NOT Optimistic? (Opsi B Ditolak)

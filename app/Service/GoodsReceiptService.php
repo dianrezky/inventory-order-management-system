@@ -184,6 +184,12 @@ class GoodsReceiptService
         }
 
         if ($outcome === null) {
+            // Sort ascending by productId before acquiring locks so that two concurrent
+            // transactions touching the same products always lock in the same order,
+            // eliminating the circular-wait condition that causes InnoDB deadlocks.
+            // See ADR-002 §Multi-item deadlock prevention.
+            usort($lines, static fn($a, $b) => $a['item']->productId <=> $b['item']->productId);
+
             foreach ($lines as $line) {
                 $lineResult = $this->applyReceiptLine($line['item'], $line['qty'], $warehouseId, $purchaseOrderId, $userId);
                 if ($lineResult instanceof Result) {
