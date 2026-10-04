@@ -48,6 +48,7 @@ use App\Service\FileValidationService;
 use App\Service\GoodsReceiptService;
 use App\Service\GoodsIssueService;
 use App\Service\ImageUploadService;
+use App\Service\LowStockService;
 use App\Service\NotificationService;
 use App\Service\PermissionService;
 use App\Service\ProductService;
@@ -113,6 +114,11 @@ class Container // NOSONAR
         );
     }
 
+    public function getClock()
+    {
+        return $this->instances[ClockInterface::class] ??= new SystemClock();
+    }
+
     public function getIdObfuscator()
     {
         return $this->instances[IdObfuscator::class] ??= new IdObfuscator(
@@ -133,6 +139,7 @@ class Container // NOSONAR
             $this->getUserRepository(),
             $this->getSessionManager(),
             $this->getEventLogService(),
+            $this->getClock(),
         );
     }
 
@@ -218,6 +225,7 @@ class Container // NOSONAR
     {
         return $this->instances[ReportService::class] ??= new ReportService(
             $this->getReportRepository(),
+            $this->getClock(),
         );
     }
 
@@ -429,6 +437,7 @@ class Container // NOSONAR
             $this->getStockLedgerRepository(),
             $this->getSalesOrderPolicy(),
             $this->getEventLogService(),
+            $this->getClock(),
         );
     }
 
@@ -452,6 +461,15 @@ class Container // NOSONAR
     {
         return $this->instances[SalesDashboardService::class] ??= new SalesDashboardService(
             $this->getSalesOrderRepository(),
+        );
+    }
+
+    public function getLowStockService()
+    {
+        return $this->instances[LowStockService::class] ??= new LowStockService(
+            $this->getProductRepository(),
+            $this->getProductStockRepository(),
+            $this->getNotificationService(),
         );
     }
 }

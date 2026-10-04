@@ -4,12 +4,12 @@
  * JOB-01 / scripts/check-low-stock.php
  *
  * Standalone CLI script — no session, no HTTP, no framework.
- * Queries product+warehouse combinations where that warehouse's stock < the product's reorder_point.
- *
- * Also creates an in-app notification (notifications table) for every low-stock
- * row found, deduplicated so re-running the script while stock stays low
- * doesn't spam the Admin/WarehouseStaff dashboard with repeats (bonus feature,
- * §2 "Scheduled Job — Notifikasi stok rendah", DIPERBOLEHKAN).
+ * Delegates the actual rule (total stock across all warehouses below the
+ * product's reorder_point) and the deduplicated notification side-effect to
+ * App\Service\LowStockService, built through the same Container used by
+ * public/index.php — so this job goes through Controller-less but still
+ * Service → Repository layering, and the rule is unit-tested independently
+ * of this script (see tests/Unit/LowStockServiceTest.php).
  *
  * Usage:
  *   php scripts/check-low-stock.php
@@ -39,48 +39,37 @@ if (is_file($root . '/.env')) {
     $dotenv->safeLoad();
 }
 
-$dbHost = $_ENV['DB_HOST'] ?? 'localhost';
-$dbPort = (int) ($_ENV['DB_PORT'] ?? 3306);
-$dbName = $_ENV['DB_NAME'] ?? 'inventory_order_management';
-$dbUser = $_ENV['DB_USER'] ?? 'root';
-$dbPass = $_ENV['DB_PASSWORD'] ?? '';
+$config = [
+    'db' => [
+        'host'     => $_ENV['DB_HOST'] ?? 'localhost',
+        'port'     => (int) ($_ENV['DB_PORT'] ?? 3306),
+        'name'     => $_ENV['DB_NAME'] ?? 'inventory_order_management',
+        'user'     => $_ENV['DB_USER'] ?? 'root',
+        'password' => $_ENV['DB_PASSWORD'] ?? '',
+    ],
+];
 
 try {
-    // Database is the app's single PDO-instantiation point (ADR-001) — reused
-    // here for the report query (via ->pdo()) and for NotificationService below.
-    $database = new App\Core\Database($dbHost, $dbPort, $dbName, $dbUser, $dbPass);
-    $pdo = $database->pdo();
+    $container = new App\Core\Container($config);
+    $lowStockService = $container->getLowStockService();
 } catch (\Throwable $e) {
     fwrite(STDERR, "Error: Database connection failed — " . $e->getMessage() . "\n");
     exit(1);
 }
 
-$notificationService = new App\Service\NotificationService(
-    new App\Repository\MySQL\NotificationMySQLRepository(
-        $database,
-        new App\Repository\MySQL\QueryBuilder($database)
-    )
-);
-
 echo "=== Low Stock Report ===" . PHP_EOL;
 echo "Generated: " . date('Y-m-d H:i:s') . PHP_EOL;
 echo str_repeat('-', 50) . PHP_EOL;
 
-// Product-level: a product is low-stock when its TOTAL quantity across all
-// warehouses is below its reorder point (Project Brief JOB-01 "produk di bawah
-// reorder point"; same basis as the dashboard and the Products list filter).
-$stmt = $pdo->prepare(
-    'SELECT p.id AS product_id, p.sku, p.name, COALESCE(SUM(ps.quantity), 0) AS quantity, p.reorder_point '
-    . 'FROM products p '
-    . 'LEFT JOIN product_stocks ps ON ps.product_id = p.id '
-    . 'WHERE p.is_active = 1 '
-    . 'GROUP BY p.id '
-    . 'HAVING COALESCE(SUM(ps.quantity), 0) < p.reorder_point '
-    . 'ORDER BY quantity ASC'
-);
-$stmt->execute();
+$checkResult = $lowStockService->checkAndNotify();
 
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if ($checkResult->code !== App\Core\Result::CODE_SUCCESS) {
+    fwrite(STDERR, "Error: " . $checkResult->info . "\n");
+    exit(1);
+}
+
+$rows = $checkResult->data['rows'];
+$notified = $checkResult->data['notified_count'];
 
 if ($rows === []) {
     echo "No low-stock products." . PHP_EOL;
@@ -90,33 +79,17 @@ if ($rows === []) {
 printf("%-8s %-40s %10s %10s\n", 'SKU', 'Product', 'Stock', 'Reorder Pt');
 echo str_repeat('-', 72) . PHP_EOL;
 
-$count = 0;
-$notified = 0;
 foreach ($rows as $row) {
-    $count++;
     printf(
         "%-8s %-40s %10s %10s\n",
         $row['sku'],
         mb_substr($row['name'], 0, 40),
-        number_format((int) $row['quantity']),
-        number_format((int) $row['reorder_point'])
+        number_format($row['quantity']),
+        number_format($row['reorder_point'])
     );
-
-    $message = sprintf(
-        '%s is below reorder point (%s in stock across all warehouses, reorder at %s).',
-        $row['name'],
-        number_format((int) $row['quantity']),
-        number_format((int) $row['reorder_point'])
-    );
-
-    // Product-level notification (no single warehouse) — warehouse_id is null.
-    $notifyResult = $notificationService->notifyLowStock((int) $row['product_id'], null, $message);
-    if ($notifyResult->code === App\Core\Result::CODE_SUCCESS && $notifyResult->data !== null) {
-        $notified++;
-    }
 }
 
 echo PHP_EOL;
-echo "Total low-stock products: $count" . PHP_EOL;
+echo "Total low-stock products: " . count($rows) . PHP_EOL;
 echo "New notifications created: $notified (existing unread ones were left as-is)" . PHP_EOL;
 exit(0);

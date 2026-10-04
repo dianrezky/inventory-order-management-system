@@ -2,7 +2,9 @@
 
 namespace App\Service;
 
+use App\Core\ClockInterface;
 use App\Core\Result;
+use App\Core\SystemClock;
 use App\Core\TransactionManagerInterface;
 use App\Entity\SalesOrder;
 use App\Repository\Interface\ProductStockRepositoryInterface;
@@ -25,9 +27,11 @@ class GoodsIssueService
     private $stockLedgerRepository;
     private $policy;
     private $eventLogService;
+    private $clock;
 
-    // $eventLogService is optional (nullable, default null) — see AuthService
-    // for why: existing tests construct this Service directly without it.
+    // $eventLogService and $clock are optional (nullable, default null) —
+    // see AuthService for why: existing tests construct this Service
+    // directly without them.
     public function __construct(
         TransactionManagerInterface $transactionManager,
         SalesOrderRepositoryInterface $salesOrderRepository,
@@ -35,7 +39,8 @@ class GoodsIssueService
         ProductStockRepositoryInterface $productStockRepository,
         StockLedgerRepositoryInterface $stockLedgerRepository,
         SalesOrderPolicy $policy,
-        EventLogService $eventLogService = null
+        EventLogService $eventLogService = null,
+        ClockInterface $clock = null
     ) {
         $this->transactionManager = $transactionManager;
         $this->salesOrderRepository = $salesOrderRepository;
@@ -44,6 +49,7 @@ class GoodsIssueService
         $this->stockLedgerRepository = $stockLedgerRepository;
         $this->policy = $policy;
         $this->eventLogService = $eventLogService;
+        $this->clock = $clock ?? new SystemClock();
     }
 
     public function issue($salesOrderId, $actorUserId)
@@ -150,7 +156,7 @@ class GoodsIssueService
             if ($outcome === null) {
                 $updateStatus = $this->salesOrderRepository->updateStatus($salesOrder->id, SalesOrder::STATUS_FULFILLED, [
                     'issued_by' => $actorUserId,
-                    'issued_at' => date('Y-m-d H:i:s'),
+                    'issued_at' => $this->clock->now()->format('Y-m-d H:i:s'),
                 ]);
                 if ($updateStatus->code !== Result::CODE_SUCCESS) {
                     $outcome = $updateStatus;
@@ -226,7 +232,7 @@ class GoodsIssueService
                 'ref_type' => 'SO',
                 'ref_id' => $salesOrder->id,
                 'done_by_user_id' => $actorUserId,
-                'done_at' => date('Y-m-d H:i:s'),
+                'done_at' => $this->clock->now()->format('Y-m-d H:i:s'),
             ]);
             if ($insertResult->code !== Result::CODE_SUCCESS) {
                 $failure = $insertResult;

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Core\FakeClock;
 use App\Core\Result;
 use Tests\Support\InMemorySessionManager;
 use App\Entity\Role;
 use App\Entity\User;
 use App\Repository\Fake\UserFakeRepository;
 use App\Service\AuthService;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class AuthServiceTest extends TestCase
@@ -107,5 +109,26 @@ final class AuthServiceTest extends TestCase
         $auth->logout();
 
         $this->assertNull($auth->currentUser());
+    }
+
+    public function testCurrentUserExpiresAfterIdleTimeoutUsingFakeClock(): void
+    {
+        $repo = new UserFakeRepository([
+            $this->makeUser(1, 'sales1@example.com', 'sales123', Role::Sales->value),
+        ]);
+        $session = $this->sessionManager();
+        $clock = new FakeClock(new DateTimeImmutable('2026-01-01 00:00:00'));
+        $auth = new AuthService($repo, $session, null, $clock);
+
+        $loginResult = $auth->login('sales1@example.com', 'sales123');
+        self::assertSame(Result::CODE_SUCCESS, $loginResult->code);
+
+        // Still well within the session's 3600s lifetime: idle timeout does not fire.
+        $clock->set(new DateTimeImmutable('2026-01-01 00:30:00'));
+        self::assertNotNull($auth->currentUser());
+
+        // Past the lifetime since the last recorded activity: idle timeout fires deterministically, no sleep() needed.
+        $clock->set(new DateTimeImmutable('2026-01-01 02:00:00'));
+        self::assertNull($auth->currentUser());
     }
 }
