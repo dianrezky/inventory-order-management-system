@@ -24,6 +24,14 @@ services:
     # tag — the only effect is that port 8090 also stays published on the host.
     ports: !reset []
 
+  # The base file publishes MySQL (3307) and Memcached (11211) on the host for local
+  # dev. On a public VPS that would expose them to the internet (Docker publishes
+  # bypass ufw), so production clears them: only the app reaches them, over iom_net.
+  db:
+    ports: !reset []
+  memcached:
+    ports: !reset []
+
 networks:
   # The network the shared Caddy stack (deploy/docker-compose.yml) already created.
   # Compose names a network <project>_<name>; the deploy/ stack's default project
