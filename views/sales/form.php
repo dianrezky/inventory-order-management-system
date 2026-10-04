@@ -10,6 +10,18 @@
 $errors ??= [];
 $old ??= [];
 $so ??= null;
+if ($so !== null && count($old) === 0) {
+    $old = [
+        'customer_id' => $so->customerId,
+        'source_warehouse_id' => $so->sourceWarehouseId,
+        'order_date' => $so->orderDate,
+        'note' => $so->note,
+        'item_product_id' => array_column($so->items, 'productId'),
+        'item_qty' => array_column($so->items, 'qty'),
+        'item_sale_price' => array_column($so->items, 'salePrice'),
+    ];
+}
+$formAction = $so === null ? '/sales-orders' : '/sales-orders/' . $idObfuscator->encode($so->id) . '/update';
 
 $getOld = static fn (string $key, mixed $default = ''): mixed => $old[$key] ?? $default;
 
@@ -23,7 +35,7 @@ $soProductListJson = json_encode(array_map(
         'sale_price' => $p->salePrice,
     ],
     $products
-));
+), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
 // Line items the user already entered, so a server-side validation failure
 // re-renders them instead of wiping the table back to one blank row.
@@ -45,7 +57,7 @@ $soOldItemsJson = json_encode($soOldItems, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HE
 <div class="page-header">
     <div class="page-header__title-row">
         <a class="btn btn--tertiary" href="/sales-orders">&larr; Back</a>
-        <h1 class="page-header__title" data-i18n="sales_orders.create_title">New Sales Order</h1>
+        <h1 class="page-header__title"><?= $so === null ? 'New Sales Order' : 'Edit Draft Sales Order' ?></h1>
     </div>
 </div>
 
@@ -57,7 +69,7 @@ $soOldItemsJson = json_encode($soOldItems, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HE
     </div>
 <?php endif; ?>
 
-<form method="post" action="/sales-orders" id="so-form" novalidate>
+<form method="post" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" id="so-form" novalidate>
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
     <div class="card">

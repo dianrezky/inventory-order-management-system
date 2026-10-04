@@ -8,8 +8,8 @@
 /** @var int $outboundQty */
 /** @var int $netQty */
 /** @var float $turnoverVelocity */
-/** @var int $totalValuation */
-/** @var int $categoryTotal */
+/** @var float $totalValuation */
+/** @var float $categoryTotal */
 /** @var array $categoryData */
 /** @var array $trendData */
 /** @var array $lineItems */
@@ -30,7 +30,7 @@
 /** @var list<\App\Entity\Warehouse> $warehouses */
 /** @var list<\App\Entity\Category> $categories */
 /** @var array $whData */
-/** @var int $whGrandTotal */
+/** @var float $whGrandTotal */
 
 $startRecord = $lineItemsTotal > 0 ? (($page - 1) * $perPage) + 1 : 0;
 $endRecord   = min($page * $perPage, $lineItemsTotal);
@@ -39,13 +39,13 @@ $endRecord   = min($page * $perPage, $lineItemsTotal);
 // ledger-reconstructed trend series, so this is a real comparison (it used to
 // be a hardcoded "+4.2%"). Shown in Rupiah, not %, so a near-zero baseline
 // (e.g. stock first received this month) can't blow up into "+1.000.000.000%".
-$valuationNow   = (int) ($trendData[count($trendData) - 1]['valuation'] ?? 0);
-$valuationPrev  = (int) ($trendData[count($trendData) - 2]['valuation'] ?? 0);
+$valuationNow   = (float) ($trendData[count($trendData) - 1]['valuation'] ?? 0);
+$valuationPrev  = (float) ($trendData[count($trendData) - 2]['valuation'] ?? 0);
 $valuationDelta = $valuationNow - $valuationPrev;
 $movedSkuPct = $activeSku > 0 ? round($movedSku / $activeSku * 100, 1) : 0;
 
 // Format helpers
-$fmtRp   = static fn(int $v): string => 'Rp ' . number_format($v, 0, ',', '.');
+$fmtRp   = static fn($v) => 'Rp ' . number_format((float) $v, 2, ',', '.');
 $fmtNum  = static fn(int $v): string => number_format($v, 0, ',', '.');
 
 // $sortOptions comes from ReportService::SORT_OPTIONS — only the sorts the

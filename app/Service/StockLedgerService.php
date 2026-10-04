@@ -123,8 +123,8 @@ class StockLedgerService
         // warehouse_id; returns every matching row in range with no pagination
         $result = new Result();
 
-        $from = trim((string) ($filters['date_from'] ?? ''));
-        $to = trim((string) ($filters['date_to'] ?? ''));
+        $from = trim((string) ($filters['date_from'] ?? ''), " \t\n\r\x0B");
+        $to = trim((string) ($filters['date_to'] ?? ''), " \t\n\r\x0B");
         $warehouseIdRaw = $filters['warehouse_id'] ?? null;
         $warehouseId = ($warehouseIdRaw !== null && $warehouseIdRaw !== '' && (int) $warehouseIdRaw > 0) ? (int) $warehouseIdRaw : null;
         $categoryIdRaw = $filters['category_id'] ?? null;
@@ -140,6 +140,7 @@ class StockLedgerService
         }
 
         try {
+            ReportDateRangePolicy::assertValid($from, $to);
             $findResult = $this->stockLedgerRepository->findForExport($from, $to, $warehouseId, $categoryId, $search);
             if ($findResult->code !== Result::CODE_SUCCESS) {
                 return $findResult;
@@ -148,6 +149,10 @@ class StockLedgerService
             $result->code = Result::CODE_SUCCESS;
             $result->info = 'Success to export stock ledger';
             $result->data = $findResult->data;
+        } catch (\App\Service\Exception\DomainException $e) {
+            $result->code = Result::CODE_VALIDATION;
+            $result->info = $e->getMessage();
+            $result->data = null;
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;

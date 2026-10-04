@@ -172,6 +172,65 @@ class SalesOrderController extends BaseController
         return $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($result->data->id));
     }
 
+    public function editFormAction($id)
+    {
+        $guardError = $this->requirePermission('sales_orders.menu');
+        if ($guardError !== null) {
+            return $guardError;
+        }
+        $currentUser = $this->currentUser();
+        $draftResult = $this->container->getSalesOrderService()->findEditableDraft($this->decodeId($id), $currentUser->id, $currentUser->role === Role::Admin);
+        if ($draftResult->code === Result::CODE_INTERNAL) {
+            throw new \RuntimeException('Could not load the Draft sales order.');
+        }
+        if ($draftResult->code !== Result::CODE_SUCCESS) {
+            $response = $draftResult->info === \App\Service\SalesOrderService::MESSAGE_NOT_FOUND ? $this->notFound() : $this->forbidden();
+        } else {
+            $response = $this->salesOrderEditForm($draftResult->data, [], []);
+        }
+        return $response;
+    }
+
+    public function updateAction($id)
+    {
+        $guardError = $this->requirePermissionWithCsrf('sales_orders.menu');
+        if ($guardError !== null) {
+            return $guardError;
+        }
+        $currentUser = $this->currentUser();
+        $id = $this->decodeId($id);
+        $draftResult = $this->container->getSalesOrderService()->findEditableDraft($id, $currentUser->id, $currentUser->role === Role::Admin);
+        if ($draftResult->code === Result::CODE_INTERNAL) {
+            throw new \RuntimeException('Could not load the Draft sales order.');
+        }
+        if ($draftResult->code !== Result::CODE_SUCCESS) {
+            return $draftResult->info === \App\Service\SalesOrderService::MESSAGE_NOT_FOUND ? $this->notFound() : $this->forbidden();
+        }
+        $items = array_map(static function ($item) {
+            return ['product_id' => $item['product_id'], 'qty' => $item['qty'], 'sale_price' => $item['price']];
+        }, $this->parseItemsFromRequest('item_product_id', 'item_qty', 'item_sale_price'));
+        $updateResult = $this->container->getSalesOrderService()->updateDraft($id, $_POST, $items, $currentUser->id, $currentUser->role === Role::Admin);
+        if ($updateResult->code !== Result::CODE_SUCCESS) {
+            $response = $this->salesOrderEditForm($draftResult->data, [$this->t($updateResult->info)], $_POST)->setStatusCode($this->formErrorStatus($updateResult));
+        } else {
+            $response = $this->redirect(self::ROUTE_SALES_ORDERS . '/' . $this->encodeId($id));
+        }
+
+        return $response;
+    }
+
+    private function salesOrderEditForm($salesOrder, $errors, $old)
+    {
+        return $this->view(self::TEMPLATE_FORM, [
+            'so' => $salesOrder,
+            'customers' => $this->container->getCustomerService()->listActiveCustomers(),
+            'warehouses' => $this->container->getWarehouseService()->listActiveWarehouses(),
+            'products' => $this->container->getProductService()->listActiveProducts(),
+            'errors' => $errors,
+            'old' => $old,
+        ]);
+    }
+
     public function submitAction($id)
     {
         $guardError = $this->requireAuthWithCsrf();

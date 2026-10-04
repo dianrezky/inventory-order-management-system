@@ -1,11 +1,29 @@
 # Static Analysis Results — PHPStan
 
-> ✅ **STATUS AS OF 2026-09-25: VERIFIED — 0 errors.** See the current run below. The 22 Sep run
-> further down found 13 errors; those were fixed the same day.
+**Current source result (2026-10-04): 0 errors, exit 0.** The initial reference audit found 10 assignment errors in ImageUploadService/UserService; those were repaired without blanket ignores. This verifies configured source paths; PHPUnit has its own current evidence in the testing index.
+
+## Final image verification — 2026-10-04
+
+PHPStan 1.12.34 also passed with 0 errors, exit 0, in the fresh workspace image used for Unit/Integration (PHP 8.3.20). The same phpstan.neon was mounted read-only because it is excluded from the runtime Docker build. Command inside the integration-tests service: php vendor/bin/phpstan analyse --configuration=phpstan.neon --no-progress --memory-limit=512M. The old-version notice is informational; dependencies were not upgraded.
+
+## Earlier host run — 2026-10-04
+
+- Runtime: host PHP 8.3.13.
+- Configuration: local `phpstan.neon`, level 5, paths `app/`, `public/`, `scripts/`; excludes `app/Repository/Fake/` as configured.
+- Dependency executable: reused from a separate local checkout because this workspace has no local vendor tree. CWD/configuration and analyzed source point to this workspace.
+- Command:
+
+```text
+php C:/laragon/www/portfolio-apps/inventory-order-management-system/vendor/phpstan/phpstan/phpstan analyse --configuration=phpstan.neon --no-progress --memory-limit=512M
+[OK] No errors
+Exit code: 0
+```
+
+The installed PHPStan 1.12 executable also prints an old-version notice. No dependency upgrade was performed. Full fake-repository regressions and syntax checks are recorded separately in [test evidence](README.md).
 
 ---
 
-## Current run — 2026-09-25 (verified)
+## Historical run — 2026-09-25 (verified)
 
 **Date:** 2026-09-25
 **Command:** `docker compose exec app ./vendor/bin/phpstan analyse`

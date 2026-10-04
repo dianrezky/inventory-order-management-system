@@ -74,11 +74,18 @@ class ProductService
             : ['total' => 0, 'normal' => 0, 'low' => 0, 'out' => 0, 'inactive' => 0];
     }
 
-    public function findAll($search = null, $limit = 0, $offset = 0, $categoryIds = null, $warehouseIds = null, $stockStatus = null, $sku = null, $productName = null)
+    public function findAll($search = null, $limit = 0, $offset = 0, $categoryIds = null, $warehouseIds = null, $stockStatus = null, $sku = null, $productName = null, $sort = 'name_asc')
     {
-        $findResult = $this->productRepository->findAll($search, $limit, $offset, $categoryIds, $warehouseIds, $stockStatus, $sku, $productName);
-
-        return $findResult->code === Result::CODE_SUCCESS ? $findResult->data : [];
+        $products = [];
+        try {
+            $findResult = $this->productRepository->findAll($search, $limit, $offset, $categoryIds, $warehouseIds, $stockStatus, $sku, $productName, $sort);
+            if ($findResult->code === Result::CODE_SUCCESS) {
+                $products = $findResult->data;
+            }
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
+        }
+        return $products;
     }
 
     public function listActiveProducts()
@@ -116,39 +123,59 @@ class ProductService
 
     public function getAvailability($sku)
     {
-        $findResult = $this->productRepository->findBySku($sku);
-        if ($findResult->code !== Result::CODE_SUCCESS || $findResult->data === null) {
-            return null;
+        $result = new Result();
+        try {
+            $findResult = $this->productRepository->findBySku($sku);
+            if ($findResult->code !== Result::CODE_SUCCESS) {
+                throw new \RuntimeException('Product availability lookup failed.');
+            }
+            $result->code = Result::CODE_SUCCESS;
+            $result->info = 'Product availability retrieved.';
+            $result->data = null;
+            if ($findResult->data !== null) {
+                $stocksResult = $this->stockRepository->findAllWithProduct($findResult->data->id);
+                if ($stocksResult->code !== Result::CODE_SUCCESS || $stocksResult->data === null) {
+                    throw new \RuntimeException('Product stock lookup failed.');
+                }
+                $result->data = $this->availabilityPayload($findResult->data, $stocksResult->data);
+            }
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
+            $result->code = Result::CODE_INTERNAL;
+            $result->info = self::MESSAGE_FAILED_FUNCTION;
+            $result->data = null;
+        }
+        if ($result->code !== Result::CODE_SUCCESS) {
+            return $result;
         }
 
-        $product = $findResult->data;
+        return $result->data;
+    }
 
-        $stocksResult = $this->stockRepository->findAllWithProduct($product->id);
-        $stocks = $stocksResult->code === Result::CODE_SUCCESS ? $stocksResult->data : [];
-
-        $total       = 0;
+    private function availabilityPayload($product, $stocks)
+    {
+        $total = 0;
         $availability = [];
-
         foreach ($stocks as $stock) {
             if (!$stock['warehouse_active']) {
                 continue;
             }
             $availability[] = [
-                'warehouse_id'   => (int) $stock['warehouse_id'],
+                'warehouse_id' => (int) $stock['warehouse_id'],
                 'warehouse_code' => $stock['warehouse_code'],
                 'warehouse_name' => $stock['warehouse_name'],
-                'quantity'       => (int) $stock['quantity'],
+                'quantity' => (int) $stock['quantity'],
             ];
             $total += (int) $stock['quantity'];
         }
 
         return [
-            'sku'          => $product->sku,
-            'product_id'   => $product->id,
-            'name'         => $product->name,
-            'unit'         => $product->unit,
-            'available'    => $total > 0,
-            'total_stock'  => $total,
+            'sku' => $product->sku,
+            'product_id' => $product->id,
+            'name' => $product->name,
+            'unit' => $product->unit,
+            'available' => $total > 0,
+            'total_stock' => $total,
             'availability' => $availability,
         ];
     }
@@ -386,7 +413,7 @@ class ProductService
         $categoryId = (int) ($input['category_id'] ?? 0);
         $purchasePrice = (string) ($input['purchase_price'] ?? '0');
         $salePrice    = (string) ($input['sale_price'] ?? '0');
-        $reorderPoint = (int) ($input['reorder_point'] ?? 0);
+        $reorderPoint = filter_var($input['reorder_point'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 4294967295]]);
 
         $error = $this->invalidProductFieldInfo($sku, $name, $unit, $description, $categoryId, $purchasePrice, $salePrice, $reorderPoint);
 
@@ -420,7 +447,7 @@ class ProductService
         $categoryId = (int) ($input['category_id'] ?? 0);
         $purchasePrice = (string) ($input['purchase_price'] ?? '0');
         $salePrice    = (string) ($input['sale_price'] ?? '0');
-        $reorderPoint = (int) ($input['reorder_point'] ?? 0);
+        $reorderPoint = filter_var($input['reorder_point'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 4294967295]]);
 
         $error = $this->invalidProductFieldInfo($sku, $name, $unit, $description, $categoryId, $purchasePrice, $salePrice, $reorderPoint);
 
@@ -448,7 +475,7 @@ class ProductService
     // Shared field-level checks for create/update: returns the first failing
     // message, or null when every field is valid. Repository-dependent checks
     // (SKU uniqueness, category existence) are handled separately by the caller.
-    private function invalidProductFieldInfo($sku, $name, $unit, $description, $categoryId, $purchasePrice, $salePrice, $reorderPoint): ?string
+    private function invalidProductFieldInfo($sku, $name, $unit, $description, $categoryId, $purchasePrice, $salePrice, $reorderPoint)
     {
         $info = null;
         if ($sku === '') {
@@ -465,13 +492,13 @@ class ProductService
             $info = 'Unit of measure is required.';
         } elseif ($categoryId <= 0) {
             $info = 'Please select a category.';
-        } elseif (!is_numeric($purchasePrice) || (float) $purchasePrice < 0) {
+        } elseif (!is_numeric($purchasePrice) || (float) $purchasePrice < 0 || (float) $purchasePrice > 9999999999999.99) {
             $info = 'Please enter a valid, non-negative purchase price.';
-        } elseif (!is_numeric($salePrice) || (float) $salePrice < 0) {
+        } elseif (!is_numeric($salePrice) || (float) $salePrice < 0 || (float) $salePrice > 9999999999999.99) {
             $info = 'Please enter a valid, non-negative selling price.';
         } elseif ((float) $salePrice < (float) $purchasePrice) {
             $info = 'Selling price must be greater than or equal to purchase price.';
-        } elseif ($reorderPoint < 0) {
+        } elseif ($reorderPoint === false || $reorderPoint < 0) {
             // PRD-01.04: reorder point >= 0 (0 disables the low-stock alert)
             $info = 'Minimum stock threshold cannot be negative.';
         }
@@ -508,7 +535,7 @@ class ProductService
             'unit'     => trim((string) ($input['unit'] ?? '')),
             'purchase_price' => number_format((float) $purchasePrice, 2, '.', ''),
             'sale_price'     => number_format((float) $salePrice, 2, '.', ''),
-            'reorder_point'  => (int) ($input['reorder_point'] ?? 0),
+            'reorder_point'  => filter_var($input['reorder_point'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 4294967295]]),
             'is_active' => isset($input['is_active']) ? (bool) $input['is_active'] : true,
         ];
     }

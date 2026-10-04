@@ -103,51 +103,64 @@ class ReportService
     // $warehouses: the active warehouses shown in the allocation panel.
     public function getDashboard($params, $warehouses)
     {
-        $categoryId = $params['category_id'];
-        $warehouseId = $params['warehouse_id'];
-        $dateFrom = $params['date_from'];
-        $dateTo = $params['date_to'];
+        $result = new \App\Core\Result();
+        try {
 
-        $valuationResult = $this->reportRepository->inventoryValuation($categoryId, $warehouseId);
-        $totalValuation = (int) $this->dataOf($valuationResult, 0);
+            $categoryId = $params['category_id'];
+            $warehouseId = $params['warehouse_id'];
+            $dateFrom = $params['date_from'];
+            $dateTo = $params['date_to'];
 
-        $skuResult = $this->reportRepository->skuSummary($categoryId, $warehouseId);
-        $sku = $this->dataOf($skuResult, ['active_sku' => 0, 'low_sku' => 0, 'out_sku' => 0]);
+            $valuationResult = $this->reportRepository->inventoryValuation($categoryId, $warehouseId);
+            $totalValuation = (float) $this->dataOf($valuationResult, 0);
 
-        $movedResult = $this->reportRepository->movedSkuCount($categoryId, $warehouseId, $dateFrom, $dateTo);
-        $movementResult = $this->reportRepository->movementTotals($categoryId, $warehouseId, $dateFrom, $dateTo);
-        $movements = $this->dataOf($movementResult, ['Receipt' => 0, 'Issue' => 0]);
+            $skuResult = $this->reportRepository->skuSummary($categoryId, $warehouseId);
+            $sku = $this->dataOf($skuResult, ['active_sku' => 0, 'low_sku' => 0, 'out_sku' => 0]);
 
-        // Turnover: outflow at cost over the range ÷ on-hand valuation, annualised
-        // so it compares to the card's ">4.0x / yr" benchmark.
-        $outflowResult = $this->reportRepository->outflowValue($categoryId, $warehouseId, $dateFrom, $dateTo);
-        $outflowValue = (int) $this->dataOf($outflowResult, 0);
-        $rangeDays = max(1, (int) ((strtotime($dateTo) - strtotime($dateFrom)) / 86400) + 1);
+            $movedResult = $this->reportRepository->movedSkuCount($categoryId, $warehouseId, $dateFrom, $dateTo);
+            $movementResult = $this->reportRepository->movementTotals($categoryId, $warehouseId, $dateFrom, $dateTo);
+            $movements = $this->dataOf($movementResult, ['Receipt' => 0, 'Issue' => 0]);
 
-        [$categoryData, $categoryTotal] = $this->categoryBreakdown($categoryId, $warehouseId, $dateFrom, $dateTo, $rangeDays);
-        [$whData, $whGrandTotal] = $this->warehouseAllocation($categoryId, $warehouseId, $warehouses);
-        [$lineItems, $lineItemsTotal] = $this->lineItems($params);
+            // Turnover: outflow at cost over the range ÷ on-hand valuation, annualised
+            // so it compares to the card's ">4.0x / yr" benchmark.
+            $outflowResult = $this->reportRepository->outflowValue($categoryId, $warehouseId, $dateFrom, $dateTo);
+            $outflowValue = (float) $this->dataOf($outflowResult, 0);
+            $rangeDays = max(1, (int) ((strtotime($dateTo) - strtotime($dateFrom)) / 86400) + 1);
 
-        return [
-            'totalValuation'   => $totalValuation,
-            'activeSku'        => (int) $sku['active_sku'],
-            'lowSku'           => (int) $sku['low_sku'],
-            'outSku'           => (int) $sku['out_sku'],
-            'movedSku'         => (int) $this->dataOf($movedResult, 0),
-            'inboundQty'       => (int) $movements['Receipt'],
-            'outboundQty'      => (int) $movements['Issue'],
-            'netQty'           => (int) $movements['Receipt'] - (int) $movements['Issue'],
-            'turnoverVelocity' => $this->annualisedTurnover($outflowValue, $totalValuation, $rangeDays),
-            'categoryData'     => $categoryData,
-            'categoryTotal'    => $categoryTotal,
-            'trendData'        => $this->trend($categoryId, $warehouseId),
-            'whData'           => $whData,
-            'whGrandTotal'     => $whGrandTotal,
-            'lineItems'        => $lineItems,
-            'lineItemsTotal'   => $lineItemsTotal,
-            'totalPages'       => max(1, (int) ceil($lineItemsTotal / self::PER_PAGE)),
-            'perPage'          => self::PER_PAGE,
-        ];
+            [$categoryData, $categoryTotal] = $this->categoryBreakdown($categoryId, $warehouseId, $dateFrom, $dateTo, $rangeDays);
+            [$whData, $whGrandTotal] = $this->warehouseAllocation($categoryId, $warehouseId, $warehouses);
+            [$lineItems, $lineItemsTotal] = $this->lineItems($params);
+
+            $result->code = Result::CODE_SUCCESS;
+            $result->info = 'Report dashboard retrieved.';
+            $result->data = [
+                'totalValuation'   => $totalValuation,
+                'activeSku'        => (int) $sku['active_sku'],
+                'lowSku'           => (int) $sku['low_sku'],
+                'outSku'           => (int) $sku['out_sku'],
+                'movedSku'         => (int) $this->dataOf($movedResult, 0),
+                'inboundQty'       => (int) $movements['Receipt'],
+                'outboundQty'      => (int) $movements['Issue'],
+                'netQty'           => (int) $movements['Receipt'] - (int) $movements['Issue'],
+                'turnoverVelocity' => $this->annualisedTurnover($outflowValue, $totalValuation, $rangeDays),
+                'categoryData'     => $categoryData,
+                'categoryTotal'    => $categoryTotal,
+                'trendData'        => $this->trend($categoryId, $warehouseId),
+                'whData'           => $whData,
+                'whGrandTotal'     => $whGrandTotal,
+                'lineItems'        => $lineItems,
+                'lineItemsTotal'   => $lineItemsTotal,
+                'totalPages'       => max(1, (int) ceil($lineItemsTotal / self::PER_PAGE)),
+                'perPage'          => self::PER_PAGE,
+            ];
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
+            $result->code = \App\Core\Result::CODE_INTERNAL;
+            $result->info = \App\Core\Result::MESSAGE_FAILED_FUNCTION;
+            $result->data = null;
+            throw new \RuntimeException($result->info, 0, $e);
+        }
+        return $result->data;
     }
 
     private function categoryBreakdown($categoryId, $warehouseId, $dateFrom, $dateTo, $rangeDays)
@@ -157,17 +170,17 @@ class ReportService
         $outflowResult = $this->reportRepository->categoryOutflow($categoryId, $warehouseId, $dateFrom, $dateTo);
         $outflow = $this->dataOf($outflowResult, []);
 
-        $total = (int) array_sum(array_column($rows, 'total_valuation'));
+        $total = round(array_sum(array_column($rows, 'total_valuation')), 2);
         $categoryData = [];
         foreach ($rows as $row) {
-            $valuation = (int) ($row['total_valuation'] ?? 0);
+            $valuation = (float) ($row['total_valuation'] ?? 0);
             $categoryData[] = [
                 'name'       => $row['category_name'] ?? 'Uncategorized',
                 'sku_count'  => (int) ($row['sku_count'] ?? 0),
                 'quantity'   => (int) ($row['total_quantity'] ?? 0),
                 'valuation'  => $valuation,
                 // Real per-category turnover, same formula as the KPI card.
-                'velocity'   => $this->annualisedTurnover((int) ($outflow[(int) $row['category_id']] ?? 0), $valuation, $rangeDays),
+                'velocity'   => $this->annualisedTurnover((float) ($outflow[(int) $row['category_id']] ?? 0), $valuation, $rangeDays),
                 'percentage' => $total > 0 ? round($valuation / $total * 100, 1) : 0,
             ];
         }
@@ -191,7 +204,7 @@ class ReportService
 
             $trendData[] = [
                 'label'     => date('M Y', $monthStart),
-                'valuation' => (int) $this->dataOf($valuationResult, 0),
+                'valuation' => (float) $this->dataOf($valuationResult, 0),
                 'inbound'   => (int) $movements['Receipt'],
                 'outbound'  => (int) $movements['Issue'],
             ];
@@ -209,7 +222,7 @@ class ReportService
                 continue;
             }
             $valuationResult = $this->reportRepository->warehouseValuation($categoryId, $warehouse->id);
-            $valuation = (int) $this->dataOf($valuationResult, 0);
+            $valuation = (float) $this->dataOf($valuationResult, 0);
             $grandTotal += $valuation;
             $whData[$warehouse->id] = [
                 'name'      => $warehouse->name,
@@ -277,8 +290,8 @@ class ReportService
             'warehouse'   => $row['hub'] ?? '-',
             'stock'       => $totalStock,
             'unit'        => $row['unit'],
-            'unit_cost'   => (int) $row['purchase_price'],
-            'valuation'   => (int) $row['valuation'],
+            'unit_cost'   => (float) $row['purchase_price'],
+            'valuation'   => (float) $row['valuation'],
             'velocity'    => $velocity30d,
             'status'      => $status,
             'status_type' => $statusType,
@@ -314,7 +327,7 @@ class ReportService
             $statusType = 'high_velocity';
         }
 
-        $purchasePrice = (int) $row['purchase_price'];
+        $purchasePrice = (float) $row['purchase_price'];
 
         return [
             'sku'          => $row['sku'],
@@ -323,7 +336,7 @@ class ReportService
             'stock'        => $totalStock,
             'unit'         => $row['unit'],
             'unit_cost'    => $purchasePrice,
-            'valuation'    => $totalStock * $purchasePrice,
+            'valuation'    => round($totalStock * $purchasePrice, 2),
             'last_receipt' => $referenceDate !== null ? date('M d, Y', strtotime($referenceDate)) : '-',
             'aging'        => $agingLabel,
             'status'       => $status,
@@ -336,7 +349,7 @@ class ReportService
     {
         $totalStock = (int) $row['total_stock'];
         $outflow30d = (int) $row['outflow_30d'];
-        $purchasePrice = (int) $row['purchase_price'];
+        $purchasePrice = (float) $row['purchase_price'];
 
         $status = 'Slow-Moving';
         $statusType = 'low_stock';
@@ -352,7 +365,7 @@ class ReportService
             'stock'       => $totalStock,
             'unit'        => $row['unit'],
             'unit_cost'   => $purchasePrice,
-            'valuation'   => $totalStock * $purchasePrice,
+            'valuation'   => round($totalStock * $purchasePrice, 2),
             'outflow_30d' => $outflow30d,
             'velocity'    => $totalStock > 0 ? round($outflow30d / $totalStock, 1) : 0,
             'status'      => $status,

@@ -15,7 +15,7 @@ interface ProductStockRepositoryInterface
 
     public function incrementQuantity($productId, $warehouseId, $delta);
 
-    public function totalInventoryValue();
+    public function totalInventoryValue($categoryId = null, $warehouseId = null);
 
     public function sumByProductId($productId);
 

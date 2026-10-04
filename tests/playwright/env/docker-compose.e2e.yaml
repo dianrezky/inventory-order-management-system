@@ -103,7 +103,7 @@ services:
       "
     networks: [e2e_net]
 
-  app:
+  app: &application
     build:
       context: ../../..
       dockerfile: Dockerfile
@@ -147,6 +147,43 @@ services:
       timeout: 5s
       retries: 40
       start_period: 10s
+    networks: [e2e_net]
+
+  # PHP integration exercises database and HTTP workflows without uploads.
+  # Reuse the same built application, omitting unrelated object-store startup.
+  integration-app:
+    <<: *application
+    profiles: ["php-tests"]
+    ports: []
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      memcached: { condition: service_healthy }
+
+  # Reuses this disposable stack for PHP integration tests. No developer DB,
+  # no application bind mount, and tests/config are read-only in the runner.
+  integration-tests:
+    profiles: ["php-tests"]
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    restart: "no"
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: ${APPLICATION_DB_NAME:-inventory_order_management}
+      TEST_DB_NAME: ${DB_NAME:-ioms_e2e}
+      APP_TEST_DB_NAME: ${DB_NAME:-ioms_e2e}
+      DB_USER: ${DB_USER:-ioms_e2e_app}
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      APP_TEST_BASE_URL: http://integration-app:8080
+      ID_OBFUSCATION_KEY: ${ID_OBFUSCATION_KEY:?}
+    volumes:
+      - ../../:/var/www/html/tests:ro
+      - ../../../phpunit.xml:/var/www/html/phpunit.xml:ro
+    command: ["php", "vendor/bin/phpunit", "--testsuite", "Integration", "--cache-directory", "/tmp/ioms-phpunit-cache"]
+    depends_on:
+      integration-app: { condition: service_healthy }
     networks: [e2e_net]
 
   # Opt-in profile: a second app instance with a short session lifetime, for

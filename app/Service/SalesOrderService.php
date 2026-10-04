@@ -77,11 +77,26 @@ class SalesOrderService
 
     public function findForExport($from, $to, $userId = null, $warehouseId = null)
     {
-        // $from/$to are YYYY-MM-DD; $userId restricts the export to one sales owner (BR-018);
-        // $warehouseId restricts it to one source warehouse.
-        $findResult = $this->salesOrderRepository->findForExport($from, $to, $userId, $warehouseId);
-
-        return $findResult->code === Result::CODE_SUCCESS ? $findResult->data : [];
+        $result = new Result();
+        try {
+            ReportDateRangePolicy::assertValid($from, $to);
+            $exportResult = $this->salesOrderRepository->findForExport($from, $to, $userId, $warehouseId);
+            if ($exportResult->code !== Result::CODE_SUCCESS) {
+                throw new \RuntimeException('Could not retrieve the order export.');
+            }
+            $result->code = Result::CODE_SUCCESS;
+            $result->info = 'Order export retrieved.';
+            $result->data = $exportResult->data;
+        } catch (\App\Service\Exception\DomainException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
+            $result->code = Result::CODE_INTERNAL;
+            $result->info = self::MESSAGE_FAILED_FUNCTION;
+            $result->data = null;
+            throw new \RuntimeException($result->info, 0, $e);
+        }
+        return $result->data;
     }
 
     public function findById($id)
@@ -104,47 +119,12 @@ class SalesOrderService
         try {
             $customerId   = (int) ($input['customer_id'] ?? 0);
             $warehouseId  = (int) ($input['source_warehouse_id'] ?? 0);
-            $orderDate    = trim((string) ($input['order_date'] ?? ''));
+            $orderDate    = trim((string) ($input['order_date'] ?? ''), " \t\n\r\x0B");
             $note         = trim((string) ($input['note'] ?? ''));
 
-            // The first failing step wins; the atomic persist runs only after
-            // every pre-flight check has passed, and $result is populated on success.
-            $errorResult = null;
-            $customerResult = $this->customerRepository->findById($customerId);
-            if ($customerResult->code !== Result::CODE_SUCCESS) {
-                $errorResult = $customerResult;
-            }
-
-            $warehouseResult = null;
-            if ($errorResult === null) {
-                $warehouseResult = $this->warehouseRepository->findById($warehouseId);
-                if ($warehouseResult->code !== Result::CODE_SUCCESS) {
-                    $errorResult = $warehouseResult;
-                }
-            }
-
-            if ($errorResult === null) {
-                $headerInfo = $this->headerInvalidInfo($customerResult->data, $warehouseResult->data, $orderDate);
-                if ($headerInfo !== '') {
-                    $result->code = Result::CODE_VALIDATION;
-                    $result->info = $headerInfo;
-                    $result->data = null;
-                    $errorResult = $result;
-                }
-            }
-
-            $normalizedItems = null;
-            if ($errorResult === null) {
-                $normalizedItems = $this->normalizeAndValidateItems($items);
-                if ($normalizedItems instanceof Result) {
-                    $errorResult = $normalizedItems;
-                } elseif (count($normalizedItems) === 0) {
-                    $result->code = Result::CODE_VALIDATION;
-                    $result->info = 'A sales order needs at least one line item.';
-                    $result->data = null;
-                    $errorResult = $result;
-                }
-            }
+            $validationResult = $this->validateCreationPayload($customerId, $warehouseId, $orderDate, $items);
+            $errorResult = $validationResult->code === Result::CODE_SUCCESS ? null : $validationResult;
+            $normalizedItems = $validationResult->data;
 
             if ($errorResult === null) {
                 // Header + line items must persist atomically: an item insert
@@ -196,6 +176,169 @@ class SalesOrderService
         return $result;
     }
 
+    private function validateCreationPayload($customerId, $warehouseId, $orderDate, $items)
+    {
+        $result = new Result();
+        $errorResult = null;
+        $customerResult = $this->customerRepository->findById($customerId);
+        if ($customerResult->code !== Result::CODE_SUCCESS) {
+            $errorResult = $customerResult;
+        }
+
+        $warehouseResult = null;
+        if ($errorResult === null) {
+            $warehouseResult = $this->warehouseRepository->findById($warehouseId);
+            if ($warehouseResult->code !== Result::CODE_SUCCESS) {
+                $errorResult = $warehouseResult;
+            }
+        }
+
+        if ($errorResult === null) {
+            $headerInfo = $this->headerInvalidInfo($customerResult->data, $warehouseResult->data, $orderDate);
+            if ($headerInfo !== '') {
+                $result->code = Result::CODE_VALIDATION;
+                $result->info = $headerInfo;
+                $result->data = null;
+                $errorResult = $result;
+            }
+        }
+
+        $normalizedItems = null;
+        if ($errorResult === null) {
+            $normalizedItems = $this->normalizeAndValidateItems($items);
+            if ($normalizedItems instanceof Result) {
+                $errorResult = $normalizedItems;
+            } elseif (count($normalizedItems) === 0) {
+                $result->code = Result::CODE_VALIDATION;
+                $result->info = 'A sales order needs at least one line item.';
+                $result->data = null;
+                $errorResult = $result;
+            }
+        }
+        if ($errorResult !== null) {
+            return $errorResult;
+        }
+        $result->code = Result::CODE_SUCCESS;
+        $result->info = 'The order header and items are valid.';
+        $result->data = $normalizedItems;
+
+        return $result;
+    }
+
+    public function findEditableDraft($id, $actorId, $isAdmin)
+    {
+        $result = new Result();
+        try {
+            $findResult = $this->salesOrderRepository->findById($id);
+            if ($findResult->code !== Result::CODE_SUCCESS) {
+                throw new \RuntimeException('Could not load the sales order.');
+            }
+            $salesOrder = $findResult->data;
+            if ($salesOrder === null) {
+                throw new \App\Service\Exception\InvalidStateException(self::MESSAGE_NOT_FOUND);
+            }
+            if ($salesOrder->status !== SalesOrder::STATUS_DRAFT || (!$isAdmin && $salesOrder->createdBy !== $actorId)) {
+                throw new \App\Service\Exception\InvalidStateException('Only the creator or an Admin may edit a Draft sales order.');
+            }
+            $itemsResult = $this->salesOrderItemRepository->findBySalesOrderIdWithProduct($id);
+            if ($itemsResult->code !== Result::CODE_SUCCESS) {
+                throw new \RuntimeException('Could not load the sales order items.');
+            }
+            $result->code = Result::CODE_SUCCESS;
+            $result->info = 'Draft sales order loaded.';
+            $result->data = $salesOrder->withItems($itemsResult->data);
+        } catch (DomainException $e) {
+            $result->code = Result::CODE_VALIDATION;
+            $result->info = $e->getMessage();
+            $result->data = null;
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
+            $result->code = Result::CODE_INTERNAL;
+            $result->info = self::MESSAGE_FAILED_FUNCTION;
+            $result->data = null;
+        }
+
+        return $result;
+    }
+
+    public function updateDraft($id, $input, $items, $actorId, $isAdmin)
+    {
+        $result = new Result();
+        try {
+            $editableResult = $this->findEditableDraft($id, $actorId, $isAdmin);
+            if ($editableResult->code !== Result::CODE_SUCCESS) {
+                return $editableResult;
+            }
+            $draftPayload = $this->validateDraftPayload($input, $items);
+            if ($draftPayload instanceof Result) {
+                return $draftPayload;
+            }
+            $this->transactionManager->beginTransaction();
+            $lockResult = $this->salesOrderRepository->lockForUpdate($id);
+            if ($lockResult->code !== Result::CODE_SUCCESS) {
+                throw new \RuntimeException('Could not lock the sales order.');
+            }
+            if (($lockResult->data[0]['status'] ?? null) !== SalesOrder::STATUS_DRAFT) {
+                throw new \App\Service\Exception\InvalidStateException('The order status has changed. Only Draft orders can be edited.');
+            }
+            $updateResult = $this->salesOrderRepository->updateDraft($id, $draftPayload['header'], $draftPayload['items']);
+            if ($updateResult->code !== Result::CODE_SUCCESS) {
+                throw new \RuntimeException('Could not save the sales order.');
+            }
+            $this->transactionManager->commit();
+            $result->code = Result::CODE_SUCCESS;
+            $result->info = 'The Draft sales order has been updated.';
+            $result->data = $id;
+            $this->logEvent($actorId, 'update', $id, "Updated Draft SO #{$id}");
+        } catch (DomainException $e) {
+            $this->transactionManager->rollBack();
+            $result->code = Result::CODE_VALIDATION;
+            $result->info = $e->getMessage();
+            $result->data = null;
+        } catch (\Throwable $e) {
+            $this->transactionManager->rollBack();
+            error_log($e->getMessage());
+            $result->code = Result::CODE_INTERNAL;
+            $result->info = self::MESSAGE_FAILED_FUNCTION;
+            $result->data = null;
+        }
+
+        return $result;
+    }
+
+    private function validateDraftPayload($input, $items)
+    {
+        $result = new Result();
+        $customerResult = $this->customerRepository->findById((int) ($input['customer_id'] ?? 0));
+        $warehouseResult = $this->warehouseRepository->findById((int) ($input['source_warehouse_id'] ?? 0));
+        if ($customerResult->code !== Result::CODE_SUCCESS || $warehouseResult->code !== Result::CODE_SUCCESS) {
+            throw new \RuntimeException('Could not validate the sales order header.');
+        }
+        $orderDate = trim((string) ($input['order_date'] ?? ''), " \t\n\r\x0B");
+        $headerInfo = $this->headerInvalidInfo($customerResult->data, $warehouseResult->data, $orderDate);
+        if ($headerInfo !== '') {
+            throw new \App\Service\Exception\InvalidStateException($headerInfo);
+        }
+        $normalizedItems = $this->normalizeAndValidateItems($items);
+        if ($normalizedItems instanceof Result) {
+            return $normalizedItems;
+        }
+        if (count($normalizedItems) === 0) {
+            throw new \App\Service\Exception\InvalidStateException('A sales order needs at least one line item.');
+        }
+        $note = trim((string) ($input['note'] ?? ''));
+
+        return [
+            'header' => [
+                'customer_id' => (int) $input['customer_id'],
+                'source_warehouse_id' => (int) $input['source_warehouse_id'],
+                'order_date' => $orderDate,
+                'note' => $note === '' ? null : $note,
+            ],
+            'items' => $normalizedItems,
+        ];
+    }
+
     public function submitForApproval($id, $actorId)
     {
         $result = new Result();
@@ -219,7 +362,7 @@ class SalesOrderService
             }
 
             if ($errorResult === null) {
-                $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_PENDING_APPROVAL);
+                $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_PENDING_APPROVAL, [], $salesOrder->status);
                 if ($updateResult->code !== Result::CODE_SUCCESS) {
                     $errorResult = $updateResult;
                 } else {
@@ -287,7 +430,7 @@ class SalesOrderService
                 $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_APPROVED, [
                     'approved_by' => $actorId,
                     'approved_at' => date('Y-m-d H:i:s'),
-                ]);
+                ], $salesOrder->status);
                 if ($updateResult->code !== Result::CODE_SUCCESS) {
                     $errorResult = $updateResult;
                 } else {
@@ -357,7 +500,7 @@ class SalesOrderService
                     $extras['cancellation_reason'] = trim($reason);
                 }
 
-                $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_CANCELLED, $extras);
+                $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_CANCELLED, $extras, $salesOrder->status);
                 if ($updateResult->code !== Result::CODE_SUCCESS) {
                     $errorResult = $updateResult;
                 } else {
@@ -392,47 +535,38 @@ class SalesOrderService
     public function cancel($id, $actorId, $isAdmin)
     {
         $result = new Result();
-
         try {
-            $salesOrder = $this->requireExisting($id);
-            if ($salesOrder instanceof Result) {
-                return $salesOrder;
+            $order = $this->requireExisting($id);
+            if ($order instanceof Result) {
+                return $order;
             }
-
-            try {
-                $this->policy->assertCanCancel($salesOrder, $actorId, $isAdmin);
-            } catch (DomainException $ex) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = $ex->getMessage();
-                $result->data = null;
-
-                return $result;
-            }
-
-            $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_CANCELLED);
+            $this->policy->assertCanCancel($order, $actorId, $isAdmin);
+            $updateResult = $this->salesOrderRepository->updateStatus($id, SalesOrder::STATUS_CANCELLED, [], $order->status);
             if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
-            }
-
-            $refreshed = $this->findById($id);
-            if ($refreshed === null) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = self::MESSAGE_NOT_FOUND;
-                $result->data = null;
+                $result->code = $updateResult->code;
+                $result->info = $updateResult->info;
+                $result->data = $updateResult->data;
             } else {
-                $result->code = Result::CODE_SUCCESS;
-                $result->info = 'The sales order has been cancelled.';
-                $result->data = $refreshed;
-
-                $this->logEvent($actorId, 'cancel', $id, "Cancelled SO #{$id}");
+                $result->data = $this->findById($id);
+                if ($result->data === null) {
+                    $result->code = Result::CODE_INTERNAL;
+                    $result->info = self::MESSAGE_NOT_FOUND;
+                } else {
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The sales order has been cancelled.';
+                    $this->logEvent($actorId, 'cancel', $id, "Cancelled SO #{$id}");
+                }
             }
+        } catch (DomainException $e) {
+            $result->code = Result::CODE_VALIDATION;
+            $result->info = $e->getMessage();
+            $result->data = null;
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
             $result->info = self::MESSAGE_FAILED_FUNCTION;
             $result->data = null;
         }
-
         return $result;
     }
 
@@ -440,12 +574,16 @@ class SalesOrderService
 
     private function headerInvalidInfo($customer, $warehouse, $orderDate)
     {
+        $parsedDate = false;
+        if (preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $orderDate) === 1) {
+            $parsedDate = \DateTime::createFromFormat('!Y-m-d', $orderDate);
+        }
         $info = '';
         if ($customer === null || !$customer->isActive) {
             $info = 'Please select a valid, active customer.';
         } elseif ($warehouse === null || !$warehouse->isActive) {
             $info = 'Please select a valid, active warehouse.';
-        } elseif ($orderDate === '' || \DateTime::createFromFormat('Y-m-d', $orderDate) === false) {
+        } elseif ($parsedDate === false || $parsedDate->format('Y-m-d') !== $orderDate) {
             $info = 'Please enter a valid order date.';
         }
 
@@ -474,11 +612,11 @@ class SalesOrderService
         $errorResult = null;
 
         foreach ($items as $item) {
-            $productId = (int) ($item['product_id'] ?? 0);
-            $quantity  = (int) ($item['qty'] ?? 0);
+            $productId = filter_var($item['product_id'] ?? 0, FILTER_VALIDATE_INT);
+            $quantity  = filter_var($item['qty'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 4294967295]]);
             $salePrice = (string) ($item['sale_price'] ?? '0');
 
-            if ($productId <= 0 && $quantity <= 0) {
+            if (trim((string) ($item['product_id'] ?? '')) === '' && trim((string) ($item['qty'] ?? '')) === '') {
                 continue;
             }
 
@@ -492,9 +630,9 @@ class SalesOrderService
             $lineError = null;
             if ($product === null || !$product->isActive) {
                 $lineError = 'Please select a valid, active product for every line.';
-            } elseif ($quantity <= 0) {
+            } elseif ($quantity === false || $quantity <= 0) {
                 $lineError = 'Ordered quantity must be greater than zero.';
-            } elseif (!is_numeric($salePrice) || (float) $salePrice < 0) {
+            } elseif (!is_numeric($salePrice) || (float) $salePrice < 0 || (float) $salePrice > 9999999999999.99) {
                 $lineError = 'Please enter a valid, non-negative price.';
             }
 

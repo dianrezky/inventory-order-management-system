@@ -21,7 +21,7 @@ $actorUserId = (int) ($argv[2] ?? 0);
 
 $host = (string) (getenv('DB_HOST') ?: 'db');
 $port = (int) (getenv('DB_PORT') ?: 3306);
-$name = (string) (getenv('DB_NAME') ?: 'inventory_order_management');
+$name = \Tests\Support\IntegrationEnvironment::databaseName();
 $user = (string) (getenv('DB_USER') ?: 'iom_app');
 $password = (string) (getenv('DB_PASSWORD') ?: '');
 

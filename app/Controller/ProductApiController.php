@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Core\Result;
+
 class ProductApiController extends BaseController
 {
     // ================================================================
@@ -20,10 +22,16 @@ class ProductApiController extends BaseController
 
         $availability = $this->container->getProductService()->getAvailability($sku);
 
-        if ($availability === null) {
-            return $this->json(['error' => self::ERROR_NOT_FOUND, 'sku' => $sku], 404);
+        if ($availability instanceof Result) {
+            $availability = ['error' => 'internal_error'];
+            $status = 500;
+        } elseif ($availability === null) {
+            $availability = ['error' => self::ERROR_NOT_FOUND, 'sku' => $sku];
+            $status = 404;
+        } else {
+            $status = 200;
         }
 
-        return $this->json($availability);
+        return $this->json($availability, $status);
     }
 }

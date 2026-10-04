@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Core\CacheService;
+use Tests\Support\InMemoryCacheService;
 use App\Repository\Fake\PermissionFakeRepository;
 use App\Service\PermissionService;
 use PHPUnit\Framework\TestCase;
 
 final class PermissionServiceTest extends TestCase
 {
-    private function makeService(array $grouped = []): PermissionService
+    private function makeService($grouped = [])
     {
         $repo = new PermissionFakeRepository($grouped ?: [
             'reports.stock_ledger.view' => ['Admin', 'WarehouseStaff'],
@@ -21,10 +21,7 @@ final class PermissionServiceTest extends TestCase
             'sales_orders.menu' => ['Admin', 'Sales'],
         ]);
 
-        // Host with no listener, so Memcached::getStats() fails and isAvailable()
-        // stays false — exercises PermissionService's fallback-to-repository path
-        // without requiring a live Memcached instance.
-        $cache = new CacheService('127.0.0.1', 1);
+        $cache = new InMemoryCacheService(false);
 
         return new PermissionService($repo, $cache);
     }

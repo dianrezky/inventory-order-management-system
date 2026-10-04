@@ -26,7 +26,7 @@ final class SalesOrderApprovalPolicyTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->baseUrl = rtrim((string) (getenv('APP_TEST_BASE_URL') ?: 'http://localhost:8080'), '/');
+        $this->baseUrl = \Tests\Support\IntegrationEnvironment::baseUrl();
 
         if (!extension_loaded('curl')) {
             self::markTestSkipped('ext-curl is required for this HTTP integration test.');
@@ -36,7 +36,7 @@ final class SalesOrderApprovalPolicyTest extends TestCase
 
         $host = (string) (getenv('DB_HOST') ?: 'db');
         $port = (int) (getenv('DB_PORT') ?: 3306);
-        $name = (string) (getenv('DB_NAME') ?: 'inventory_order_management');
+        $name = \Tests\Support\IntegrationEnvironment::databaseName();
         $user = (string) (getenv('DB_USER') ?: 'iom_app');
         $password = (string) (getenv('DB_PASSWORD') ?: '');
 

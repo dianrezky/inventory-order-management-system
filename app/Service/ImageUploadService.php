@@ -35,6 +35,9 @@ class ImageUploadService
             // failing stage's Result is returned, otherwise $result succeeds.
             $tmpName = (string) ($uploaded['tmp_name'] ?? '');
             $errorResult = null;
+            $width = 0;
+            $height = 0;
+            $image = null;
 
             $uploadInfo = $this->uploadInvalidInfo($uploaded, $tmpName);
             if ($uploadInfo !== '') {

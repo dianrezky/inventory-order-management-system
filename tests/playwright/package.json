@@ -21,7 +21,8 @@
     "e2e:env:up": "cross-env E2E_MODE=isolated tsx support/cli-env-up.ts",
     "e2e:env:down": "cross-env E2E_MODE=isolated tsx support/cli-env-down.ts",
     "e2e:list": "playwright test --list",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "test:integration": "cross-env E2E_MODE=isolated tsx support/cli-integration-tests.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

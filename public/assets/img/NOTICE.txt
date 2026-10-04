@@ -1,0 +1,56 @@
+IOMS SVG Icon Attribution
+Verified 2026-10-04
+
+37 of 39 symbols in icons.svg have exactly matching child-element geometry
+(tag names and attributes) in Feather v4.29.2. Feather is copyright
+(c) 2013-2023 Cole Bemis and licensed under MIT; see feather-license.txt.
+Reference: https://github.com/feathericons/feather/tree/v4.29.2/icons
+
+The layout-dashboard symbol follows Lucide's rectangle layout with rx removed.
+The warehouse symbol contains modified geometry similar to Lucide warehouse.
+These two are conservatively credited as adapted Lucide-style designs, not
+claimed as exact matches. Lucide is ISC-licensed, with inherited Feather MIT
+portions; see lucide-license.txt.
+Reference: https://github.com/lucide-icons/lucide/tree/0.468.0/icons
+
+The reference tags identify versions used for this geometry comparison.
+They do not establish the original import version or authoring history.
+
+Exact Feather geometry matches (local symbol -> upstream icon):
+icon-sun -> sun
+icon-moon -> moon
+icon-globe -> globe
+icon-user -> user
+icon-log-out -> log-out
+icon-menu -> menu
+icon-chevron-down -> chevron-down
+icon-check-circle -> check-circle
+icon-alert-circle -> alert-circle
+icon-alert-triangle -> alert-triangle
+icon-info -> info
+icon-x -> x
+icon-package -> package
+icon-users -> users
+icon-list -> list
+icon-bar-chart -> bar-chart-2
+icon-shopping-cart -> shopping-cart
+icon-trash-2 -> trash
+icon-dollar-sign -> dollar-sign
+icon-truck -> truck
+icon-check -> check
+icon-plus -> plus
+icon-bell -> bell
+icon-refresh-cw -> refresh-cw
+icon-file-text -> file-text
+icon-tag -> tag
+icon-lock -> lock
+icon-clock -> clock
+icon-git-branch -> git-branch
+icon-search -> search
+icon-download -> download
+icon-inbox -> inbox
+icon-more-vertical -> more-vertical
+icon-eye -> eye
+icon-edit-2 -> edit-2
+icon-trash-2 -> trash-2
+icon-power -> power

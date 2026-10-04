@@ -23,5 +23,5 @@ interface PurchaseOrderRepositoryInterface
 
     public function create($data);
 
-    public function updateStatus($id, $status);
+    public function updateStatus($id, $status, $expectedStatus = null);
 }

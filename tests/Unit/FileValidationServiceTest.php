@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Core\CacheService;
+use Tests\Support\InMemoryCacheService;
 use App\Repository\Fake\FileValidationFakeRepository;
 use App\Service\FileValidationService;
 use PHPUnit\Framework\TestCase;
 
 final class FileValidationServiceTest extends TestCase
 {
-    private function makeService(array $rules): FileValidationService
+    private function makeService($rules)
     {
         $repo = new FileValidationFakeRepository($rules);
 
-        // Host with no listener, so Memcached is unavailable and the service
-        // falls back to the repository — same pattern as PermissionServiceTest.
-        $cache = new CacheService('127.0.0.1', 1);
+        $cache = new InMemoryCacheService(false);
 
         return new FileValidationService($repo, $cache);
     }

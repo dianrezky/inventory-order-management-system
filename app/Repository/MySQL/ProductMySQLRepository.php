@@ -70,7 +70,7 @@ class ProductMySQLRepository implements ProductRepositoryInterface
         return $result;
     }
 
-    public function findAll($search = null, $limit = 0, $offset = 0, $categoryIds = null, $warehouseIds = null, $stockStatus = null, $sku = null, $productName = null)
+    public function findAll($search = null, $limit = 0, $offset = 0, $categoryIds = null, $warehouseIds = null, $stockStatus = null, $sku = null, $productName = null, $sort = 'name_asc')
     {
         $result = new Result();
 
@@ -115,7 +115,7 @@ class ProductMySQLRepository implements ProductRepositoryInterface
                 $searchColumns,
                 $searchTerm,
                 [],
-                'p.name ASC',
+                (['name_asc' => 'p.name ASC, p.id ASC', 'name_desc' => 'p.name DESC, p.id ASC', 'sku_asc' => 'p.sku ASC, p.id ASC', 'sku_desc' => 'p.sku DESC, p.id ASC'][$sort] ?? 'p.name ASC, p.id ASC'),
                 $limit,
                 $offset,
                 $likeFilters,

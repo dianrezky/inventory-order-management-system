@@ -1,5 +1,7 @@
 # Integration Test Results
 
+**Current remediation run (2026-10-04): PASS — 17 tests, 143 assertions.** PHP 8.3.20 / PHPUnit 10.5.64 in a fresh workspace image; see [current environment and evidence](README.md). Everything below retains its historical date and output.
+
 ✅ **STATUS AS OF 2026-09-22: VERIFIED — 17/17 pass.** The 3 failures found earlier the same day
 (all in `SalesOrderApprovalPolicyTest`, "SO detail page should embed a CSRF token") are now fixed and
 confirmed with a real, fresh test run below.

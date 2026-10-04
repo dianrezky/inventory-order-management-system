@@ -210,6 +210,7 @@ class Container // NOSONAR
     {
         return $this->instances[ReportRepositoryInterface::class] ??= new ReportMySQLRepository(
             $this->getDatabase(),
+            $this->getProductStockRepository(),
         );
     }
 

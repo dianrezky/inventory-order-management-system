@@ -39,6 +39,10 @@ class ProductController extends BaseController
         $categoryIds  = $this->categoryFilter();
         $warehouseIds = $this->warehouseFilter();
         $stockStatus = $this->stockStatusFilter();
+        $sort = (string) $this->requestParam('sort', 'name_asc');
+        if (!in_array($sort, ['name_asc', 'name_desc', 'sku_asc', 'sku_desc'], true)) {
+            $sort = 'name_asc';
+        }
         $page = max(1, (int) ($this->requestParam('page') ?? 1));
         $perPage = (int) $this->requestParam('per_page', self::PER_PAGE);
         if (!in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
@@ -57,7 +61,7 @@ class ProductController extends BaseController
         }
 
         $total = $this->container->getProductService()->countAll(null, $categoryIds, $warehouseIds, $queryStockStatus, $sku, $productName);
-        $products = $this->container->getProductService()->findAll(null, $perPage, $offset, $categoryIds, $warehouseIds, $queryStockStatus, $sku, $productName);
+        $products = $this->container->getProductService()->findAll(null, $perPage, $offset, $categoryIds, $warehouseIds, $queryStockStatus, $sku, $productName, $sort);
 
         // Compute per-product stock for the list view's stock column. When a
         // warehouse filter is active, show that warehouse's quantity instead of
@@ -91,6 +95,7 @@ class ProductController extends BaseController
             'categoryIds' => $categoryIds,
             'warehouseIds' => $warehouseIds,
             'stockStatus' => $stockStatus,
+            'sort' => $sort,
             'categories' => $this->container->getCategoryService()->listActiveCategories(),
             'warehouses' => $this->container->getWarehouseService()->listActiveWarehouses(),
             'page' => $page,

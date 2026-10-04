@@ -2,7 +2,7 @@
 
 **Document:** `docs/quality/tech-debt.md`
 **Project:** Inventory & Order Management System
-**Date:** 2026-09-01
+**Date:** 2026-09-01; reviewed 2026-10-04
 **Priority scale:** High (blocks release) / Medium (should fix before production) / Low (nice to have)
 
 ---
@@ -85,15 +85,12 @@ Also fixed in the same pass: `public/assets/css/main.css` referenced `--color-br
 
 ## LOW — Nice to Have
 
-### TDB-005: No CSRF token rotation on role change
+### TDB-005: CSRF token lifetime — reassessed as informational (2026-10-04)
 
-**Files:** `app/Core/SessionManager.php`, `app/Service/AuthService.php`
-**Status:** Low urgency
-**Effort:** 1 hour
+**Files:** `app/Core/SessionManager.php`, `app/Service/AuthService.php`, `app/Controller/BaseController.php`
+**Status:** The previous stale-role claim does not apply to the current implementation.
 
-CSRF token is tied to the session. If a user's role changes mid-session (e.g., admin demotes a user), the existing session retains the old role's permissions until logout/login.
-
-**Fix:** Refresh CSRF token on every authenticated request (already done by some frameworks). Current implementation is acceptable for MVP.
+AuthService::currentUser() reloads the user, invalidates inactive/expired sessions, and synchronizes the session role with the database value. A changed role therefore does not retain its previous permissions until logout. CSRF tokens remain stable for the session so multiple tabs/back navigation can submit safely; rotating them on every authenticated request is not a required fix. Any future rotation policy should be a deliberate session-security decision, not a remedy for the obsolete role-sync claim.
 
 ---
 
@@ -168,6 +165,22 @@ Originally recorded on the assumption that fixing TDB-009 would make `CsvExportS
 **Fix:** Either darken `--color-border` enough to hit 3:1 against both page backgrounds, or give `.input` a distinct background (e.g. `--color-bg-surface`) so the border is a secondary cue rather than the only one.
 
 ---
+
+### TDB-014: Duplicate order-line validation in PO/SO
+
+**Files:** `app/Service/PurchaseOrderService.php::normalizeAndValidateItems`, `app/Service/SalesOrderService.php::normalizeAndValidateItems`
+**Status:** Open; low priority after input/range validation was fixed on 2026-10-04.
+
+Both workflows contain similar line validation and normalization. Purchase and sales price fields remain distinct domain contracts. A future consolidation should have a clear order-line responsibility; no tiny generic Result helper was added merely to reduce duplication/metrics. Current regression tests cover both workflows independently.
+
+### TDB-015: Current release/runtime evidence pending
+
+**Status:** Open. Current source fixes have passing standalone regressions, Unit (132 tests/404 assertions), isolated Integration (17 tests/143 assertions), and PHPStan evidence. Dedicated MySQL cancellation-race coverage, clean-clone build, role/mobile demo, VPS image-storage verification and a revision-matched Sonar run remain pending. The previously inspected active container mounted another checkout. See [current test evidence](../testing/README.md) and [reference audit](reference-gap-audit-2026-10-04.md). No passing historical result is promoted to proof of the current working tree.
+
+### TDB-016: Assessment provenance and dependency interpretation
+
+**Status:** Open. The original project brief is now available; its Composer wording and the stricter reference blueprint must be reconciled before altering the existing phpdotenv runtime dependency. DESIGN-04 requires the assessor-provided snippet; critique.md currently analyzes a hypothetical example. Asset source/license notices were added after geometry comparison, but the original icon import version is not documented. MinIO uses the owner's existing VPS; runtime endpoint/bucket connectivity remains pending.
+
 
 ## RESOLVED
 
@@ -244,3 +257,13 @@ Found while verifying the CACHE-01 fix: a duplicated `return $result; } }` block
 **Files:** `Dockerfile`, `composer.json`
 
 `Dockerfile` was `FROM php:8.2-cli` and `composer.json` was `"php": ">=8.2"`, against the project's rank-2 decision to fix PHP at 8.3.20 (brief itself only requires "8.2+", so this was a spec/impl mismatch rather than a brief violation). Fixed: `Dockerfile` is now `FROM php:8.3.20-cli` (tag confirmed to exist on Docker Hub) and `composer.json` is now `"php": "^8.3"`. Verified: PHPStan level 5 clean and Unit suite 72/72 pass against the local PHP 8.3.13 CLI. **Not yet verified against an actual Docker build** — the Docker daemon was unavailable in the session that made this change, so the image has not been rebuilt/run with the new base tag.
+
+### TDB-R13: Deterministic stock lock ordering (source verified 2026-10-04)
+
+**Files:** `app/Service/GoodsIssueService.php`, `app/Service/GoodsReceiptService.php`, `tests/Unit/GoodsIssueServiceLockOrderTest.php`, `tests/Unit/GoodsReceiptServiceLockOrderTest.php`
+
+Both goods workflows sort lines by ascending productId before stock locking. New public-workflow regressions use real reversed fake-repository fixtures `[5,3]`, assert locks `[3,5]`, and verify per-product stock and ledger quantities. They pass in the standalone runner and Unit suite. Existing isolated Integration concurrency tests also pass, but do not specifically prove a two-product overlapping lock-order schedule or the new cancellation race. This addresses inconsistent stock lock ordering, not a guarantee that every possible database deadlock is eliminated. This entry follows R12 (2026-09-18) chronologically.
+
+### TDB-R14: Confirmed reference audit code/documentation gaps (source verified 2026-10-04)
+
+Conditional status updates now reject stale transitions; raw integer/date/price validation rejects malformed and schema-out-of-range values; PHPStan assignment failures are fixed. Draft SO editing, product sort, display-number search, API failure classification, shared inventory valuation and decimal presentation have been implemented. Unit session/cache boundaries are isolated, integration DB selection is explicit, API/as-built/testing documentation matches current source, and asset notices are distributed. See the [remediation audit](reference-gap-audit-2026-10-04.md) for individual findings and limits. Outstanding runtime/provenance decisions remain open in TDB-015/TDB-016.

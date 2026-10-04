@@ -17,35 +17,28 @@ class ReportMySQLRepository implements ReportRepositoryInterface
 {
     private const SQL_AND = ' AND ';
     private $db;
+    private $stockRepository;
 
-    public function __construct(Database $db)
+    public function __construct($db, $stockRepository = null)
     {
         $this->db = $db;
+        $this->stockRepository = $stockRepository ?? new ProductStockMySQLRepository(new QueryBuilder($db));
     }
 
     public function inventoryValuation($categoryId, $warehouseId)
     {
         $result = new Result();
-
         try {
-            [$scopeSql, $params] = $this->scope($categoryId, $warehouseId, 'ps.warehouse_id', 'k1');
-            $row = $this->fetchOne("
-                SELECT COALESCE(SUM(ps.quantity * p.purchase_price), 0) AS valuation
-                FROM product_stocks ps
-                JOIN products p ON p.id = ps.product_id
-                WHERE {$scopeSql}
-            ", $params);
-
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'Success to compute inventory valuation';
-            $result->data = (int) ($row['valuation'] ?? 0);
+            $valuationResult = $this->stockRepository->totalInventoryValue($categoryId, $warehouseId);
+            $result->code = $valuationResult->code;
+            $result->info = $valuationResult->info;
+            $result->data = $valuationResult->data;
         } catch (\Throwable $e) {
-            error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
+            error_log($e->getMessage());
             $result->code = Result::CODE_INTERNAL;
             $result->info = Result::MESSAGE_FAILED_FUNCTION;
             $result->data = null;
         }
-
         return $result;
     }
 
@@ -164,7 +157,7 @@ class ReportMySQLRepository implements ReportRepositoryInterface
 
             $result->code = Result::CODE_SUCCESS;
             $result->info = 'Success to compute outflow value';
-            $result->data = (int) ($row['outflow_value'] ?? 0);
+            $result->data = (float) ($row['outflow_value'] ?? 0);
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -275,7 +268,7 @@ class ReportMySQLRepository implements ReportRepositoryInterface
 
             $result->code = Result::CODE_SUCCESS;
             $result->info = 'Success to reconstruct valuation';
-            $result->data = max(0, (int) ($row['valuation'] ?? 0));
+            $result->data = max(0.0, (float) ($row['valuation'] ?? 0));
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
             $result->code = Result::CODE_INTERNAL;
@@ -318,32 +311,20 @@ class ReportMySQLRepository implements ReportRepositoryInterface
     public function warehouseValuation($categoryId, $warehouseId)
     {
         $result = new Result();
-
         try {
-            [$scopeSql, $params] = $this->scope($categoryId, 0, null, 'wa');
-            $params['wa_wid'] = (int) $warehouseId;
-            $row = $this->fetchOne("
-                SELECT COALESCE(SUM(ps.quantity * p.purchase_price), 0) AS valuation
-                FROM product_stocks ps
-                JOIN products p ON p.id = ps.product_id
-                WHERE ps.warehouse_id = :wa_wid AND {$scopeSql}
-            ", $params);
-
-            $result->code = Result::CODE_SUCCESS;
-            $result->info = 'Success to value warehouse';
-            $result->data = (int) ($row['valuation'] ?? 0);
+            $valuationResult = $this->inventoryValuation($categoryId, $warehouseId);
+            $result->code = $valuationResult->code;
+            $result->info = $valuationResult->info;
+            $result->data = $valuationResult->data;
         } catch (\Throwable $e) {
-            error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
+            error_log($e->getMessage());
             $result->code = Result::CODE_INTERNAL;
             $result->info = Result::MESSAGE_FAILED_FUNCTION;
             $result->data = null;
         }
-
         return $result;
     }
 
-    // Per-SKU stock, valuation, primary warehouse and 30-day outflow — sorted and
-    // paginated in SQL across the whole result, all scoped to the chosen warehouse.
     public function stockValuationLines($filters, $sort, $limit, $offset)
     {
         $result = new Result();

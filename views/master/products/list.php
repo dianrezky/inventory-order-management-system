@@ -154,6 +154,14 @@ $metricCards = [
     <form method="post" action="/products/search" id="products-filter-form" novalidate>
         <div class="filter-grid">
             <div class="form-field">
+                <label class="form-field__label" for="product-sort">Sort products</label>
+                <select id="product-sort" name="sort" class="input">
+                    <?php foreach (['name_asc' => 'Name A–Z', 'name_desc' => 'Name Z–A', 'sku_asc' => 'SKU A–Z', 'sku_desc' => 'SKU Z–A'] as $value => $label): ?>
+                        <option value="<?= $value ?>" <?= ($sort ?? 'name_asc') === $value ? 'selected' : '' ?>><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-field">
                 <label class="form-field__label" for="product-sku">Product SKU / Barcode</label>
                 <input class="input" type="search" id="product-sku" name="sku"
                        value="<?= htmlspecialchars($sku ?? '', ENT_QUOTES, 'UTF-8') ?>"

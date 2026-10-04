@@ -11,6 +11,12 @@ class SalesOrderFakeRepository implements SalesOrderRepositoryInterface
 {
     private $orders = [];
     private $nextId = 1;
+    private $itemRepository;
+
+    public function __construct($itemRepository = null)
+    {
+        $this->itemRepository = $itemRepository;
+    }
 
     public function findById($id)
     {
@@ -81,6 +87,16 @@ class SalesOrderFakeRepository implements SalesOrderRepositoryInterface
             ));
         }
 
+        $orderNumber = trim((string) ($filters['order_number'] ?? ''));
+        if (preg_match('/^(?:#|SO-)([0-9]+)$/i', $orderNumber, $numberMatch) === 1) {
+            $orderNumber = (string) ((int) $numberMatch[1]);
+        }
+        if ($orderNumber !== '') {
+            $rows = array_values(array_filter($rows, static function ($order) use ($orderNumber) {
+                return str_contains((string) $order->id, $orderNumber);
+            }));
+        }
+
         $direction = strtoupper((string) ($filters['sort'] ?? 'desc')) === 'ASC' ? 1 : -1;
         usort($rows, function ($a, $b) use ($direction) { return $direction * ($a->id <=> $b->id); });
 
@@ -136,31 +152,86 @@ class SalesOrderFakeRepository implements SalesOrderRepositoryInterface
 
     public function create($header, $items)
     {
-        $id = $this->nextId++;
-        $this->orders[] = new SalesOrder(
-            $id,
-            (int) $header['customer_id'],
-            (int) $header['source_warehouse_id'],
-            (string) $header['status'],
-            (string) $header['order_date'],
-            $header['note'] ?? null,
-            (int) $header['created_by']
-        );
-
         $result = new Result();
-        $result->code = Result::CODE_SUCCESS;
-        $result->info = 'Success to create sales order';
-        $result->data = $id;
+        try {
+            $id = $this->nextId;
+            if ($this->itemRepository !== null) {
+                $itemsResult = $this->itemRepository->replaceForSalesOrder($id, $items);
+                if ($itemsResult->code !== Result::CODE_SUCCESS) {
+                    return $itemsResult;
+                }
+            }
+            $this->orders[] = new SalesOrder($id, (int) $header['customer_id'],
+                (int) $header['source_warehouse_id'], (string) $header['status'],
+                (string) $header['order_date'], $header['note'] ?? null, (int) $header['created_by']);
+            $this->nextId++;
+            $result->code = Result::CODE_SUCCESS;
+            $result->info = 'Success to create sales order';
+            $result->data = $id;
+        } catch (\Throwable $e) {
+            $result->code = Result::CODE_INTERNAL;
+            $result->info = Result::MESSAGE_FAILED_FUNCTION;
+            $result->data = null;
+        }
+        return $result;
+    }
+
+    public function updateDraft($id, $header, $items)
+    {
+        $result = new Result();
+        try {
+            $findResult = $this->findById($id);
+            $order = $findResult->data;
+            if ($order === null || $order->status !== SalesOrder::STATUS_DRAFT) {
+                $result->code = Result::CODE_VALIDATION;
+                $result->info = 'Only Draft sales orders can be edited.';
+                $result->data = null;
+
+                return $result;
+            }
+            if ($this->itemRepository !== null) {
+                $itemsResult = $this->itemRepository->replaceForSalesOrder($id, $items);
+                if ($itemsResult->code !== Result::CODE_SUCCESS) {
+                    return $itemsResult;
+                }
+            }
+            foreach ($this->orders as $index => $existing) {
+                if ($existing->id === $id) {
+                    $updated = clone $existing;
+                    $updated->customerId = $header['customer_id'];
+                    $updated->sourceWarehouseId = $header['source_warehouse_id'];
+                    $updated->orderDate = $header['order_date'];
+                    $updated->note = $header['note'];
+                    $this->orders[$index] = $updated;
+                    break;
+                }
+            }
+            $result->code = Result::CODE_SUCCESS;
+            $result->info = 'Draft sales order saved.';
+            $result->data = $id;
+        } catch (\Throwable $e) {
+            $result->code = Result::CODE_INTERNAL;
+            $result->info = Result::MESSAGE_FAILED_FUNCTION;
+            $result->data = null;
+        }
 
         return $result;
     }
 
-    public function updateStatus($id, $status, $extras = [])
+    public function updateStatus($id, $status, $extras = [], $expectedStatus = null)
     {
+        $result = new Result();
         $found = false;
 
         foreach ($this->orders as &$o) {
             if ($o->id === $id) {
+                if ($expectedStatus !== null && $o->status !== $expectedStatus) {
+                    $result->code = Result::CODE_VALIDATION;
+                    $result->info = 'The order status has changed. Refresh the order before trying again.';
+                    $result->data = null;
+
+                    return $result;
+                }
                 $o = new SalesOrder(
                     $o->id,
                     $o->customerId,
@@ -182,8 +253,6 @@ class SalesOrderFakeRepository implements SalesOrderRepositoryInterface
             }
         }
         unset($o);
-
-        $result = new Result();
 
         if (!$found) {
             $result->code = Result::CODE_INTERNAL;

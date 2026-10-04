@@ -3,24 +3,24 @@
 Final Project - Intermediate Programmer
 **PT Neuronworks Indonesia** · September 2026
 
-Aplikasi web manajemen inventory dan order dengan multi-warehouse, tiga peran (Admin / Sales / Warehouse Staff), Purchase Order, Sales Order, Stock Ledger, Dashboard KPI, CSV Reporting, dan Product Availability API. Gambar produk disimpan di MinIO (S3-compatible). UI berbahasa Inggris dengan satu tema terang.
+An inventory and order management web application supporting multiple warehouses, three roles (Admin / Sales / Warehouse Staff), Purchase Orders, Sales Orders, a Stock Ledger, KPI dashboards, CSV reporting, and a Product Availability API. Product images are stored in MinIO (S3-compatible). The UI uses English and a single light theme.
 
-## Tech Stack (Wajib)
+## Tech Stack (Required)
 - **Backend:** PHP 8.3 Native OOP (brief: 8.2+), Controller → Service → Repository
 - **Frontend:** HTML, CSS, Vanilla JavaScript + Fetch API
 - **Database:** MySQL 8, PDO prepared statements, InnoDB transactions
-- **Container:** Docker + Docker Compose (5 services: `app` — PHP 8.3, `cron` — low-stock check, `db` — MySQL 8, `redis` — sessions, `memcached` — product & permission cache). Object storage memakai MinIO eksternal (`portfolio-minio`, lihat `MINIO_*` di `compose.yaml`).
+- **Container:** Docker + Docker Compose (5 services: `app` — PHP 8.3, `cron` — low-stock check, `db` — MySQL 8, `redis` — sessions, `memcached` — product & permission cache). Object storage uses external MinIO (`portfolio-minio`; see `MINIO_*` in `docker-compose.yaml`).
 - **Testing:** PHPUnit (Unit + Integration), PHPStan level 5 ✅
 
-## Konfigurasi `.env` (wajib sebelum start)
+## `.env` Configuration (Required Before Startup)
 
-Semua credential dibaca dari file `.env` dan **tidak** disimpan di repository
-(secret di `compose.yaml` memakai pola `${VAR:?}`, jadi Compose menolak start
-bila `.env` belum ada). Pada clone bersih, buat `.env` di root proyek — salin
-blok di bawah ini (nilai di bawah aman untuk lokal/demo, **ganti untuk produksi**):
+All credentials are read from `.env` and are **not** stored in the repository.
+Secrets in `docker-compose.yaml` use the `${VAR:?}` pattern, so Compose refuses to start
+when the required variables are missing. On a clean clone, create `.env` in the
+project root using the block below (values are for local/demo use; **replace them for production**):
 
 ```dotenv
-# Aplikasi
+# Application
 APP_ENV=local
 APP_DEBUG=true
 APP_PORT=8090
@@ -45,7 +45,7 @@ REDIS_PORT=6379
 MEMCACHED_HOST=memcached
 MEMCACHED_PORT=11211
 
-# Object storage (MinIO eksternal — portfolio-minio)
+# Object storage (external MinIO — portfolio-minio)
 MINIO_ENDPOINT=http://host.docker.internal:9000
 MINIO_PUBLIC_URL=http://localhost:9000
 MINIO_REGION=us-east-1
@@ -53,19 +53,22 @@ MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin123
 MINIO_BUCKET=portfolio-uploads
 
-# Keamanan
+# Security
 ID_OBFUSCATION_KEY=change_this_to_a_long_random_string
 ```
 
-> Kalau `.env` belum dibuat, `docker compose up` sengaja gagal dengan pesan
-> `required variable ... is missing` — itu perilaku keamanan yang diharapkan,
-> bukan bug.
+> If `.env` has not been created, `docker compose up` intentionally fails with
+> `required variable ... is missing`. This is expected security behavior.
+
+## MinIO on an existing VPS
+
+External MinIO is supported through the existing S3 client. Set `MINIO_ENDPOINT` and `MINIO_PUBLIC_URL` to your S3 API domain, configure the existing bucket and application credentials, and allow browser reads for the public product-image prefix. Follow the [VPS integration guide](docs/ops/minio-vps-integration.md) for configuration, permissions and verification.
 
 ## Quick Start
 
 ```bash
-# 1. Buat file .env dulu (lihat bagian "Konfigurasi .env" di atas), lalu start
-#    5 containers: app + cron + db + redis + memcached (MinIO jalan terpisah)
+# 1. Create .env first (see the configuration section above), then start
+#    5 containers: app + cron + db + redis + memcached (MinIO runs separately)
 docker compose up --build -d
 
 # Schema + seed data load automatically on first start via MySQL's
@@ -96,15 +99,15 @@ open http://localhost:8090
 ## Architecture
 
 ```
-Controller ──► Service ──► Repository (MySQL / Fake)
-     │            │
-     │            └── SalesOrderPolicy (BR-001 segregation)
-     │            └── DashboardService (per-role KPI)
-     │            └── CsvExportService (RFC 4180)
-     │
-     └── AuthService + SessionManager (Redis-backed, CSRF)
-     └── CacheService (Memcached — product-by-SKU & permission cache)
-     └── ImageUploadService + MinioClient (product images)
+Controller â”€â”€â–º Service â”€â”€â–º Repository (MySQL / Fake)
+     â”‚            â”‚
+     â”‚            â””â”€â”€ SalesOrderPolicy (BR-001 segregation)
+     â”‚            â””â”€â”€ DashboardService (per-role KPI)
+     â”‚            â””â”€â”€ CsvExportService (RFC 4180)
+     â”‚
+     â””â”€â”€ AuthService + SessionManager (Redis-backed, CSRF)
+     â””â”€â”€ CacheService (Memcached — product-by-SKU & permission cache)
+     â””â”€â”€ ImageUploadService + MinioClient (product images)
 ```
 
 ## Key Business Rules
@@ -112,6 +115,7 @@ Controller ──► Service ──► Repository (MySQL / Fake)
 | Rule | Implementation |
 |------|--------------|
 | ARCH-02 (No overselling) | `SELECT FOR UPDATE` + DB transaction in `GoodsIssueService` |
+| Deterministic stock lock order | `GoodsIssueService::applyIssuanceLines()` and `GoodsReceiptService::applyLinesInTransaction()` sort items by `productId` in ascending order before acquiring stock locks to prevent deadlocks caused by reversed product lock order. See [ADR-002](docs/architecture/adr-002-concurrency-strategy.md#multi-item-deadlock-prevention). |
 | BR-001 (Segregation of duties) | `SalesOrderPolicy::assertCanDecide()` — server-side |
 | BR-018 (Sales scope) | BR-018 filter in `SalesOrderRepository` |
 | Stock invariant | `product_stocks` = SUM(`stock_ledger.qty`) |
@@ -120,21 +124,41 @@ Controller ──► Service ──► Repository (MySQL / Fake)
 ## Testing
 
 ```bash
-# Run all tests
-docker compose exec app vendor/bin/phpunit
+# Dependency-free public workflow regressions (no services or PHPUnit required)
+php tests/Regression/run-reference-gaps.php
 
-# Unit tests only
-docker compose exec app vendor/bin/phpunit --testsuite Unit
+# Full isolated unit suite
+php vendor/bin/phpunit --testsuite Unit
 
-# Integration tests (requires DB)
-docker compose exec app vendor/bin/phpunit --testsuite Integration
+# Integration suite using the existing disposable E2E stack
+cd tests/playwright
+npm run test:integration
 
-# Static analysis
-docker compose exec app vendor/bin/phpstan analyse --level=5
-
-# Low-stock CLI
-docker compose exec app php scripts/check-low-stock.php
+# Static analysis from the repository root
+php vendor/bin/phpstan analyse --level=5
 ```
+
+The integration command reuses the dedicated `ioms-e2e` database and test app; it does not target the normal application database. It requires the E2E environment and dependencies documented in [test instructions](docs/testing/README.md). Direct integration runs must explicitly configure `TEST_DB_NAME` different from `DB_NAME`, plus the matching test app URL/database. No application database is selected by default.
+
+On 2026-10-04, the standalone runner passed 19 scenarios/153 assertions, PHPUnit Unit passed 132 tests/404 assertions, and isolated Integration passed 17 tests/143 assertions against an image built from this workspace. The release results below remain historical. See [current verification and limitations](docs/testing/README.md).
+
+## SonarQube Results
+
+The screenshots and measurement context are also documented in [SonarQube dashboard evidence](docs/quality/sonarqube-results-2026-10-04.md).
+
+Screenshots were captured on **2026-10-04** from the dashboard for project `ioms-apps`, version **1.1**. The Quality Gate shows **Passed**, and the dashboard reports warnings for the latest analysis. The screenshots reflect the analysis available on the server; no new scan was run against the current checkout.
+
+### Overall Code
+
+Security, Reliability, and Maintainability each have **0 open issues** and an **A** rating. Coverage is **11.1%**, duplications are **8.5%**, and there are **0 Security Hotspots**.
+
+![SonarQube Overall Code — Quality Gate Passed, coverage 11.1%, duplications 8.5%](docs/quality/screenshots/sonarqube-overall-code-2026-10-04.png)
+
+### New Code
+
+The New Code baseline is **Since 1.0**. There are **0 new issues**, **0 accepted issues**, **0.0% coverage** across **17 lines to cover**, **0.0% duplications** across **37 new lines**, and **0 Security Hotspots**. The Passed status does not mean coverage has reached the **80%** target shown on the dashboard.
+
+![SonarQube New Code — 0 new issues, coverage 0%, duplications 0%](docs/quality/screenshots/sonarqube-new-code-2026-10-04.png)
 
 ## API Endpoints
 
@@ -151,7 +175,7 @@ app/
   Controller/     — HTTP layer (thin, no business logic)
   Service/       — Business logic + domain policies
   Repository/    — Data access (MySQL + Fake for tests)
-  Entity/        — Immutable DTOs
+  Entity/        — Domain entities and data objects
   Core/          — Database, Container, SessionManager, CacheService, MinioClient, IdObfuscator
 public/
   index.php      — Router
@@ -181,3 +205,13 @@ docs/
 **Stage 9 Release** — v1.0-mvp
 All 6 slices complete. Docker clean rebuild verified. PHPUnit Unit 101/101 + Integration 17/17 ✅ · PHPStan level 5 0 errors ✅ (re-verified 2026-09-25) · QA 103 checks pass ✅
 
+**Remediation update (2026-10-04):** conditional order transitions prevent stale status overwrites; quantity/date/reorder validation rejects malformed and out-of-range input; Draft Sales Orders can be edited by their creator or an Admin; product sorting and displayed order-number search are available; availability dependency errors return 500; report valuation retains cents and shares the stock-value aggregate. Lock-order regressions now cover both Goods Issue and Goods Receipt. PHPStan level 5 passed against this working tree. Current Unit and isolated MySQL/HTTP Integration passed. A dedicated MySQL cancellation-race case, clean-clone build, complete role/mobile demo, VPS image-storage verification, and revision-matched Sonar evidence remain pending.
+
+The 2026-09-25 release/build/test results above are historical snapshots and do not verify the current uncommitted remediation. Sonar screenshots are preserved with their original measurement context. The [reference audit](docs/quality/reference-gap-audit-2026-10-04.md) records current source fixes and remaining evidence or requirement decisions.
+
+Architecture notes are available in [ADR-002 — Concurrency Strategy](docs/architecture/adr-002-concurrency-strategy.md); outstanding technical debt is tracked in [Tech Debt](docs/quality/tech-debt.md).
+
+
+## Asset Credits
+
+The [SVG sprite](public/assets/img/icons.svg) includes Feather icon geometry (MIT, Cole Bemis) and two adapted Lucide-style symbols (ISC, Lucide Contributors; inherited Feather portions use MIT). Geometry was compared against [Feather v4.29.2](https://github.com/feathericons/feather/tree/v4.29.2/icons) and [Lucide 0.468.0](https://github.com/lucide-icons/lucide/tree/0.468.0/icons); these are verification references, not a claim about the original import version. [Attribution details](public/assets/img/NOTICE.txt), [Feather license](public/assets/img/feather-license.txt), and [Lucide license](public/assets/img/lucide-license.txt) are distributed with the assets.

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Core\Result;
-use App\Core\SessionManager;
+use Tests\Support\InMemorySessionManager;
 use App\Entity\Role;
 use App\Entity\User;
 use App\Repository\Fake\UserFakeRepository;
@@ -26,16 +26,9 @@ final class AuthServiceTest extends TestCase
         );
     }
 
-    private function sessionManager(): SessionManager
+    private function sessionManager()
     {
-        $manager = new SessionManager('test_session', 3600);
-        $manager->useFileSessions();
-
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            @$manager->start();
-        }
-
-        return $manager;
+        return new InMemorySessionManager();
     }
 
     public function testLoginSucceedsWithValidCredentials(): void
@@ -99,7 +92,7 @@ final class AuthServiceTest extends TestCase
         $this->assertNull($auth->currentUser());
     }
 
-    public function testLogoutClearsSession(): void
+    public function testLogoutClearsSession()
     {
         $repo = new UserFakeRepository([
             $this->makeUser(1, 'admin@example.com', 'admin123', Role::Admin->value),
@@ -113,9 +106,6 @@ final class AuthServiceTest extends TestCase
 
         $auth->logout();
 
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            @session_start();
-        }
         $this->assertNull($auth->currentUser());
     }
 }

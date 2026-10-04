@@ -1,6 +1,6 @@
 # AI Usage Log
 
-Dokumen ini mencatat penggunaan AI (Claude) secara jujur & transparan selama pengerjaan Final Project Inventory & Order Management System, sesuai kewajiban pada §6.2 Project Brief.
+Dokumen ini mencatat penggunaan AI (Claude dan Codex) secara jujur & transparan selama pengerjaan Final Project Inventory & Order Management System, sesuai kewajiban pada §6.2 Project Brief.
 
 ## Empat Kewajiban Peserta (Project Brief §6.2)
 1. **DISCLOSE** — penggunaan AI dicatat, tidak disembunyikan.
@@ -290,6 +290,19 @@ Peserta tetap bertanggung jawab penuh atas solusi dan mampu menjelaskan setiap k
 - Output yang ditolak / dimodifikasi: tidak ada.
 - Verifikasi: `git diff` review manual sebelum commit; tidak ada test yang terpengaruh (perubahan kosmetik/konstanta).
 - Test: perubahan bersifat refactor konstanta — tidak mengubah perilaku runtime; tidak ada test baru diperlukan.
+
+---
+
+### 2026-10-04 — Reference audit remediation and coordinated review
+
+- Tool: Codex (GPT-6), with coordinated local Codex sessions authorized by the user.
+- Tujuan: memperbaiki temuan audit acuan berdasarkan real flow, lalu merekonsiliasi dengan brief PDF asli yang diberikan pengguna.
+- Prompt (sanitasi): "Tolong perbaiki temuan audit; komunikasikan dan kolaborasikan dengan sesi lain."
+- Output yang digunakan: conditional status updates, strict raw-input/schema-range validation, Draft SO editing with header-lock recheck, allowlisted product sorting, display-number search, explicit availability failures, shared scoped inventory valuation and decimal preservation, isolated test doubles/database configuration, public-flow regression scenarios, current API/as-built/testing/audit docs, and MinIO VPS guidance.
+- Output yang ditolak/dimodifikasi: duplicated methods from overlapping sessions were reconciled; local MinIO provisioning was dropped after the owner clarified that MinIO already runs on the VPS; blueprint examples were not treated as overriding the original brief. Icon attribution uses verified geometry/reference tags and does not invent an import history. The hypothetical critique is not presented as assessor-provided work.
+- Review: sessions split ownership of application code, tests/docs, and MinIO docs; source was traced through routes/controllers/services/repositories/schema/view/JS. An additional loop checked error status classification, date NUL/shape, schema bounds, ownership/status races, and result compatibility.
+- Verifikasi: current PHPStan level 5 exit 0; PHP syntax checks; TypeScript typecheck, integration CLI ESLint, and Compose configuration validation exit 0. Test schema/seed/fixture SQL ran only in the disposable integration stack after explicit authorization; developer/production database changes, deployment, commit and push were not performed.
+- Test: standalone regressions passed 19 scenarios/153 explicit assertions using in-memory dependencies. After the user explicitly requested Unit and isolated Integration, the fresh workspace image passed Unit 132 tests/404 assertions and Integration 17 tests/143 assertions on PHP 8.3.20 / PHPUnit 10.5.64. PHPStan also passed in that image. Dedicated cancellation-race MySQL coverage, full browser/mobile/role demos, VPS image integration, clean-clone build, and fresh Sonar evidence remain pending.
 
 ---
 

@@ -254,6 +254,9 @@ $totalUnits = (int) $so->itemsQty > 0 ? (int) $so->itemsQty : $totalQty;
 <!-- Action Bar -->
 <?php if (!in_array($so->status, ['Fulfilled', 'Cancelled'], true)): ?>
 <div class="action-bar">
+    <?php if ($so->status === 'Draft' && ($isAdminRole || ($isSalesRole && $isCreator))): ?>
+        <a class="btn btn--secondary" href="/sales-orders/<?= $idObfuscator->encode($so->id) ?>/edit">Edit Draft</a>
+    <?php endif; ?>
     <?php if ($canSubmit): ?>
         <form class="action-bar__form" method="post" action="/sales-orders/<?= $idObfuscator->encode($so->id) ?>/submit">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">

@@ -84,7 +84,7 @@ class ProductStockFakeRepository implements ProductStockRepositoryInterface
         return $result;
     }
 
-    public function totalInventoryValue()
+    public function totalInventoryValue($categoryId = null, $warehouseId = null)
     {
         // Fake has no purchase_price, so the value is always zero.
         $result = new Result();
@@ -118,6 +118,7 @@ class ProductStockFakeRepository implements ProductStockRepositoryInterface
         foreach ($this->byKey as $stock) {
             if ($stock->productId === $productId) {
                 $rows[] = [
+                    'warehouse_id' => $stock->warehouseId,
                     'quantity' => $stock->quantity,
                     'warehouse_code' => 'WH-' . $stock->warehouseId,
                     'warehouse_name' => 'Warehouse ' . $stock->warehouseId,

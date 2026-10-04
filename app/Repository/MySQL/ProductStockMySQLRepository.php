@@ -122,17 +122,24 @@ class ProductStockMySQLRepository implements ProductStockRepositoryInterface
         return $result;
     }
 
-    public function totalInventoryValue()
+    public function totalInventoryValue($categoryId = null, $warehouseId = null)
     {
         $result = new Result();
 
         try {
+            $filters = ['p.is_active' => 1];
+            if ((int) $categoryId > 0) {
+                $filters['p.category_id'] = (int) $categoryId;
+            }
+            if ((int) $warehouseId > 0) {
+                $filters['ps.warehouse_id'] = (int) $warehouseId;
+            }
             $value = $this->queryBuilder->scalar(
                 'product_stocks',
                 'ps',
                 'COALESCE(SUM(ps.quantity * p.purchase_price), 0)',
                 [['type' => 'INNER', 'table' => 'products', 'alias' => 'p', 'on' => self::JOIN_PRODUCT]],
-                ['p.is_active' => 1]
+                $filters
             );
 
             $result->code = Result::CODE_SUCCESS;

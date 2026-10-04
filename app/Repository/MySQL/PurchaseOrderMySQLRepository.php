@@ -186,12 +186,23 @@ class PurchaseOrderMySQLRepository implements PurchaseOrderRepositoryInterface
         return $result;
     }
 
-    public function updateStatus($id, $status)
+    public function updateStatus($id, $status, $expectedStatus = null)
     {
         $result = new Result();
 
         try {
-            $this->queryBuilder->update('purchase_orders', ['status' => $status], ['id' => $id]);
+            $filters = ['id' => $id];
+            if ($expectedStatus !== null) {
+                $filters['status'] = $expectedStatus;
+            }
+            $affectedRows = $this->queryBuilder->update('purchase_orders', ['status' => $status], $filters);
+            if ($expectedStatus !== null && $affectedRows !== 1) {
+                $result->code = Result::CODE_VALIDATION;
+                $result->info = 'The order status has changed. Refresh the order before trying again.';
+                $result->data = null;
+
+                return $result;
+            }
 
             $result->code = Result::CODE_SUCCESS;
             $result->info = 'Success to update purchase order status';
@@ -307,6 +318,9 @@ class PurchaseOrderMySQLRepository implements PurchaseOrderRepositoryInterface
         $orderNumber = $orderNumber !== null && $orderNumber !== '' ? (string) $orderNumber : null;
         $supplierName = $supplierName !== null && $supplierName !== '' ? (string) $supplierName : null;
 
+        if ($orderNumber !== null && preg_match('/^(?:#|PO-)([0-9]+)$/i', trim($orderNumber), $numberMatch) === 1) {
+            $orderNumber = (string) ((int) $numberMatch[1]);
+        }
         $likeFilters = [];
         if ($orderNumber !== null) {
             $likeFilters['CAST(po.id AS CHAR)'] = $orderNumber;

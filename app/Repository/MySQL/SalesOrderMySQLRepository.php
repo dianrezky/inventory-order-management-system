@@ -178,7 +178,40 @@ class SalesOrderMySQLRepository implements SalesOrderRepositoryInterface
         return $result;
     }
 
-    public function updateStatus($id, $status, $extras = [])
+    // Caller holds the header lock in the existing order transaction.
+    public function updateDraft($id, $header, $items)
+    {
+        $result = new Result();
+        try {
+            $this->queryBuilder->update('sales_orders', [
+                'customer_id' => $header['customer_id'],
+                'source_warehouse_id' => $header['source_warehouse_id'],
+                'order_date' => $header['order_date'],
+                'note' => $header['note'],
+            ], ['id' => $id, 'status' => SalesOrder::STATUS_DRAFT]);
+            $this->queryBuilder->delete('sales_order_items', ['sales_order_id' => $id]);
+            foreach ($items as $item) {
+                $this->queryBuilder->insert('sales_order_items', [
+                    'sales_order_id' => $id,
+                    'product_id' => $item['product_id'],
+                    'qty' => $item['qty'],
+                    'sale_price' => $item['sale_price'],
+                ]);
+            }
+            $result->code = Result::CODE_SUCCESS;
+            $result->info = 'Draft sales order saved.';
+            $result->data = $id;
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
+            $result->code = Result::CODE_INTERNAL;
+            $result->info = Result::MESSAGE_FAILED_FUNCTION;
+            $result->data = null;
+        }
+
+        return $result;
+    }
+
+    public function updateStatus($id, $status, $extras = [], $expectedStatus = null)
     {
         $result = new Result();
 
@@ -201,7 +234,18 @@ class SalesOrderMySQLRepository implements SalesOrderRepositoryInterface
                 $columns['cancellation_reason'] = (string) $extras['cancellation_reason'];
             }
 
-            $this->queryBuilder->update('sales_orders', $columns, ['id' => $id]);
+            $filters = ['id' => $id];
+            if ($expectedStatus !== null) {
+                $filters['status'] = $expectedStatus;
+            }
+            $affectedRows = $this->queryBuilder->update('sales_orders', $columns, $filters);
+            if ($expectedStatus !== null && $affectedRows !== 1) {
+                $result->code = Result::CODE_VALIDATION;
+                $result->info = 'The order status has changed. Refresh the order before trying again.';
+                $result->data = null;
+
+                return $result;
+            }
 
             $result->code = Result::CODE_SUCCESS;
             $result->info = 'Success to update sales order status';
@@ -477,6 +521,9 @@ class SalesOrderMySQLRepository implements SalesOrderRepositoryInterface
         $orderNumber = isset($filters['order_number']) && $filters['order_number'] !== '' ? (string) $filters['order_number'] : null;
         $customerName = isset($filters['customer_name']) && $filters['customer_name'] !== '' ? (string) $filters['customer_name'] : null;
 
+        if ($orderNumber !== null && preg_match('/^(?:#|SO-)([0-9]+)$/i', trim($orderNumber), $numberMatch) === 1) {
+            $orderNumber = (string) ((int) $numberMatch[1]);
+        }
         $likeFilters = [];
         if ($orderNumber !== null) {
             $likeFilters['CAST(so.id AS CHAR)'] = $orderNumber;

@@ -33,6 +33,9 @@ class PurchaseOrderFakeRepository implements PurchaseOrderRepositoryInterface
 
     public function findAll($status = null, $limit = 0, $offset = 0, $search = null, $sortDirection = 'desc', $warehouseIds = null, $orderNumber = null, $supplierName = null)
     {
+        if ($orderNumber !== null && preg_match('/^(?:#|PO-)([0-9]+)$/i', trim((string) $orderNumber), $numberMatch) === 1) {
+            $orderNumber = (string) ((int) $numberMatch[1]);
+        }
         $all = array_values($this->byId);
 
         // Handle warehouse_ids: array → IN, scalar → equality
@@ -88,6 +91,9 @@ class PurchaseOrderFakeRepository implements PurchaseOrderRepositoryInterface
 
     public function countAll($status = null, $search = null, $warehouseIds = null, $orderNumber = null, $supplierName = null)
     {
+        if ($orderNumber !== null && preg_match('/^(?:#|PO-)([0-9]+)$/i', trim((string) $orderNumber), $numberMatch) === 1) {
+            $orderNumber = (string) ((int) $numberMatch[1]);
+        }
         $all = array_values($this->byId);
 
         if ($warehouseIds !== null && count($warehouseIds) > 0) {
@@ -182,7 +188,7 @@ class PurchaseOrderFakeRepository implements PurchaseOrderRepositoryInterface
         return $result;
     }
 
-    public function updateStatus($id, $status)
+    public function updateStatus($id, $status, $expectedStatus = null)
     {
         $result = new Result();
         $existing = $this->byId[$id] ?? null;
@@ -190,6 +196,14 @@ class PurchaseOrderFakeRepository implements PurchaseOrderRepositoryInterface
         if ($existing === null) {
             $result->code = Result::CODE_INTERNAL;
             $result->info = Result::MESSAGE_FAILED_FUNCTION;
+            $result->data = null;
+
+            return $result;
+        }
+
+        if ($expectedStatus !== null && $existing->status !== $expectedStatus) {
+            $result->code = Result::CODE_VALIDATION;
+            $result->info = 'The order status has changed. Refresh the order before trying again.';
             $result->data = null;
 
             return $result;

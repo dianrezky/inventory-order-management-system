@@ -6,6 +6,9 @@
 **Date:** 2026-09-15
 **Purpose:** Critically examine a deliberately flawed code snippet; name smells, SOLID violations, and the refactoring direction. *Implementing the fix is not required.*
 
+
+**Assessment provenance review (2026-10-04):** this document analyzes a hypothetical example, as its source label states. The original brief's DESIGN-04 requires a snippet supplied by the assessor. No evidence that this example is that supplied snippet has been found. Keep the analysis as practice material; replace or supplement it with the actual assessor snippet and attribution before claiming DESIGN-04 completion.
+
 ---
 
 ## Flawed Code Under Review

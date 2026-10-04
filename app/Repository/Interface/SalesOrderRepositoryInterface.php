@@ -17,7 +17,9 @@ interface SalesOrderRepositoryInterface
 
     public function create($header, $items);
 
-    public function updateStatus($id, $status, $extras = []);
+    public function updateDraft($id, $header, $items);
+
+    public function updateStatus($id, $status, $extras = [], $expectedStatus = null);
 
     public function findForExport($from, $to, $userId = null, $warehouseId = null);
 

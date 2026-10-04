@@ -113,6 +113,9 @@ class ReportController extends BaseController
 
         $exportResult = $this->container->getStockLedgerService()->findForExport($filters);
 
+        if ($exportResult->code === Result::CODE_INTERNAL) {
+            throw new \RuntimeException('Could not retrieve the stock ledger export.');
+        }
         if ($exportResult->code !== Result::CODE_SUCCESS) {
             return $this->badRequest($this->t($exportResult->info));
         }
@@ -155,24 +158,29 @@ class ReportController extends BaseController
         $warehouseId = (int) $this->requestParam('warehouse_id', 0);
         $warehouseFilter = $warehouseId > 0 ? $warehouseId : null;
 
-        $rows = [];
+        try {
+            $rows = [];
 
-        if ($canViewSalesOrders) {
-            if ($currentUser->role === Role::Sales) {
-                $userId = $currentUser->id;
-            } else {
-                $userId = null;
+            if ($canViewSalesOrders) {
+                if ($currentUser->role === Role::Sales) {
+                    $userId = $currentUser->id;
+                } else {
+                    $userId = null;
+                }
+                $rows = array_merge($rows, $this->container->getSalesOrderService()->findForExport($from, $to, $userId, $warehouseFilter));
             }
-            $rows = array_merge($rows, $this->container->getSalesOrderService()->findForExport($from, $to, $userId, $warehouseFilter));
+
+            if ($canViewPurchaseOrders) {
+                $rows = array_merge($rows, $this->container->getPurchaseOrderService()->findForExport($from, $to, $warehouseFilter));
+            }
+
+            $csv = $this->container->getCsvExportService()->exportOrderStatus($rows);
+
+            $response = $this->csv($csv, self::FILE_ORDERS);
+        } catch (\App\Service\Exception\DomainException $e) {
+            $response = $this->badRequest($this->t($e->getMessage()));
         }
-
-        if ($canViewPurchaseOrders) {
-            $rows = array_merge($rows, $this->container->getPurchaseOrderService()->findForExport($from, $to, $warehouseFilter));
-        }
-
-        $csv = $this->container->getCsvExportService()->exportOrderStatus($rows);
-
-        return $this->csv($csv, self::FILE_ORDERS);
+        return $response;
     }
 
     private function dateParam(string $primaryKey, string $fallbackKey): string

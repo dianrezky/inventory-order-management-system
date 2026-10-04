@@ -396,7 +396,7 @@ return [
 
     // ============================================================
     // SALES ORDER ROUTES
-    // (own shape: no edit/update/deactivate/activate; has submit/approve/reject/cancel/issue)
+    // (Draft edit/update; submit/approve/reject/cancel/issue)
     // ============================================================
     'sales-order' => [
         'type' => ROUTE_TYPE_LITERAL,
@@ -429,6 +429,24 @@ return [
                     'route' => '/sales-orders/create',
                     'method' => ['GET'],
                     'defaults' => ['controller' => SalesOrderController::class, 'action' => 'createFormAction'],
+                ],
+            ],
+            'edit-form' => [
+                'type' => ROUTE_TYPE_SEGMENT,
+                'options' => [
+                    'route' => '/sales-orders/{id}/edit',
+                    'method' => ['GET'],
+                    'constraints' => ['id' => REGEX_ID_TOKEN],
+                    'defaults' => ['controller' => SalesOrderController::class, 'action' => 'editFormAction'],
+                ],
+            ],
+            'update' => [
+                'type' => ROUTE_TYPE_SEGMENT,
+                'options' => [
+                    'route' => '/sales-orders/{id}/update',
+                    'method' => ['POST'],
+                    'constraints' => ['id' => REGEX_ID_TOKEN],
+                    'defaults' => ['controller' => SalesOrderController::class, 'action' => 'updateAction'],
                 ],
             ],
             'show' => [

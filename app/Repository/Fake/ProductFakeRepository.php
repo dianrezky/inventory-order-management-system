@@ -50,7 +50,7 @@ class ProductFakeRepository implements ProductRepositoryInterface
         return $result;
     }
 
-    public function findAll($search = null, $limit = 0, $offset = 0, $categoryIds = null, $warehouseIds = null, $stockStatus = null, $sku = null, $productName = null)
+    public function findAll($search = null, $limit = 0, $offset = 0, $categoryIds = null, $warehouseIds = null, $stockStatus = null, $sku = null, $productName = null, $sort = 'name_asc')
     {
         // $warehouseIds, $stockStatus, $sku and $productName are accepted for interface
         // compatibility but not modeled here — tests needing those filters should use
@@ -74,7 +74,14 @@ class ProductFakeRepository implements ProductRepositoryInterface
             ));
         }
 
-        usort($all, function ($a, $b) { return $a->name <=> $b->name; });
+        if (!in_array($sort, ['name_asc', 'name_desc', 'sku_asc', 'sku_desc'], true)) {
+            $sort = 'name_asc';
+        }
+        $field = str_starts_with($sort, 'sku_') ? 'sku' : 'name';
+        $direction = in_array($sort, ['name_desc', 'sku_desc'], true) ? -1 : 1;
+        usort($all, static function ($a, $b) use ($field, $direction) {
+            return $direction * ($a->{$field} <=> $b->{$field}) ?: $a->id <=> $b->id;
+        });
 
         if ($offset > 0 || $limit > 0) {
             $all = array_slice($all, $offset, $limit > 0 ? $limit : null);

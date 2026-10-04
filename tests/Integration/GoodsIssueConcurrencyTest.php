@@ -33,7 +33,7 @@ final class GoodsIssueConcurrencyTest extends TestCase
     {
         $host = (string) (getenv('DB_HOST') ?: 'db');
         $port = (int) (getenv('DB_PORT') ?: 3306);
-        $name = (string) (getenv('DB_NAME') ?: 'inventory_order_management');
+        $name = \Tests\Support\IntegrationEnvironment::databaseName();
         $user = (string) (getenv('DB_USER') ?: 'iom_app');
         $password = (string) (getenv('DB_PASSWORD') ?: '');
 
@@ -171,7 +171,7 @@ final class GoodsIssueConcurrencyTest extends TestCase
         // Windows/Laragon has no pcntl_fork, so this manual dual-PDO-connection interleaving is the fallback sanctioned by the delivery-plan risk register.
         $host = (string) (getenv('DB_HOST') ?: 'db');
         $port = (int) (getenv('DB_PORT') ?: 3306);
-        $name = (string) (getenv('DB_NAME') ?: 'inventory_order_management');
+        $name = \Tests\Support\IntegrationEnvironment::databaseName();
         $user = (string) (getenv('DB_USER') ?: 'iom_app');
         $password = (string) (getenv('DB_PASSWORD') ?: '');
 

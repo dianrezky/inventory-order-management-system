@@ -228,38 +228,34 @@ class GoodsReceiptService
 
     private function buildValidatedLines($receiptLines, $itemsById, $purchaseOrderId)
     {
+        $result = new Result();
         $lines = [];
-
-        foreach ($receiptLines as $itemId => $quantityReceived) {
-            $itemId = (int) $itemId;
-            $quantityReceived = (int) $quantityReceived;
-
-            if ($quantityReceived <= 0) {
+        foreach ($receiptLines as $rawItemId => $rawQuantity) {
+            if (trim((string) $rawQuantity) === '') {
                 continue;
             }
-
+            $itemId = filter_var($rawItemId, FILTER_VALIDATE_INT);
+            $quantityReceived = filter_var($rawQuantity, FILTER_VALIDATE_INT);
+            if ($quantityReceived === 0) {
+                continue;
+            }
             $item = $itemsById[$itemId] ?? null;
-            if ($item === null || $item->purchaseOrderId !== $purchaseOrderId) {
-                $result = new Result();
+            $info = '';
+            if ($itemId === false || $quantityReceived === false || $quantityReceived < 0) {
+                $info = 'Receipt quantity and line identifier must be valid non-negative integers.';
+            } elseif ($item === null || $item->purchaseOrderId !== $purchaseOrderId) {
+                $info = 'Invalid purchase order line item.';
+            } elseif ($quantityReceived > $item->qtyRemaining()) {
+                $info = 'Quantity received cannot exceed the quantity still outstanding for this line.';
+            }
+            if ($info !== '') {
                 $result->code = Result::CODE_VALIDATION;
-                $result->info = 'Invalid purchase order line item.';
+                $result->info = $info;
                 $result->data = null;
-
                 return $result;
             }
-
-            if ($quantityReceived > $item->qtyRemaining()) {
-                $result = new Result();
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = 'Quantity received cannot exceed the quantity still outstanding for this line.';
-                $result->data = null;
-
-                return $result;
-            }
-
             $lines[] = ['item' => $item, 'qty' => $quantityReceived];
         }
-
         return $lines;
     }
 

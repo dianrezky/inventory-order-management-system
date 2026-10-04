@@ -72,11 +72,26 @@ class PurchaseOrderService
 
     public function findForExport($from, $to, $warehouseId = null)
     {
-        // $from/$to are YYYY-MM-DD; returns every purchase order in range with no pagination,
-        // optionally restricted to one destination warehouse.
-        $findResult = $this->purchaseOrderRepository->findForExport($from, $to, $warehouseId);
-
-        return $findResult->code === Result::CODE_SUCCESS ? $findResult->data : [];
+        $result = new Result();
+        try {
+            ReportDateRangePolicy::assertValid($from, $to);
+            $exportResult = $this->purchaseOrderRepository->findForExport($from, $to, $warehouseId);
+            if ($exportResult->code !== Result::CODE_SUCCESS) {
+                throw new \RuntimeException('Could not retrieve the order export.');
+            }
+            $result->code = Result::CODE_SUCCESS;
+            $result->info = 'Order export retrieved.';
+            $result->data = $exportResult->data;
+        } catch (\App\Service\Exception\DomainException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
+            $result->code = Result::CODE_INTERNAL;
+            $result->info = self::MESSAGE_FAILED_FUNCTION;
+            $result->data = null;
+            throw new \RuntimeException($result->info, 0, $e);
+        }
+        return $result->data;
     }
 
     public function findAll($status = null, $limit = 0, $offset = 0, $search = null, $sortDirection = 'desc', $warehouseIds = null, $orderNumber = null, $supplierName = null)
@@ -106,47 +121,12 @@ class PurchaseOrderService
         try {
             $supplierId   = (int) ($input['supplier_id'] ?? 0);
             $warehouseId   = (int) ($input['destination_warehouse_id'] ?? 0);
-            $orderDate     = trim((string) ($input['order_date'] ?? ''));
+            $orderDate     = trim((string) ($input['order_date'] ?? ''), " \t\n\r\x0B");
             $note          = trim((string) ($input['note'] ?? ''));
 
-            // The first failing step wins; the atomic persist runs only after
-            // every pre-flight check has passed, and $result is populated on success.
-            $errorResult = null;
-            $supplierResult = $this->supplierRepository->findById($supplierId);
-            if ($supplierResult->code !== Result::CODE_SUCCESS) {
-                $errorResult = $supplierResult;
-            }
-
-            $warehouseResult = null;
-            if ($errorResult === null) {
-                $warehouseResult = $this->warehouseRepository->findById($warehouseId);
-                if ($warehouseResult->code !== Result::CODE_SUCCESS) {
-                    $errorResult = $warehouseResult;
-                }
-            }
-
-            if ($errorResult === null) {
-                $headerInfo = $this->headerInvalidInfo($supplierResult->data, $warehouseResult->data, $orderDate);
-                if ($headerInfo !== '') {
-                    $result->code = Result::CODE_VALIDATION;
-                    $result->info = $headerInfo;
-                    $result->data = null;
-                    $errorResult = $result;
-                }
-            }
-
-            $normalizedItems = null;
-            if ($errorResult === null) {
-                $normalizedItems = $this->normalizeAndValidateItems($items);
-                if ($normalizedItems instanceof Result) {
-                    $errorResult = $normalizedItems;
-                } elseif (count($normalizedItems) === 0) {
-                    $result->code = Result::CODE_VALIDATION;
-                    $result->info = 'A purchase order needs at least one line item.';
-                    $result->data = null;
-                    $errorResult = $result;
-                }
-            }
+            $validationResult = $this->validateCreationPayload($supplierId, $warehouseId, $orderDate, $items);
+            $errorResult = $validationResult->code === Result::CODE_SUCCESS ? null : $validationResult;
+            $normalizedItems = $validationResult->data;
 
             if ($errorResult === null) {
                 // Header + line items must persist atomically: a mid-loop item
@@ -206,6 +186,55 @@ class PurchaseOrderService
         return $result;
     }
 
+    private function validateCreationPayload($supplierId, $warehouseId, $orderDate, $items)
+    {
+        $result = new Result();
+        $errorResult = null;
+        $supplierResult = $this->supplierRepository->findById($supplierId);
+        if ($supplierResult->code !== Result::CODE_SUCCESS) {
+            $errorResult = $supplierResult;
+        }
+
+        $warehouseResult = null;
+        if ($errorResult === null) {
+            $warehouseResult = $this->warehouseRepository->findById($warehouseId);
+            if ($warehouseResult->code !== Result::CODE_SUCCESS) {
+                $errorResult = $warehouseResult;
+            }
+        }
+
+        if ($errorResult === null) {
+            $headerInfo = $this->headerInvalidInfo($supplierResult->data, $warehouseResult->data, $orderDate);
+            if ($headerInfo !== '') {
+                $result->code = Result::CODE_VALIDATION;
+                $result->info = $headerInfo;
+                $result->data = null;
+                $errorResult = $result;
+            }
+        }
+
+        $normalizedItems = null;
+        if ($errorResult === null) {
+            $normalizedItems = $this->normalizeAndValidateItems($items);
+            if ($normalizedItems instanceof Result) {
+                $errorResult = $normalizedItems;
+            } elseif (count($normalizedItems) === 0) {
+                $result->code = Result::CODE_VALIDATION;
+                $result->info = 'A purchase order needs at least one line item.';
+                $result->data = null;
+                $errorResult = $result;
+            }
+        }
+        if ($errorResult !== null) {
+            return $errorResult;
+        }
+        $result->code = Result::CODE_SUCCESS;
+        $result->info = 'The order header and items are valid.';
+        $result->data = $normalizedItems;
+
+        return $result;
+    }
+
     public function submit($id, $actorId = null)
     {
         $result = new Result();
@@ -229,7 +258,7 @@ class PurchaseOrderService
             }
 
             if ($errorResult === null) {
-                $updateResult = $this->purchaseOrderRepository->updateStatus($id, PurchaseOrder::STATUS_ORDERED);
+                $updateResult = $this->purchaseOrderRepository->updateStatus($id, PurchaseOrder::STATUS_ORDERED, $purchaseOrder->status);
                 if ($updateResult->code !== Result::CODE_SUCCESS) {
                     $errorResult = $updateResult;
                 } else {
@@ -264,38 +293,32 @@ class PurchaseOrderService
     public function cancel($id, $actorId = null)
     {
         $result = new Result();
-
         try {
-            $purchaseOrder = $this->requireExisting($id);
-            if ($purchaseOrder instanceof Result) {
-                return $purchaseOrder;
+            $order = $this->requireExisting($id);
+            if ($order instanceof Result) {
+                return $order;
             }
-
-            if (!$purchaseOrder->canBeCancelled()) {
+            if (!$order->canBeCancelled()) {
                 $result->code = Result::CODE_VALIDATION;
                 $result->info = 'This purchase order can no longer be cancelled — it has already been fully received or is already cancelled.';
                 $result->data = null;
-
                 return $result;
             }
-
-            $updateResult = $this->purchaseOrderRepository->updateStatus($id, PurchaseOrder::STATUS_CANCELLED);
+            $updateResult = $this->purchaseOrderRepository->updateStatus($id, PurchaseOrder::STATUS_CANCELLED, $order->status);
             if ($updateResult->code !== Result::CODE_SUCCESS) {
-                return $updateResult;
-            }
-
-            $refreshed = $this->findById($id);
-
-            if ($refreshed === null) {
-                $result->code = Result::CODE_VALIDATION;
-                $result->info = self::MESSAGE_NOT_FOUND;
-                $result->data = null;
+                $result->code = $updateResult->code;
+                $result->info = $updateResult->info;
+                $result->data = $updateResult->data;
             } else {
-                $result->code = Result::CODE_SUCCESS;
-                $result->info = 'The purchase order has been cancelled.';
-                $result->data = $refreshed;
-
-                $this->logEvent($actorId, 'cancel', $id, "Cancelled PO #{$id}");
+                $result->data = $this->findById($id);
+                if ($result->data === null) {
+                    $result->code = Result::CODE_INTERNAL;
+                    $result->info = self::MESSAGE_NOT_FOUND;
+                } else {
+                    $result->code = Result::CODE_SUCCESS;
+                    $result->info = 'The purchase order has been cancelled.';
+                    $this->logEvent($actorId, 'cancel', $id, "Cancelled PO #{$id}");
+                }
             }
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
@@ -303,7 +326,6 @@ class PurchaseOrderService
             $result->info = self::MESSAGE_FAILED_FUNCTION;
             $result->data = null;
         }
-
         return $result;
     }
 
@@ -319,7 +341,7 @@ class PurchaseOrderService
 
             $newStatus = $this->deriveStatusFromReceipts($purchaseOrder);
             if ($newStatus !== $purchaseOrder->status) {
-                $updateResult = $this->purchaseOrderRepository->updateStatus($id, $newStatus);
+                $updateResult = $this->purchaseOrderRepository->updateStatus($id, $newStatus, $purchaseOrder->status);
                 if ($updateResult->code !== Result::CODE_SUCCESS) {
                     return $updateResult;
                 }
@@ -342,12 +364,16 @@ class PurchaseOrderService
 
     private function headerInvalidInfo($supplier, $warehouse, $orderDate)
     {
+        $parsedDate = false;
+        if (preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $orderDate) === 1) {
+            $parsedDate = \DateTime::createFromFormat('!Y-m-d', $orderDate);
+        }
         $info = '';
         if ($supplier === null || !$supplier->isActive) {
             $info = 'Please select a valid, active supplier.';
         } elseif ($warehouse === null || !$warehouse->isActive) {
             $info = 'Please select a valid, active warehouse.';
-        } elseif ($orderDate === '' || \DateTime::createFromFormat('Y-m-d', $orderDate) === false) {
+        } elseif ($parsedDate === false || $parsedDate->format('Y-m-d') !== $orderDate) {
             $info = 'Please enter a valid order date.';
         }
 
@@ -423,11 +449,11 @@ class PurchaseOrderService
         $errorResult = null;
 
         foreach ($items as $item) {
-            $productId        = (int) ($item['product_id'] ?? 0);
-            $quantityOrdered  = (int) ($item['qty_ordered'] ?? 0);
+            $productId = filter_var($item['product_id'] ?? 0, FILTER_VALIDATE_INT);
+            $quantityOrdered  = filter_var($item['qty_ordered'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 4294967295]]);
             $purchasePrice    = (string) ($item['purchase_price'] ?? '0');
 
-            if ($productId <= 0 && $quantityOrdered <= 0) {
+            if (trim((string) ($item['product_id'] ?? '')) === '' && trim((string) ($item['qty_ordered'] ?? '')) === '') {
                 continue;
             }
 
@@ -441,9 +467,9 @@ class PurchaseOrderService
             $lineError = null;
             if ($product === null || !$product->isActive) {
                 $lineError = 'Please select a valid, active product for every line.';
-            } elseif ($quantityOrdered <= 0) {
+            } elseif ($quantityOrdered === false || $quantityOrdered <= 0) {
                 $lineError = 'Ordered quantity must be greater than zero.';
-            } elseif (!is_numeric($purchasePrice) || (float) $purchasePrice < 0) {
+            } elseif (!is_numeric($purchasePrice) || (float) $purchasePrice < 0 || (float) $purchasePrice > 9999999999999.99) {
                 $lineError = 'Please enter a valid, non-negative price.';
             }
 

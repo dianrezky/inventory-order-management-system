@@ -90,54 +90,29 @@ class UserService
     public function updateUser($id, $input, $actorId = null)
     {
         $result = new Result();
-
         try {
-            // Each step runs only while no earlier step has produced a failing
-            // Result; the first failure is returned, otherwise $result is populated.
             $existingResult = $this->userRepository->findById($id);
-            $errorResult = null;
-            if ($existingResult->code !== Result::CODE_SUCCESS) {
-                $errorResult = $existingResult;
-            } elseif ($existingResult->data === null) {
-                $errorResult = $this->notFoundResult();
+            $validationResult = $this->validateUserUpdate($existingResult, $id, $input, $actorId);
+            if ($validationResult !== null) {
+                return $validationResult;
             }
-
-            if ($errorResult === null) {
-                $v = $this->validateUpdatePayloadWithPassword($id, $input);
-                // Changing your own role would drop the permission to manage users mid-session (and can leave no Admin at all)
-                $currentRole = $existingResult->data->role instanceof \App\Entity\Role ? $existingResult->data->role->value : (string) $existingResult->data->role;
-                if ($v === null && $actorId !== null && (int) $actorId === (int) $id && (string) ($input['role'] ?? '') !== $currentRole) {
-                    $v = new Result();
-                    $v->code = Result::CODE_VALIDATION;
-                    $v->info = 'You cannot change your own role.';
-                    $v->data = ['role' => 'You cannot change your own role.'];
-                }
-                $errorResult = $v;
-            }
-
+            $name = trim((string) ($input['name'] ?? ''));
             $newPassword = (string) ($input['password'] ?? '');
-            if ($errorResult === null) {
-                $name  = trim((string) ($input['name'] ?? ''));
-                $email = trim((string) ($input['email'] ?? ''));
-                $role  = (string) ($input['role'] ?? '');
-
-                $updateResult = $this->userRepository->update($id, [
-                    'name'  => $name,
-                    'email' => $email,
-                    'role'  => $role,
-                ]);
-                if ($updateResult->code !== Result::CODE_SUCCESS) {
-                    $errorResult = $updateResult;
-                }
+            $updateResult = $this->userRepository->update($id, [
+                'name' => $name,
+                'email' => trim((string) ($input['email'] ?? '')),
+                'role' => (string) ($input['role'] ?? ''),
+            ]);
+            if ($updateResult->code !== Result::CODE_SUCCESS) {
+                return $updateResult;
             }
-
-            if ($errorResult === null && $newPassword !== '') {
+            $errorResult = null;
+            if ($newPassword !== '') {
                 $passwordResult = $this->userRepository->updatePassword($id, password_hash($newPassword, PASSWORD_BCRYPT));
                 if ($passwordResult->code !== Result::CODE_SUCCESS) {
                     $errorResult = $passwordResult;
                 }
             }
-
             if ($errorResult === null) {
                 $updatedResult = $this->userRepository->findById($id);
                 if ($updatedResult->code !== Result::CODE_SUCCESS) {
@@ -146,13 +121,13 @@ class UserService
                     $result->code = Result::CODE_SUCCESS;
                     $result->info = 'The user account has been updated.';
                     $result->data = $updatedResult->data;
-
                     $this->logEvent($actorId, 'update', $id, "Updated user \"{$name}\"" . ($newPassword !== '' ? ' (password changed)' : ''));
                 }
             }
-
             if ($errorResult !== null) {
-                return $errorResult;
+                $result->code = $errorResult->code;
+                $result->info = $errorResult->info;
+                $result->data = $errorResult->data;
             }
         } catch (\Throwable $e) {
             error_log($e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
@@ -160,8 +135,29 @@ class UserService
             $result->info = self::MESSAGE_FAILED_FUNCTION;
             $result->data = null;
         }
-
         return $result;
+    }
+
+    // Profile validation also prevents an actor from removing their own administrative role.
+    private function validateUserUpdate($existingResult, $id, $input, $actorId)
+    {
+        $validationResult = null;
+        if ($existingResult->code !== Result::CODE_SUCCESS) {
+            $validationResult = $existingResult;
+        } elseif ($existingResult->data === null) {
+            $validationResult = $this->notFoundResult();
+        } else {
+            $validationResult = $this->validateUpdatePayloadWithPassword($id, $input);
+            $role = $existingResult->data->role;
+            $currentRole = $role instanceof \App\Entity\Role ? $role->value : (string) $role;
+            if ($validationResult === null && $actorId !== null && (int) $actorId === (int) $id && (string) ($input['role'] ?? '') !== $currentRole) {
+                $validationResult = new Result();
+                $validationResult->code = Result::CODE_VALIDATION;
+                $validationResult->info = 'You cannot change your own role.';
+                $validationResult->data = ['role' => 'You cannot change your own role.'];
+            }
+        }
+        return $validationResult;
     }
 
     public function setActive($id, $active, $actorId = null)
