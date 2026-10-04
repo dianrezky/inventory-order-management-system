@@ -2,7 +2,7 @@
 # One-shot, re-runnable deploy of IOMS onto the VPS that already runs the shared
 # Caddy proxy and the portfolio MinIO.
 #
-#   curl -fsSL https://raw.githubusercontent.com/dianrezky/inventory-order-management-system/main/scripts/deploy-vps.sh | sudo bash
+#   git -C /opt/ioms pull --ff-only && sudo bash /opt/ioms/scripts/deploy-vps.sh   (first install: git clone, then run the script)
 #
 # What it does: clones/updates the repo, writes .env (generated secrets; asks for
 # the MinIO key pair on the terminal, never via chat), builds and starts the stack
@@ -27,6 +27,7 @@ ok()   { printf '  \033[32mOK\033[0m    %s\n' "$*"; }
 warn() { printf '  \033[33mWARN\033[0m  %s\n' "$*"; }
 die()  { printf '  \033[31mFAIL\033[0m  %s\n' "$*" >&2; exit 1; }
 
+main() {
 # ── 0. Preflight ─────────────────────────────────────────────────────────────
 step "Preflight"
 for bin in docker git curl openssl; do
@@ -123,14 +124,14 @@ fi
 
 # ── 3. Build + start ─────────────────────────────────────────────────────────
 step "Build image and install PHP dependencies"
-"${COMPOSE[@]}" build
+"${COMPOSE[@]}" build </dev/null
 # The app bind-mounts the checkout over /var/www/html, hiding the image's vendor/.
 # Install it once as root so the www-data app/cron containers just read it.
-"${COMPOSE[@]}" run --rm --no-deps --user root --entrypoint sh app -c \
-    'composer install --no-interaction --no-progress --prefer-dist'
+"${COMPOSE[@]}" run -T --rm --no-deps --user root --entrypoint sh app -c \
+    'composer install --no-interaction --no-progress --prefer-dist' </dev/null
 
 step "Start stack"
-"${COMPOSE[@]}" up -d
+"${COMPOSE[@]}" up -d </dev/null
 printf '  waiting for iom_app to become healthy'
 for _ in $(seq 1 40); do
     st="$(docker inspect -f '{{.State.Health.Status}}' iom_app 2>/dev/null || echo none)"
@@ -236,3 +237,8 @@ Seed accounts ship with well-known demo passwords (see README). This site is on 
 public internet: sign in and change every password from the profile page right away.
 Re-run this script any time to pull the latest main and redeploy.
 EOF
+}
+
+# Wrapped in main() so bash has read the whole script before running any of it:
+# with `curl | bash`, a command that reads stdin would otherwise swallow the rest.
+main "$@"
