@@ -262,6 +262,37 @@ Peserta tetap bertanggung jawab penuh atas solusi dan mampu menjelaskan setiap k
 
 ---
 
+### 2026-09-22 — MinIO Integration & Docker Hardening
+- Tool: Claude
+- Tujuan: Integrasi MinIO object storage untuk upload gambar produk, hardening skrip inisialisasi MinIO di Docker, dan perbaikan sanity-check agar kompatibel dengan Docker networking.
+- Prompt (sanitasi): "MinIO container gagal init saat startup karena mc client belum ready — bantu harden minio-init.sh supaya retry sampai server siap"; "Tambahkan MinIO sebagai objek storage untuk upload gambar produk di IOMS".
+- Output yang digunakan:
+  - `minio-init.sh` dengan retry-loop dan health-check
+  - `MinioClient.php` — SigV4 signing implementation
+  - Update `docker-compose.yaml` untuk service minio + env var pass-through
+  - Update `ProductController.php` & `ProductService.php` untuk upload image ke MinIO
+- Output yang ditolak / dimodifikasi:
+  - Opsi "S3 SDK library" — ditolak (brief melarang library eksternal yang wrap HTTP; implementasi manual SigV4 dipakai sebagai gantinya).
+- Verifikasi: container `minio` dan `minio-init` startup sukses; upload gambar produk ke bucket berhasil; URL publik image dapat diakses via browser.
+- Test: smoke-test manual via UI (upload gambar produk baru → image tampil di halaman produk); PHPStan 0 error.
+
+---
+
+### 2026-10-04 — Standalone Repo Cleanup & Submission Prep
+- Tool: Claude (Sonnet 4.6)
+- Tujuan: Menyiapkan standalone repo `inventory-order-management-system` untuk submission: audit temuan stray file, tambah `.env.example`, perbaiki SIGV4_ALGORITHM literal di `MinioClient.php`, update `.gitignore` dengan pola `.fuse_hidden*`, dan update log ini.
+- Prompt (sanitasi): Laporan audit dari external review atas repo IOMS vs repo referensi — 8 temuan, termasuk stray empty files, missing .env.example, missing refactor: commit prefix, dan ai-usage-log yang tidak diupdate.
+- Output yang digunakan:
+  - Buat `.env.example` dari struktur `docker-compose.yaml` + `.env.production.example`
+  - Refactor `MinioClient.php`: ganti literal `'AWS4-HMAC-SHA256'` di `buildAuthorizationHeader()` dengan constant `self::SIGV4_ALGORITHM` yang sudah ada
+  - Tambah `.fuse_hidden*` ke `.gitignore`
+  - Update log ini (ai-usage-log.md) dengan entry Sep-22 dan Okt-04
+- Output yang ditolak / dimodifikasi: tidak ada.
+- Verifikasi: `git diff` review manual sebelum commit; tidak ada test yang terpengaruh (perubahan kosmetik/konstanta).
+- Test: perubahan bersifat refactor konstanta — tidak mengubah perilaku runtime; tidak ada test baru diperlukan.
+
+---
+
 ## Kebijakan Data
 - TIDAK PERNAH mengirim source code proprietary klien / data client / PII / credential ke layanan AI publik.
 - Snippet yang dikirim untuk pertanyaan wajib disanitasi (nama, credential, path lokal disembunyikan).
