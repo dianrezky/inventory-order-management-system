@@ -79,7 +79,7 @@ Putting both in the same store invites exactly the failure this ADR exists to pr
 - Two extra services to run, operate and defend at review that the brief does not require.
 - Cache invalidation is a real (if narrow) concern now — handled by post-commit invalidation of
   `product:<SKU>` on every product write path (`ProductService`).
-- **The honest consequence to state at defense is that neither service is required — the project
+- **The honest consequence is that neither service is required — the project
   would still satisfy every brief requirement without them.** This ADR's job is to make sure that,
   having chosen to add them anyway, neither can become a critical-failure vector (§22.7) or start
   quietly holding business data MySQL should own.

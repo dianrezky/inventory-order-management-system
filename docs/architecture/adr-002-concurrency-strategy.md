@@ -18,7 +18,7 @@ Brief §3.1 juga menentukan invariant uji:
 
 > "After N operations, `product_stocks.quantity == initial + sum(ledger.qty)` untuk product+warehouse."
 
-Studi kasus yang harus di-demo ke assessor:
+Studi kasus:
 
 ```
 Stok Produk-A di Gudang Bandung = 10 unit.
@@ -96,7 +96,7 @@ try {
 1. **Sederhana & defensible** — Logika linear, tidak ada retry loop, tidak ada hidden state.
 2. **MySQL InnoDB sudah battle-tested** — `FOR UPDATE` adalah primitif resmi InnoDB, didokumentasikan di mysql.com, dan ini adalah pattern standard untuk inventory systems.
 3. **Cocok untuk contention warehouse** — Kalau ada 2 warehouse staff yang antri Goods Issue di jam sibuk, lock-nya pendek (kurang dari 1 detik per operasi). Throughput masih tinggi.
-4. **Mudah di-demo & diuji** — Acquirer (assessor) bisa langsung mengerti alur: "lock → cek → mutasi → commit".
+4. **Mudah diuji** — alurnya langsung terbaca: "lock → cek → mutasi → commit".
 5. **Cocok dengan materi ujian** — Topik row-level locking lazim di kuliah database transaction; banyak peserta akan merasa familiar.
 
 ### Konvensi Ledger
@@ -177,7 +177,6 @@ if ($rowsAffected === 0) {
 ### Alasan menolak untuk konteks ini
 1. **Retry logic** — Kalau `affected_rows=0`, kode harus decide: retry otomatis (3x?) atau reject langsung? Implementasi retry loop lebih kompleks, terutama saat error path harus dijaga deterministic untuk testing.
 2. **Hidden failure mode** — Optimistic lebih cocok untuk **low-contention** (mis. CMS update by author). Warehouse operations dengan 2-5 staff concurrent di jam sibuk = medium-to-high contention. Pessimistic lebih predictable.
-3. **Penjelasan ke assessor** — Topik row lock jauh lebih lazim di materi database transaction Indonesia; optimistic version column lebih sering diajarkan di advanced distributed systems.
 4. **Overkill untuk scope** — Tidak ada distributed system, tidak ada mobile client dengan sync offline. Kompleksitas optimistic tidak sebanding dengan benefitnya di sini.
 
 ---
@@ -341,7 +340,6 @@ Kami tetap pada **default REPEATABLE READ** InnoDB. Tidak ada kebutuhan eksplisi
 - [x] ARCH-02 AC2 — Force error di tengah → rollBack, tabel tidak berubah.
 - [x] ARCH-02 AC3 — Konsistensi ledger vs stock.
 - [x] BR-008 / BR-009 / BR-010 / BR-015 enforced.
-- [x] Demo ready untuk assessor (Brief §8.1).
 
 ---
 

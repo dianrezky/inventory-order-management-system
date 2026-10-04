@@ -360,7 +360,7 @@ Was previously undocumented in this file — added 2026-09-18 alongside its inde
 Added 2026-09-18. General, insert-only activity/event log — **not** a replacement for
 `stock_ledger`. `stock_ledger` remains the sole authoritative record of stock quantity movements
 (INV-2/INV-3); `event_logs` is a broader, best-effort trail across the whole system (auth events,
-master-data CRUD, PO/SO lifecycle transitions, exports, etc.) for traceability/defense, and is
+master-data CRUD, PO/SO lifecycle transitions, exports, etc.) for traceability, and is
 never read by authorization or stock logic.
 
 | Column | Type | Constraint | Note |
@@ -379,7 +379,7 @@ never read by authorization or stock logic.
 | Index | Type | Columns | Note |
 |-------|------|---------|------|
 | PRIMARY | BTREE | `id` | |
-| `idx_event_logs_user` | BTREE | `user_id` | "show me everything this user did" (defense/incident review) |
+| `idx_event_logs_user` | BTREE | `user_id` | "show me everything this user did" (incident review) |
 | `idx_event_logs_action` | BTREE | `action` | "show me every X action" (e.g. all approve/reject events) |
 | `idx_event_logs_entity` | BTREE | `(entity_type, entity_id)` | "show me the history of this one record" — the most common activity-log read pattern |
 | `idx_event_logs_created_at` | BTREE | `created_at` | activity feeds and date-range exports always order/filter by `created_at DESC` |

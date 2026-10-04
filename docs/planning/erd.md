@@ -8,7 +8,7 @@
 
 ## Purpose
 
-This is the presentation-ready ERD for the DB-01 defense item (brief requires ERD + schema + one
+This is the ERD for the DB-01 item (brief requires ERD + schema + one
 transaction walk-through + one index explained, all traceable to `database/schema.sql`). It is kept
 in sync with `docs/architecture/db-schema-design.md`, the original detailed design doc; this file is
 the compact version meant to be shown/walked live.
@@ -147,7 +147,7 @@ inconsistent (INV-2, INV-3).
    unrelated products/warehouses (two concurrent issues on different products proceed in parallel).
 
 That dual role — a data-integrity constraint that is *also* the concurrency-control access path — is
-the reason this is the index worth explaining at defense.
+the reason this index matters.
 
 ## See also
 

@@ -47,7 +47,7 @@ Phase 2 already fixed. Concretely:
 | Product and technical requirements | `phase1-baseline.md` §11 | Specified in implementation terms; never redefined |
 | Business rule statements | `phase1-baseline.md` §11 `Business Rule Statement` | Formalized as numbered rules that **cite** the canonical statement |
 | Sources, decisions, conflicts, assumptions | `phase1-baseline.md` §03–§06 | Referenced only. **No new registry is created** |
-| Input fields, states, authorization, data impact, transactions, concurrency, Redis, Memcached, acceptance, tests, evidence, defense, critical failures, dependencies | `phase1-baseline.md` §19.1–§19.15 | Referenced as the canonical detailed source |
+| Input fields, states, authorization, data impact, transactions, concurrency, Redis, Memcached, acceptance, tests, evidence, critical failures, dependencies | `phase1-baseline.md` §19.1–§19.15 | Referenced as the canonical detailed source |
 | Architecture, components, contracts, schema, ERD, transactions, concurrency, security, API, dashboards, reports, CLI, class diagram, ADRs | `phase2-blueprint.md` | Translated into implementation constraints; never redesigned |
 | UI/UX facts | `SRC-003` / `SRC-004` §design reference | Mapped only. **No redesign** |
 
@@ -646,7 +646,7 @@ statements in `P1 §11`; none is redefined.
 | **Main Flow** | 1. **Assert the requester's role is exactly `Admin`** — this is the first action taken, before any read-for-write, any transaction, and any state change · 2. Assert status is `PendingApproval` · 3. Record the approver's user id and the approval timestamp · 4. Transition to `Approved` |
 | **Alternative Flow** | None. **The creator's identity is not consulted**: Sales is denied regardless of ownership (`DEC-012`) |
 | **Failure Flow** | Sales requester → **403 with no transition, status unchanged, approver unset** — including on the requester's own order · Warehouse Staff → 403 · status not `PendingApproval` → rejected · unknown SO → 404 |
-| **Postconditions** | Status is `Approved`; the approver is recorded as defense evidence; the order becomes issuable |
+| **Postconditions** | Status is `Approved`; the approver is recorded for audit; the order becomes issuable |
 | **Related Requirement IDs** | SO-01 (SoD-1, SoD-2), ERR-01, AUTH-01 · `P1 §19.3`, `§19.4`, `§19.5`, `§19.14` CF-8 · `P2 §05 UC-E3`, `§12.5` SoD-A…SoD-I · AC-SO-01-3, 4, 5 |
 
 ### `UC-E4` — Reject Sales Order
@@ -2732,10 +2732,10 @@ registry is created**; every identifier below already exists in Phase 1 or Phase
 | TEST-01 | — | — | R-07 in-memory implementation, `§06.1`, SoD-I, RU-5 | `P1 §19.11` | AC-TEST-01-1, 2 |
 | TEST-02 | — | — | `CC-1`…`CC-5` verification scenarios, `§09.5` | `P1 §19.11`, `§19.7` | AC-TEST-02-1 … 3 |
 | TEST-03 | — | — | BR-1…BR-8 as static boundaries, clock abstraction | `P1 §19.11` | AC-TEST-03-1, 2 |
-| DESIGN-01 | — | — | **`P2 §20`** (initial diagram produced) | `P1 §19.12`, `§19.13` | AC-DESIGN-01-1 … 3 |
-| DESIGN-02 | — | — | **`P2 §21`** `ADR-001`, `ADR-002`, `ADR-003` | `P1 §19.12`, `§19.13` | AC-DESIGN-02-1, 2 |
+| DESIGN-01 | — | — | **`P2 §20`** (initial diagram produced) | `P1 §19.12` | AC-DESIGN-01-1 … 3 |
+| DESIGN-02 | — | — | **`P2 §21`** `ADR-001`, `ADR-002`, `ADR-003` | `P1 §19.12` | AC-DESIGN-02-1, 2 |
 | DESIGN-03 | — | — | C-10/C-12/C-13 SRP split, `§04.1` | `P1 §19.12` | AC-DESIGN-03-1 … 4 |
-| DESIGN-04 | — | — | `P2 §03`, `§03.1` prohibitions as the yardstick | `P1 §19.12`, `§19.13` | AC-DESIGN-04-1 |
+| DESIGN-04 | — | — | `P2 §03`, `§03.1` prohibitions as the yardstick | `P1 §19.12` | AC-DESIGN-04-1 |
 
 **28 of 28 requirements traced. Every reference resolves to an existing Phase 1 or Phase 2
 identifier.**

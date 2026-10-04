@@ -46,7 +46,7 @@ class EventLogMySQLRepository implements EventLogRepositoryInterface
         return $result;
     }
 
-    // Read side (activity feed / defense evidence) — not on any route yet,
+    // Read side (activity feed / audit evidence) — not on any route yet,
     // provided so the table isn't write-only once EventLogService is wired.
     public function findAll($filters = [], $limit = 0, $offset = 0)
     {

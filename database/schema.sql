@@ -405,7 +405,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 -- Adjustment) and must never be conflated with general activity logging.
 -- event_logs is a broader, best-effort trail of actions across the whole
 -- system (auth events, master-data CRUD, PO/SO lifecycle transitions,
--- exports, etc.) for traceability/defense — it is NEVER a source of truth
+-- exports, etc.) for traceability — it is NEVER a source of truth
 -- for business state and NEVER read by authorization or stock logic.
 --
 -- Like stock_ledger, this table has no UPDATE or DELETE path in the
@@ -424,7 +424,7 @@ CREATE TABLE IF NOT EXISTS event_logs (
     metadata      JSON            NULL,       -- optional structured context (e.g. changed fields); informational only, never parsed for business/authorization decisions
     created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    -- FILTER INDEXING: "show me everything this user did" (defense/incident review)
+    -- FILTER INDEXING: "show me everything this user did" (incident review)
     KEY idx_event_logs_user (user_id),
     -- FILTER INDEXING: "show me every X action" (e.g. all approve/reject events)
     KEY idx_event_logs_action (action),

@@ -583,38 +583,38 @@ as two joined views keyed on Requirement ID. This is a presentation choice only 
 
 ### 4B — Verification, evidence and status
 
-| ID | Security impact | Unit test | Integration test | Evidence | Defense point | Critical failure risk | Priority | Req status | Impl status |
-|---|---|---|---|---|---|---|---|---|---|
-| AUTH-01 | High — hashing, fixation | `AuthServiceTest` | `UserCreationTest` | 3-role login demo | Why regenerate session ID? | **Yes** — plaintext password | P0 | MANDATORY | TESTED |
-| AUTH-02 | High — session lifetime | — | — | logout demo | What exactly is invalidated? | Yes — stale session | P0 | MANDATORY | IMPLEMENTED |
-| USR-01 | High — privilege escalation | — | `UserCreationTest` | CRUD + 403 tests | Where is the role check? | **Yes** — frontend-only authz | P0 | MANDATORY | TESTED |
-| PRD-01 | Medium — file upload | — | — | upload with bad file | Why random filename? | Yes — upload RCE | P1 | MANDATORY | IMPLEMENTED |
-| WH-01 | Low | — | — | 2-warehouse demo | Why stock per warehouse? | No | P1 | MANDATORY | IMPLEMENTED |
-| PO-01 | Medium — data integrity | `GoodsReceiptServiceTest`, `PurchaseOrderServiceTest` | `GoodsReceiptTest` | ledger contents | Show the transaction boundary | **Yes** — non-transactional receipt | P0 | MANDATORY | TESTED |
-| SO-01 | High — SoD + oversell | `SalesOrderPolicyTest` | `BR001SegregationTest`, `SalesOrderApprovalPolicyTest` | full flow demo | How is self-approval blocked? | **Yes** — SoD bypass, oversell | P0 | MANDATORY | TESTED |
-| VIEW-01 | Low | — | — | with/without data screenshots | EMPTY vs NO_RESULTS? | No | P1 | MANDATORY | IMPLEMENTED |
-| FIND-01 | Medium — SQL injection | — | — | 2-page demo | Show the prepared statement | **Yes** — raw SQL concat | P1 | MANDATORY | IMPLEMENTED |
-| DASH-01 | Low | `DashboardServiceTest` | — | aggregation queries | Prove no hardcoded number | Yes — cosmetic-only feature | P1 | MANDATORY | TESTED |
-| REPORT-01 | Medium — CSV injection | `CsvExportServiceTest` | — | 2 CSV files | Why prefix `=` with `'`? | No | P1 | MANDATORY | TESTED |
-| API-01 | Medium — auth bypass | — | — | 3 curl calls | Same auth as HTML? | Yes — unauthenticated data | P1 | MANDATORY | IMPLEMENTED |
-| VAL-01 | Medium | several | several | scenario list | Why is backend the truth? | No | P1 | MANDATORY | IMPLEMENTED |
-| ERR-01 | High — info disclosure | — | — | 2 failure paths | Where is the trace suppressed? | Yes — stack trace leak | P2 | MANDATORY | IMPLEMENTED |
-| UI-01 | Low | — | — | 4×2 screenshots | Show 360px | No | P2 | MANDATORY | **IMPLEMENTED** (C-03: touch targets 44px added at max-width:768px) |
-| DB-01 | High — injection | — | all | ERD + schema | Explain one index | **Yes** — missing constraint | P0 | MANDATORY | IMPLEMENTED |
-| JOB-01 | Low | — | — | script run | Why outside the request cycle? | No | P2 | MANDATORY | IMPLEMENTED |
-| ARCH-01 | Low | all unit tests | — | interface + 2 impls | Trace one dependency | Yes — DI container framework | P0 | MANDATORY | TESTED |
-| ARCH-02 | **Critical** | — | `ARCH02ConcurrencyTest`, `GoodsIssueConcurrencyTest` | concurrency scenario | Why FOR UPDATE not optimistic? | **Yes** — reproducible oversell | P0 | MANDATORY | TESTED |
-| DESIGN-01 | — | — | — | 2 diagrams | Trace diagram→code | **Yes** — diagram ≠ code | P1 | MANDATORY | **IMPLEMENTED** (C-03: initial diagram moved to docs/planning/) |
-| DESIGN-02 | — | — | — | `adr-*.md` | Walk one ADR | No | P1 | MANDATORY | IMPLEMENTED |
-| DESIGN-03 | — | — | — | refactor log, tech debt | Which smell, which technique? | No | P1 | MANDATORY | IMPLEMENTED |
-| DESIGN-04 | — | — | — | `critique.md` | Name the SOLID violation | No | P1 | MANDATORY | **IMPLEMENTED** (C-04: created docs/quality/critique.md) |
-| TEST-01 | — | 6 files | — | `docs/testing/unit-test-results.md` | Why no DB here? | **Yes** — no valid tests | P0 | MANDATORY | **TESTED** (63 tests, 157 assertions; 2026-09-16) |
-| TEST-02 | — | — | 6 files | `docs/testing/integration-test-results.md` | Why real MySQL here? | **Yes** — no valid tests | P0 | MANDATORY | **TESTED** (17 tests, 136 assertions; 2026-09-16) |
-| TEST-03 | — | — | — | `docs/testing/phpstan-results.md` | Explain a warning | Yes — all tests failing | P1 | MANDATORY | **TESTED** (PHPStan level 5, 0 errors; no sleep(); 2026-09-16) |
-| SESSION-01 | High | — | TO BUILD | Redis TTL demo | What if Redis is down? | Yes — if it breaks AUTH-01 | P3 | OPTIONAL | IMPLEMENTED (TTL mismatch) |
-| CACHE-01 | Low | — | TO BUILD | hit/miss demo | Why Memcached not Redis? | Yes — if treated as truth | P3 | OPTIONAL | **PARTIAL** (§23) |
-| I18N-01 | Low | — | — | locale toggle | Is i18next allowed? | **Yes — CF-02** | P4 | **OUT OF SCOPE (2026-09-08)** | IMPLEMENTED (pre-existing, not required) |
-| THEME-01 | Low | — | — | theme toggle | Why build this? | No | P4 | **OUT OF SCOPE (2026-09-08)** | IMPLEMENTED (pre-existing, not required) |
+| ID | Security impact | Unit test | Integration test | Evidence | Critical failure risk | Priority | Req status | Impl status |
+|---|---|---|---|---|---|---|---|---|
+| AUTH-01 | High — hashing, fixation | `AuthServiceTest` | `UserCreationTest` | 3-role login demo | **Yes** — plaintext password | P0 | MANDATORY | TESTED |
+| AUTH-02 | High — session lifetime | — | — | logout demo | Yes — stale session | P0 | MANDATORY | IMPLEMENTED |
+| USR-01 | High — privilege escalation | — | `UserCreationTest` | CRUD + 403 tests | **Yes** — frontend-only authz | P0 | MANDATORY | TESTED |
+| PRD-01 | Medium — file upload | — | — | upload with bad file | Yes — upload RCE | P1 | MANDATORY | IMPLEMENTED |
+| WH-01 | Low | — | — | 2-warehouse demo | No | P1 | MANDATORY | IMPLEMENTED |
+| PO-01 | Medium — data integrity | `GoodsReceiptServiceTest`, `PurchaseOrderServiceTest` | `GoodsReceiptTest` | ledger contents | **Yes** — non-transactional receipt | P0 | MANDATORY | TESTED |
+| SO-01 | High — SoD + oversell | `SalesOrderPolicyTest` | `BR001SegregationTest`, `SalesOrderApprovalPolicyTest` | full flow demo | **Yes** — SoD bypass, oversell | P0 | MANDATORY | TESTED |
+| VIEW-01 | Low | — | — | with/without data screenshots | No | P1 | MANDATORY | IMPLEMENTED |
+| FIND-01 | Medium — SQL injection | — | — | 2-page demo | **Yes** — raw SQL concat | P1 | MANDATORY | IMPLEMENTED |
+| DASH-01 | Low | `DashboardServiceTest` | — | aggregation queries | Yes — cosmetic-only feature | P1 | MANDATORY | TESTED |
+| REPORT-01 | Medium — CSV injection | `CsvExportServiceTest` | — | 2 CSV files | No | P1 | MANDATORY | TESTED |
+| API-01 | Medium — auth bypass | — | — | 3 curl calls | Yes — unauthenticated data | P1 | MANDATORY | IMPLEMENTED |
+| VAL-01 | Medium | several | several | scenario list | No | P1 | MANDATORY | IMPLEMENTED |
+| ERR-01 | High — info disclosure | — | — | 2 failure paths | Yes — stack trace leak | P2 | MANDATORY | IMPLEMENTED |
+| UI-01 | Low | — | — | 4×2 screenshots | No | P2 | MANDATORY | **IMPLEMENTED** (C-03: touch targets 44px added at max-width:768px) |
+| DB-01 | High — injection | — | all | ERD + schema | **Yes** — missing constraint | P0 | MANDATORY | IMPLEMENTED |
+| JOB-01 | Low | — | — | script run | No | P2 | MANDATORY | IMPLEMENTED |
+| ARCH-01 | Low | all unit tests | — | interface + 2 impls | Yes — DI container framework | P0 | MANDATORY | TESTED |
+| ARCH-02 | **Critical** | — | `ARCH02ConcurrencyTest`, `GoodsIssueConcurrencyTest` | concurrency scenario | **Yes** — reproducible oversell | P0 | MANDATORY | TESTED |
+| DESIGN-01 | — | — | — | 2 diagrams | **Yes** — diagram ≠ code | P1 | MANDATORY | **IMPLEMENTED** (C-03: initial diagram moved to docs/planning/) |
+| DESIGN-02 | — | — | — | `adr-*.md` | No | P1 | MANDATORY | IMPLEMENTED |
+| DESIGN-03 | — | — | — | refactor log, tech debt | No | P1 | MANDATORY | IMPLEMENTED |
+| DESIGN-04 | — | — | — | `critique.md` | No | P1 | MANDATORY | **IMPLEMENTED** (C-04: created docs/quality/critique.md) |
+| TEST-01 | — | 6 files | — | `docs/testing/unit-test-results.md` | **Yes** — no valid tests | P0 | MANDATORY | **TESTED** (63 tests, 157 assertions; 2026-09-16) |
+| TEST-02 | — | — | 6 files | `docs/testing/integration-test-results.md` | **Yes** — no valid tests | P0 | MANDATORY | **TESTED** (17 tests, 136 assertions; 2026-09-16) |
+| TEST-03 | — | — | — | `docs/testing/phpstan-results.md` | Yes — all tests failing | P1 | MANDATORY | **TESTED** (PHPStan level 5, 0 errors; no sleep(); 2026-09-16) |
+| SESSION-01 | High | — | TO BUILD | Redis TTL demo | Yes — if it breaks AUTH-01 | P3 | OPTIONAL | IMPLEMENTED (TTL mismatch) |
+| CACHE-01 | Low | — | TO BUILD | hit/miss demo | Yes — if treated as truth | P3 | OPTIONAL | **PARTIAL** (§23) |
+| I18N-01 | Low | — | — | locale toggle | **Yes — CF-02** | P4 | **OUT OF SCOPE (2026-09-08)** | IMPLEMENTED (pre-existing, not required) |
+| THEME-01 | Low | — | — | theme toggle | No | P4 | **OUT OF SCOPE (2026-09-08)** | IMPLEMENTED (pre-existing, not required) |
 
 Every MANDATORY row has the chain Requirement → Acceptance Criteria → Implementation → Test →
 Evidence. Rows whose Impl status is not `TESTED`/`IMPLEMENTED` are the §48 blocking list.
@@ -1074,7 +1074,7 @@ Lifecycle: **insert only** (INV-3). No update path, no delete path, no repositor
 General, insert-only activity/event log. **Not** a replacement for `stock_ledger` — `stock_ledger`
 remains the sole authoritative record of stock quantity movements (INV-2/INV-3); `event_logs` is a
 broader, best-effort trail across the whole system (auth events, master-data CRUD, PO/SO lifecycle
-transitions, exports, etc.) for traceability/defense, and is never read by authorization or stock
+transitions, exports, etc.) for traceability, and is never read by authorization or stock
 logic. Not part of the brief's mandatory entity set (§1.3) — added on explicit request.
 
 | Field | Type | Null | Constraint |
@@ -1202,7 +1202,7 @@ the numeric primary key `id` plus `note`, `status`, `created_by`, dates and join
 | `idx_ledger_type` | stock_ledger | type | movement-type dropdown filter in the ledger view |
 | `idx_notifications_unread_created` | notifications | read_at, created_at | notification bell — covers `WHERE read_at IS NULL` + `ORDER BY created_at DESC` in one pass (polled on every authenticated page) |
 | `idx_notifications_dedupe` | notifications | type, product_id, warehouse_id, read_at | JOB-01's per-product dedupe check before inserting a new low-stock notification |
-| `idx_event_logs_user` | event_logs | user_id | "everything this user did" (defense/incident review) |
+| `idx_event_logs_user` | event_logs | user_id | "everything this user did" (incident review) |
 | `idx_event_logs_action` | event_logs | action | "every X action" (e.g. all approve/reject events) |
 | `idx_event_logs_entity` | event_logs | entity_type, entity_id | per-record activity history — the most common read pattern |
 | `idx_event_logs_created_at` | event_logs | created_at | activity feeds / date-range exports, `ORDER BY created_at DESC` |
@@ -1217,7 +1217,7 @@ the numeric primary key `id` plus `note`, `status`, `created_by`, dates and join
 > `uniq_warehouses_code`/`idx_warehouses_active`, and `idx_ledger_type`, which already existed in
 > `database/schema.sql` but were missing from this table.
 
-**Index to explain at defense (brief DB-01 evidence):** `uniq_product_warehouse` on `product_stocks`.
+**Key index (brief DB-01 evidence):** `uniq_product_warehouse` on `product_stocks`.
 It is simultaneously the uniqueness guarantee for INV-5 *and* the access path that makes
 `SELECT … FOR UPDATE` lock exactly one row rather than a range — which is what keeps ARCH-02 both
 correct and non-blocking for unrelated products. That dual role is the reason it is worth explaining.
@@ -1402,7 +1402,7 @@ multiple repositories (the service owns that boundary — §14).
 | Core (session, cache, DB, container, i18n) | 8 | `app/Core/` |
 
 ARCH-01 AC2 asks for *at least one* interface with two implementations. All fourteen have both. That
-is worth stating at defense as a deliberate choice: it is what makes every service unit-testable
+is a deliberate choice: it is what makes every service unit-testable
 without MySQL, rather than just the one the requirement demands.
 
 ### 11.4 Folder structure vs brief §4.1
@@ -2893,7 +2893,7 @@ decisions actually taken in this specification.
 - **Consequences.** Two extra services to run and defend. Redis must degrade to file sessions or it
   becomes a critical-failure vector (§22.7). Cache invalidation becomes a real concern (§24). In
   exchange: session storage is externalized with real TTL semantics, and the hot SKU lookup is cheap.
-  **The honest consequence to state at defense is that neither is required, and the project would
+  **The honest consequence is that neither is required, and the project would
   still satisfy the brief without them.**
 
 ### 30.2 ADR-006 outline (superseded — see the new-finding note above and the ADR file itself)
@@ -3005,7 +3005,7 @@ Honest, per brief DESIGN-03 AC3.
 | ID | Debt | Reason taken | Impact | Ideal solution | Priority |
 |---|---|---|---|---|---|
 | TD-01 | Redis has no graceful-degradation path; if Redis is down nobody can log in | Redis was added as session store without a fallback branch | **Converts an optional dependency into a brief critical failure** | Probe reachability at `start()`; fall back to file sessions with a logged warning | **Resolved (2026-09-17) — was P0 (C-02)** |
-| TD-02 | Session TTL is 7200s, spec says 3600s | Default carried over from an earlier decision | Longer exposure window than specified; spec/impl mismatch at defense | Set 3600 in `SessionManager` and `.env` | **Resolved (2026-09-17) — was P0 (C-01)** |
+| TD-02 | Session TTL is 7200s, spec says 3600s | Default carried over from an earlier decision | Longer exposure window than specified; spec/impl mismatch | Set 3600 in `SessionManager` and `.env` | **Resolved (2026-09-17) — was P0 (C-01)** |
 | TD-03 | Memcached caches only translations, not the specified master-data lookups | I18N-01 was built before CACHE-01 was specified | CACHE-01 unimplemented; the cache layer's stated purpose does not match its use | Implement `product:<sku>` cache-aside; decide on the other four (§23.5) | **Resolved (2026-09-17) — `product:<sku>` cache-aside implemented; was P1 (C-08). The other four keys from §23.5 remain undecided.** |
 | TD-04 | `PartiallyReceived → Cancelled` is not permitted | Cancelling after stock has moved needs a compensating `Adjustment` ledger entry | A part-received PO cannot be closed out; it stays open | Add an Adjustment-based reversal flow | P3 — out of current scope |
 | TD-05 | No login rate limiting | Not required by the brief; §0 penalises unjustified complexity | Brute force is only mitigated by generic messaging | Redis counter with a short window, **only if a real need appears** | P4 — deliberately not built |
@@ -3589,8 +3589,6 @@ Implementation (§40 slices)
 Tests (§26)  +  Static analysis (§27)
       ↓
 Evidence (§41)
-      ↓
-Defense
 ```
 
 ### Traceability spot-check on the highest-risk chain
@@ -3805,7 +3803,7 @@ One further observation from the CF-M check, worth keeping: the decrement is wri
 `UPDATE product_stocks SET quantity = quantity + :delta WHERE …` — a relative update rather than a
 read-modify-write of an absolute value. Combined with the `FOR UPDATE` lock this is belt-and-braces:
 even without the lock the arithmetic itself could not lose an update, though the *sufficiency check*
-still requires the lock. Worth saying at defense — it strengthens the ARCH-02 answer.
+still requires the lock.
 
 ---
 

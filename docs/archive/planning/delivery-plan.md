@@ -231,7 +231,7 @@ Sesuai keputusan user 2026-09-01: **timeline 2 minggu**, **Stage 3 UX/UI Spec di
 
 ## 8. Slice 6 — Quality & Docs (Hari 10, ~10 jam)
 
-**Tujuan:** Semua quality artifact siap untuk assessor defense.
+**Tujuan:** Semua quality artifact siap.
 
 ### Tasks
 
@@ -417,7 +417,7 @@ Timeline 2-minggu sangat ketat. Mitigasi:
 | Selesai lebih cepat (slice 4 dalam 6 hari bukan 8) | Lanjut Slice 7 bonus |
 | Selesai sesuai jadwal | Standby buffer, polish UX |
 | Terlambat 1 hari | Potong Slice 5 (defer dashboard/CSV ke release berikutnya) |
-| Terlambat 2+ hari | Push defense: fokus S1-S4 + S6 minimum, S5 optional |
+| Terlambat 2+ hari | Fokus S1-S4 + S6 minimum, S5 optional |
 
 ---
 

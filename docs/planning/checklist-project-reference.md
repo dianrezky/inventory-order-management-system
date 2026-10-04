@@ -2,7 +2,7 @@
 
 > Diturunkan langsung dari `PROJECT_REFERENCE.md` (2647 baris, Section 1–9, item **B-01 s/d B-150**,
 > **CF-01 s/d CF-10**, **DEMO-01 s/d DEMO-06**, **FAQ-01 s/d FAQ-12**). Tujuan file ini: satu tempat
-> untuk mencentang **setiap poin yang wajib dibuat / dibuktikan** sebelum submission & technical defense.
+> untuk mencentang **setiap poin yang wajib dibuat / dibuktikan** sebelum submission.
 
 ## Cara Membaca Checklist Ini
 
@@ -371,55 +371,6 @@
 - [ ] **B-139** Alur PO: create → submit → receive → ledger updated
 - [ ] **B-140** Alur SO: create → submit → approve → issue → fulfilled
 - [ ] **B-141** SOD enforcement: Sales coba approve SO sendiri → ditolak
-
----
-
-## 13. Technical Defense / Demo Readiness
-
-### Persiapan Peralatan
-- [ ] Laptop + Docker Desktop/Engine running
-- [ ] Browser untuk demo UI
-- [ ] Terminal untuk demo command line
-- [ ] Project dalam clean state (tidak ada uncommitted change)
-
-### Persiapan Materi
-- [ ] `docker compose up --build -d` → hijau
-- [ ] Unit tests pass (jumlah terbaru, bukan sekadar "63" — verifikasi ulang)
-- [ ] Integration tests pass (jumlah terbaru — verifikasi ulang)
-- [ ] PHPStan 0 error
-- [ ] Kredensial login 3 role siap dipakai
-- [ ] Class diagram di-tab terbuka / siap ditampilkan
-- [ ] 1 ADR terbuka & siap dijelaskan (rekomendasi: ADR-002 Concurrency Strategy)
-- [ ] `docs/quality/refactor-log.md` terbuka
-
-### DEMO-01 — Docker & Environment
-- [ ] Jalankan dari kondisi bersih: `docker compose down -v && docker compose up --build -d`
-- [ ] Tunjukkan `docker compose ps` — semua container running
-- [ ] Tunjukkan schema & seed sudah ter-load (login → cek data)
-
-### DEMO-02 — Unit & Integration Test
-- [ ] `phpunit --testsuite Unit --testdox`
-- [ ] `phpunit --testsuite Integration --testdox`
-- [ ] `phpstan analyse`
-- [ ] Bisa jalankan 1 test class spesifik (mis. `SalesOrderPolicyTest.php`)
-
-### DEMO-03 — Class Diagram ke Kode
-- [ ] Telusuri 1 kelas dari diagram → kode (mis. `SalesOrderService`)
-- [ ] Tunjukkan dependency ke interface → implementasi MySQL
-- [ ] Tunjukkan perbedaan initial vs as-built
-
-### DEMO-04 — Skenario Concurrency ARCH-02
-- [ ] Jelaskan mekanisme anti-oversell (`SELECT FOR UPDATE` di `lockForUpdate()`)
-- [ ] Jalankan `ARCH02ConcurrencyTest` live
-- [ ] Jelaskan skenario konkuren yang dicegah
-- [ ] Tunjukkan lock-wait-timeout di output test sebagai bukti row lock aktif
-
-### DEMO-05 — ADR Discussion
-- [ ] Pilih & jelaskan 1 ADR (Context → Decision → Consequences)
-
-### DEMO-06 — Safe Refactor Demo
-- [ ] Siap mengubah 1 method kecil di depan assessor, test tetap hijau
-- [ ] Bisa jelaskan kenapa perubahan itu aman
 
 ---
 

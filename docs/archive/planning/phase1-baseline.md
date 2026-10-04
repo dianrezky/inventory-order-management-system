@@ -322,7 +322,7 @@ Classification: **CANONICAL OWNER**
 | Assumption ID | Assumption | Basis | Authority if wrong | Impact | Mandatory | Status |
 |---|---|---|---|---|---|---|
 | ASM-001 | A rejected Sales Order terminates at status `Cancelled` | `DEC-009`, derived from SRC-001 §1.3 permitted `Cancelled` at any stage before `Fulfilled` | SRC-001 / trainer clarification per FAQ 12 | If the trainer specifies a distinct rejection state, the SO status model, STATE MATRIX rows for SO rejection, and the SO detail UI state gain one value. Contained: one enum value, one transition row, one badge | **YES** | **OPEN** — requires trainer confirmation |
-| ASM-002 | Strictly scoped Redis (session/security state only) and Memcached (ephemeral read cache only) do not constitute "layer tambahan yang tidak menyelesaikan masalah nyata" under SRC-001 §0 | `DEC-005`, `DEC-006`; SRC-001 §4 does not prohibit either; §0 penalises unjustified complexity | SRC-001 §0 scoring, assessor judgement at defense | Scoring exposure on code-quality if the participant cannot defend why each exists. Not a critical failure — CF-3 lists only frameworks/ORM/DI containers. Mitigation: both bounded in §20/§21 and each requires a defensible rationale (DEFENSE MATRIX) | No | ACCEPTED |
+| ASM-002 | Strictly scoped Redis (session/security state only) and Memcached (ephemeral read cache only) do not constitute "layer tambahan yang tidak menyelesaikan masalah nyata" under SRC-001 §0 | `DEC-005`, `DEC-006`; SRC-001 §4 does not prohibit either; §0 penalises unjustified complexity | SRC-001 §0 scoring, assessor judgement at defense | Scoring exposure on code-quality if the participant cannot defend why each exists. Not a critical failure — CF-3 lists only frameworks/ORM/DI containers. Mitigation: both bounded in §20/§21 and each requires a defensible rationale | No | ACCEPTED |
 | ASM-003 | Applying the SRC-003 baseline's own documented collapsed-rail and mobile-drawer behaviour to product screens is baseline **application**, not redesign | SRC-003 documents the behaviour on the shell blueprint but implements it only there; UI-01 requires 360px usability on product screens | SRC-003 / `DEC-007` | If treated as redesign, UI-01 cannot be satisfied without a decision to amend the baseline. Recorded as a Required Adjustment in §23, not a redesign | No | ACCEPTED |
 
 **3 assumptions. 1 mandatory and open (`ASM-001`).** It is not hidden: it is declared here, in
@@ -558,7 +558,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § AUTH-01 (AC-AUTH-01-1 … AC-AUTH-01-5)
 - **Test Ref:** TEST TRACEABILITY MATRIX § AUTH-01
 - **Evidence Ref:** EVIDENCE MATRIX § AUTH-01
-- **Defense Ref:** DEFENSE MATRIX § AUTH-01
 - **Critical Failure Ref:** CF-2, CF-5
 - **Dependency Ref:** USR-01 (accounts must exist), DB-01 (user storage), ENV-01 (runnable environment)
 - **Priority:** P0
@@ -602,7 +601,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § AUTH-02 (AC-AUTH-02-1, AC-AUTH-02-2)
 - **Test Ref:** TEST TRACEABILITY MATRIX § AUTH-02
 - **Evidence Ref:** EVIDENCE MATRIX § AUTH-02
-- **Defense Ref:** DEFENSE MATRIX § AUTH-02
 - **Critical Failure Ref:** CF-5
 - **Dependency Ref:** AUTH-01
 - **Priority:** P1
@@ -646,7 +644,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § USR-01 (AC-USR-01-1 … AC-USR-01-4)
 - **Test Ref:** TEST TRACEABILITY MATRIX § USR-01
 - **Evidence Ref:** EVIDENCE MATRIX § USR-01
-- **Defense Ref:** DEFENSE MATRIX § USR-01
 - **Critical Failure Ref:** CF-5
 - **Dependency Ref:** AUTH-01, DB-01
 - **Priority:** P1
@@ -690,7 +687,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § PRD-01 (AC-PRD-01-1 … AC-PRD-01-5)
 - **Test Ref:** TEST TRACEABILITY MATRIX § PRD-01
 - **Evidence Ref:** EVIDENCE MATRIX § PRD-01
-- **Defense Ref:** DEFENSE MATRIX § PRD-01
 - **Critical Failure Ref:** CF-5
 - **Dependency Ref:** AUTH-01, USR-01, DB-01, VAL-01
 - **Priority:** P1
@@ -734,7 +730,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § MSTR-01 (AC-MSTR-01-1 … AC-MSTR-01-3)
 - **Test Ref:** TEST TRACEABILITY MATRIX § MSTR-01
 - **Evidence Ref:** EVIDENCE MATRIX § MSTR-01
-- **Defense Ref:** DEFENSE MATRIX § MSTR-01
 - **Critical Failure Ref:** CF-5
 - **Dependency Ref:** AUTH-01, USR-01, DB-01, VAL-01
 - **Priority:** P1
@@ -778,7 +773,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § WH-01 (AC-WH-01-1, AC-WH-01-2)
 - **Test Ref:** TEST TRACEABILITY MATRIX § WH-01
 - **Evidence Ref:** EVIDENCE MATRIX § WH-01
-- **Defense Ref:** DEFENSE MATRIX § WH-01
 - **Critical Failure Ref:** CF-6
 - **Dependency Ref:** AUTH-01, PRD-01, DB-01
 - **Priority:** P1
@@ -822,7 +816,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § PO-01 (AC-PO-01-1 … AC-PO-01-6)
 - **Test Ref:** TEST TRACEABILITY MATRIX § PO-01
 - **Evidence Ref:** EVIDENCE MATRIX § PO-01
-- **Defense Ref:** DEFENSE MATRIX § PO-01
 - **Critical Failure Ref:** CF-2, CF-6, CF-7
 - **Dependency Ref:** AUTH-01, MSTR-01, WH-01, PRD-01, DB-01, ARCH-02, VAL-01
 - **Priority:** P0
@@ -866,7 +859,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § SO-01 (AC-SO-01-1 … AC-SO-01-8)
 - **Test Ref:** TEST TRACEABILITY MATRIX § SO-01
 - **Evidence Ref:** EVIDENCE MATRIX § SO-01
-- **Defense Ref:** DEFENSE MATRIX § SO-01
 - **Critical Failure Ref:** CF-2, CF-5, CF-6, CF-7
 - **Dependency Ref:** AUTH-01, USR-01, MSTR-01, WH-01, PRD-01, DB-01, ARCH-02, VAL-01
 - **Priority:** P0
@@ -910,7 +902,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § VIEW-01 (AC-VIEW-01-1, AC-VIEW-01-2)
 - **Test Ref:** TEST TRACEABILITY MATRIX § VIEW-01
 - **Evidence Ref:** EVIDENCE MATRIX § VIEW-01
-- **Defense Ref:** DEFENSE MATRIX § VIEW-01
 - **Critical Failure Ref:** CF-2
 - **Dependency Ref:** AUTH-01, PRD-01, PO-01, SO-01, ERR-01
 - **Priority:** P1
@@ -954,7 +945,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § FIND-01 (AC-FIND-01-1 … AC-FIND-01-4)
 - **Test Ref:** TEST TRACEABILITY MATRIX § FIND-01
 - **Evidence Ref:** EVIDENCE MATRIX § FIND-01
-- **Defense Ref:** DEFENSE MATRIX § FIND-01
 - **Critical Failure Ref:** CF-2
 - **Dependency Ref:** VIEW-01, PRD-01, PO-01, SO-01, DB-01
 - **Priority:** P2
@@ -998,7 +988,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § DASH-01 (AC-DASH-01-1 … AC-DASH-01-4)
 - **Test Ref:** TEST TRACEABILITY MATRIX § DASH-01
 - **Evidence Ref:** EVIDENCE MATRIX § DASH-01
-- **Defense Ref:** DEFENSE MATRIX § DASH-01
 - **Critical Failure Ref:** CF-2
 - **Dependency Ref:** AUTH-01, PRD-01, WH-01, PO-01, SO-01, DB-01
 - **Priority:** P1
@@ -1042,7 +1031,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § REPORT-01 (AC-REPORT-01-1 … AC-REPORT-01-3)
 - **Test Ref:** TEST TRACEABILITY MATRIX § REPORT-01
 - **Evidence Ref:** EVIDENCE MATRIX § REPORT-01
-- **Defense Ref:** DEFENSE MATRIX § REPORT-01
 - **Critical Failure Ref:** CF-2
 - **Dependency Ref:** AUTH-01, DASH-01, PO-01, SO-01, DB-01
 - **Priority:** P2
@@ -1086,7 +1074,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § API-01 (AC-API-01-1 … AC-API-01-3)
 - **Test Ref:** TEST TRACEABILITY MATRIX § API-01
 - **Evidence Ref:** EVIDENCE MATRIX § API-01
-- **Defense Ref:** DEFENSE MATRIX § API-01
 - **Critical Failure Ref:** CF-2
 - **Dependency Ref:** AUTH-01, PRD-01, WH-01, DB-01
 - **Priority:** P2
@@ -1130,7 +1117,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § VAL-01 (AC-VAL-01-1 … AC-VAL-01-3)
 - **Test Ref:** TEST TRACEABILITY MATRIX § VAL-01
 - **Evidence Ref:** EVIDENCE MATRIX § VAL-01
-- **Defense Ref:** DEFENSE MATRIX § VAL-01
 - **Critical Failure Ref:** CF-5
 - **Dependency Ref:** All requirements that accept input: USR-01, PRD-01, MSTR-01, WH-01, PO-01, SO-01, FIND-01, REPORT-01, API-01
 - **Priority:** P1
@@ -1174,7 +1160,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § ERR-01 (AC-ERR-01-1 … AC-ERR-01-4)
 - **Test Ref:** TEST TRACEABILITY MATRIX § ERR-01
 - **Evidence Ref:** EVIDENCE MATRIX § ERR-01
-- **Defense Ref:** DEFENSE MATRIX § ERR-01
 - **Critical Failure Ref:** CF-5
 - **Dependency Ref:** AUTH-01, VIEW-01, API-01
 - **Priority:** P1
@@ -1218,7 +1203,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § UI-01 (AC-UI-01-1, AC-UI-01-2)
 - **Test Ref:** TEST TRACEABILITY MATRIX § UI-01
 - **Evidence Ref:** EVIDENCE MATRIX § UI-01
-- **Defense Ref:** DEFENSE MATRIX § UI-01
 - **Critical Failure Ref:** N/A — SRC-001 §8.2 lists no UI-specific critical failure
 - **Dependency Ref:** AUTH-01, VIEW-01, DASH-01
 - **Priority:** P2
@@ -1262,7 +1246,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § JOB-01 (AC-JOB-01-1, AC-JOB-01-2)
 - **Test Ref:** TEST TRACEABILITY MATRIX § JOB-01
 - **Evidence Ref:** EVIDENCE MATRIX § JOB-01
-- **Defense Ref:** DEFENSE MATRIX § JOB-01
 - **Critical Failure Ref:** N/A
 - **Dependency Ref:** PRD-01, WH-01, DB-01, ARCH-01, ENV-01
 - **Priority:** P2
@@ -1306,7 +1289,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § DB-01 (AC-DB-01-1 … AC-DB-01-5)
 - **Test Ref:** TEST TRACEABILITY MATRIX § DB-01
 - **Evidence Ref:** EVIDENCE MATRIX § DB-01
-- **Defense Ref:** DEFENSE MATRIX § DB-01
 - **Critical Failure Ref:** CF-1, CF-5, CF-6, CF-7
 - **Dependency Ref:** ENV-01 (runnable MySQL), ARCH-01 (repository boundary)
 - **Priority:** P0
@@ -1350,7 +1332,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § ARCH-01 (AC-ARCH-01-1 … AC-ARCH-01-4)
 - **Test Ref:** TEST TRACEABILITY MATRIX § ARCH-01
 - **Evidence Ref:** EVIDENCE MATRIX § ARCH-01
-- **Defense Ref:** DEFENSE MATRIX § ARCH-01
 - **Critical Failure Ref:** CF-3, CF-9
 - **Dependency Ref:** DB-01, TEST-01
 - **Priority:** P0
@@ -1394,7 +1375,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § ARCH-02 (AC-ARCH-02-1 … AC-ARCH-02-4)
 - **Test Ref:** TEST TRACEABILITY MATRIX § ARCH-02
 - **Evidence Ref:** EVIDENCE MATRIX § ARCH-02
-- **Defense Ref:** DEFENSE MATRIX § ARCH-02
 - **Critical Failure Ref:** CF-6, CF-7
 - **Dependency Ref:** DB-01, PO-01, SO-01, TEST-02
 - **Priority:** P0
@@ -1438,7 +1418,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § ENV-01 (AC-ENV-01-1 … AC-ENV-01-3)
 - **Test Ref:** TEST TRACEABILITY MATRIX § ENV-01
 - **Evidence Ref:** EVIDENCE MATRIX § ENV-01
-- **Defense Ref:** DEFENSE MATRIX § ENV-01
 - **Critical Failure Ref:** CF-1, CF-5
 - **Dependency Ref:** DB-01
 - **Priority:** P0
@@ -1482,7 +1461,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § TEST-01 (AC-TEST-01-1, AC-TEST-01-2)
 - **Test Ref:** TEST TRACEABILITY MATRIX § TEST-01
 - **Evidence Ref:** EVIDENCE MATRIX § TEST-01
-- **Defense Ref:** DEFENSE MATRIX § TEST-01
 - **Critical Failure Ref:** CF-4
 - **Dependency Ref:** ARCH-01
 - **Priority:** P0
@@ -1526,7 +1504,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § TEST-02 (AC-TEST-02-1 … AC-TEST-02-3)
 - **Test Ref:** TEST TRACEABILITY MATRIX § TEST-02
 - **Evidence Ref:** EVIDENCE MATRIX § TEST-02
-- **Defense Ref:** DEFENSE MATRIX § TEST-02
 - **Critical Failure Ref:** CF-4, CF-7
 - **Dependency Ref:** ENV-01, DB-01, ARCH-02, PO-01, SO-01
 - **Priority:** P0
@@ -1570,7 +1547,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § TEST-03 (AC-TEST-03-1, AC-TEST-03-2)
 - **Test Ref:** TEST TRACEABILITY MATRIX § TEST-03
 - **Evidence Ref:** EVIDENCE MATRIX § TEST-03
-- **Defense Ref:** DEFENSE MATRIX § TEST-03
 - **Critical Failure Ref:** N/A — SRC-001 §8.2 does not list static analysis as a critical failure
 - **Dependency Ref:** TEST-01, TEST-02
 - **Priority:** P2
@@ -1614,7 +1590,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § DESIGN-01 (AC-DESIGN-01-1 … AC-DESIGN-01-3)
 - **Test Ref:** TEST TRACEABILITY MATRIX § DESIGN-01
 - **Evidence Ref:** EVIDENCE MATRIX § DESIGN-01
-- **Defense Ref:** DEFENSE MATRIX § DESIGN-01
 - **Critical Failure Ref:** CF-8
 - **Dependency Ref:** ARCH-01
 - **Priority:** P0
@@ -1658,7 +1633,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § DESIGN-02 (AC-DESIGN-02-1, AC-DESIGN-02-2)
 - **Test Ref:** TEST TRACEABILITY MATRIX § DESIGN-02
 - **Evidence Ref:** EVIDENCE MATRIX § DESIGN-02
-- **Defense Ref:** DEFENSE MATRIX § DESIGN-02
 - **Critical Failure Ref:** CF-9
 - **Dependency Ref:** ARCH-01, ARCH-02
 - **Priority:** P1
@@ -1702,7 +1676,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § DESIGN-03 (AC-DESIGN-03-1 … AC-DESIGN-03-4)
 - **Test Ref:** TEST TRACEABILITY MATRIX § DESIGN-03
 - **Evidence Ref:** EVIDENCE MATRIX § DESIGN-03
-- **Defense Ref:** DEFENSE MATRIX § DESIGN-03
 - **Critical Failure Ref:** N/A
 - **Dependency Ref:** ARCH-01, TEST-01
 - **Priority:** P2
@@ -1746,7 +1719,6 @@ a resolved value, not a placeholder.
 - **Acceptance Criteria Ref:** ACCEPTANCE MATRIX § DESIGN-04 (AC-DESIGN-04-1)
 - **Test Ref:** TEST TRACEABILITY MATRIX § DESIGN-04
 - **Evidence Ref:** EVIDENCE MATRIX § DESIGN-04
-- **Defense Ref:** DEFENSE MATRIX § DESIGN-04
 - **Critical Failure Ref:** N/A
 - **Dependency Ref:** ARCH-01
 - **Priority:** P2
@@ -2542,49 +2514,6 @@ Owns evidence mapping.
 | DESIGN-03 | Logs + commit history | `docs/quality/refactor-log.md`; `docs/quality/tech-debt.md`; `refactor:` commit | Show one refactoring and the tagged commit |
 | DESIGN-04 | Written critique | `docs/quality/critique.md` | Discuss the critique briefly at defense |
 
-## 19.13 DEFENSE MATRIX
-
-Owns defense questions.
-
-| Requirement ID | Assessor Question | Expected Explanation | Evidence Reference |
-|---|---|---|---|
-| AUTH-01 | How do you stop an attacker learning which credential was wrong? | One generic failure message for every credential failure, produced before any field-specific branch; the inactive-account case uses the same shape | §19.12 AUTH-01 |
-| AUTH-01 | Why regenerate the session ID after login? | To defeat session fixation — a pre-authentication identifier planted by an attacker is discarded at the moment privilege is granted | §19.12 AUTH-01 |
-| AUTH-02 | What exactly does logout remove? | The authentication data in the session, so the next protected request has no identity to trust | §19.12 AUTH-02 |
-| USR-01 | Why is the endpoint guarded as well as the page? | Because hiding a page is not authorization; the endpoint is directly reachable and is where the decision must be made | §19.12 USR-01 |
-| PRD-01 | Why can a used product not be deleted? | Deleting it would break the order lines referencing it and destroy history; deactivation preserves the record while removing it from new transactions | §19.12 PRD-01 |
-| PRD-01 | Why a random filename for uploads? | So a stored file cannot be located or overwritten by guessing the original name | §19.12 PRD-01 |
-| MSTR-01 | Why deactivate rather than delete a supplier? | Same reason as products — purchase history references it, and audit trails must survive | §19.12 MSTR-01 |
-| WH-01 | Why store stock per warehouse rather than one total? | Because stock is physically located; a single total cannot answer where the goods are, and fulfilment must draw from a specific warehouse | §19.12 WH-01 |
-| PO-01 | How is a partial receipt tracked? | The outstanding quantity per line is derivable from ordered quantity minus the sum of received quantities; the PO stays PartiallyReceived until every line is complete | §19.12 PO-01 |
-| PO-01 | Why is the receipt transactional? | The stock increase and the ledger row are one fact; if either survived alone the stock figure would be unexplainable | §19.12 PO-01 |
-| SO-01 | Why can Sales not approve its own order? | Segregation of duties — one person creating and approving the same transaction can abuse the flow alone; the rule is enforced in the authorization layer, not the UI | §19.12 SO-01 |
-| SO-01 | Where is the approval decision made? | In the Service authorization layer before any state transition, so an API or crafted request is refused identically to the UI | §19.12 SO-01 |
-| SO-01 | What happens to a rejected order? | It terminates at `Cancelled`, the only terminal state the brief defines before `Fulfilled`; this rests on `DEC-009` and is flagged for trainer confirmation as `ASM-001` | §05, §06 |
-| ARCH-01 | Why a repository interface rather than PDO in the Service? | So business logic depends on a contract instead of a driver; that inversion lets the logic run in tests against a fake, and makes storage substitutable | §19.12 ARCH-01 |
-| ARCH-01 | Show a test that proves logic runs without a database | The Service is constructed with the in-memory repository and asserts on outcomes; no PDO is instantiated anywhere in that path | §19.12 ARCH-01 |
-| ARCH-02 | Which concurrent scenario does your mechanism prevent? | Two goods issues reading the same available quantity and both committing a decrement; the mechanism serialises or rejects the second so the sum of committed movements always equals the final quantity | §19.12 ARCH-02 |
-| ARCH-02 | Why not use Redis for the stock lock? | Correctness would then depend on cache infrastructure that can evict or fail; the database already holds the authoritative row and can enforce the invariant with the constraint as a backstop | §20, §22 |
-| DB-01 | Explain one multi-table transaction | Goods issue: the ledger append and the stock decrement commit together or not at all, keeping ProductStock explainable from StockLedger | §19.12 DB-01 |
-| DB-01 | Explain one index | An index supporting the stock-ledger date-range and product/warehouse lookups used by REPORT-01 and DASH-01, chosen because those aggregations are the frequent read path | §19.12 DB-01 |
-| DASH-01 | How do you know the figures are not static? | Every figure comes from an aggregation query; changing the underlying data and reloading changes the figure | §19.12 DASH-01 |
-| REPORT-01 | Why must the report agree with the dashboard? | Both must derive from the same aggregation basis; two different queries for one number is how reports and dashboards drift apart | §19.12 REPORT-01 |
-| API-01 | Why does the API return JSON on failure too? | Because it is a contract — a consumer parsing JSON cannot handle an HTML error page, so 401 and 404 carry JSON bodies | §19.12 API-01 |
-| VAL-01 | Why validate twice? | Frontend validation is a convenience that can be bypassed; the backend is the only place the decision can be trusted | §19.12 VAL-01 |
-| ERR-01 | Why hide the stack trace? | It discloses internal structure, file paths, and query shapes that assist an attacker | §19.12 ERR-01 |
-| UI-01 | How is 360px handled? | The documented baseline collapse and drawer behaviour applies below the desktop threshold so navigation stays reachable and tables are not clipped | §23 |
-| JOB-01 | Why is the low-stock task outside the web cycle? | It is a scheduled-style batch concern; separating it keeps request handling free of batch work and mirrors how cron would run it | §19.12 JOB-01 |
-| ENV-01 | Why must configuration come from the environment? | So the same image runs anywhere and no credential is committed; absolute paths would tie the build to one machine | §19.12 ENV-01 |
-| TEST-01 | Why do getter tests not count? | They assert language behaviour rather than business rules, so they provide no evidence that the logic is correct | §19.12 TEST-01 |
-| TEST-02 | Why must integration tests hit real MySQL? | Constraints, transactions, and concurrency behaviour are database properties; a fake cannot demonstrate them | §19.12 TEST-02 |
-| TEST-03 | Why is a remaining warning acceptable but an unexplained one not? | A warning that is understood and recorded is a judgement; an ignored one is an unknown defect | §19.12 TEST-03 |
-| DESIGN-01 | Trace one class from the diagram to the code | Follow a named Service from the as-built diagram to its file, then to its injected repository interface and concrete implementation | §19.12 DESIGN-01 |
-| DESIGN-02 | Why this ADR and not others? | It records a decision with real alternatives and lasting consequences, rather than a preference | §19.12 DESIGN-02 |
-| DESIGN-03 | Which smell did you remove and how? | Named smell, named technique, and the before/after excerpt from the refactoring log | §19.12 DESIGN-03 |
-| DESIGN-04 | What is wrong with the supplied excerpt? | The named smells, the violated SOLID principles, and the refactoring direction | §19.12 DESIGN-04 |
-| MSTR-01 / ENV-01 | Why do these requirement IDs exist when the brief has no such ID? | Both capabilities are mandated by the brief without an attached ID; creating a canonical row keeps them traceable rather than orphaned; `DEC-015` also resolves pre-coding finding `GAP-001`. Recorded as `DEC-015` and `DEC-016` | §04 |
-| — (Redis / Memcached) | The brief never mentions Redis or Memcached — why are they here? | They are confirmed project decisions (`DEC-005`, `DEC-006`), not brief requirements. Each is bounded to a non-authoritative role, neither holds business data, and neither participates in stock correctness. Recorded as `CON-002`, `CON-003`, with residual scoring exposure as `ASM-002` | §05, §06, §20, §21 |
-
 ## 19.14 CRITICAL FAILURE MATRIX
 
 Owns critical failure mapping.
@@ -2994,7 +2923,6 @@ Classification: **AUDIT**. Each matrix is checked for existence, coverage, and a
 | M-10 | §19.10 ACCEPTANCE MATRIX | 95 AC rows; every one of the 28 requirements has ≥1 AC | None | PASS |
 | M-11 | §19.11 TEST TRACEABILITY MATRIX | All 28 requirements mapped to a test position | None | PASS |
 | M-12 | §19.12 EVIDENCE MATRIX | All 28 requirements mapped to a deliverable artifact | None | PASS |
-| M-13 | §19.13 DEFENSE MATRIX | Defense questions traced to canonical sections | None | PASS |
 | M-14 | §19.14 CRITICAL FAILURE MATRIX | All 10 SRC-001 §8.2 conditions present, each mapped to ≥1 requirement | None | PASS |
 | M-15 | §19.15 DEPENDENCY MATRIX | Dependencies stated for all requirements that have them; no circular dependency detected | None | PASS |
 

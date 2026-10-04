@@ -39,7 +39,7 @@ Menerjemahkan PRD §22 requirement + 22 Business Rules menjadi **blueprint tekni
 
 ---
 
-## Keputusan Paling Kritis (Highlight untuk Assessor)
+## Keputusan Paling Kritis
 
 ### 1. ARCH-02 Concurrency (P0 — Critical Failure if wrong)
 
@@ -53,8 +53,6 @@ Mekanisme singkat:
 5. `INSERT INTO stock_ledger (type='Issue', qty=-N, ref=SO/...)`
 6. `UPDATE sales_orders SET status='Fulfilled' WHERE id=?`
 7. `COMMIT`
-
-Demo ke assessor (Brief §8.1): 2 request paralel → 1 sukses, 1 gagal, stok akhir valid.
 
 Lihat: [adr-002-concurrency-strategy.md](./adr-002-concurrency-strategy.md) + [sequence-diagrams.md §2](./sequence-diagrams.md#2-goods-issue-so--stock-out).
 

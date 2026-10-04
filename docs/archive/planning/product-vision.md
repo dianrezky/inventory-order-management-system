@@ -8,15 +8,12 @@
 
 ---
 
-## 1. Vision Statement, Elevator Pitch & Positioning
+## 1. Vision Statement & Positioning
 
 ### 1.1 Vision Statement (Internal Compass)
 > **"Menghadirkan sistem manajemen inventory & order berbasis web yang aman, dapat ditelusuri (auditable), menegakkan pemisahan tanggung jawab, dan ramah untuk siapa pun — dua bahasa, dua tema — sehingga tim gudang dan sales dapat mempercayai setiap angka stok dan setiap transaksi yang dicatatnya, bahkan ketika dua aksi terjadi bersamaan."**
 
 Aplikasi ini bukan sekadar CRUD produk & order. Aplikasi ini adalah **bukti nyata** bahwa peserta memahami rekayasa perangkat lunak menengah: arsitektur berlapis, keputusan desain yang bisa dipertahankan, integritas data pada kondisi konkuren, pengujian sebagai bagian dari desain, dan **pengalaman pengguna yang inklusif** (multi-bahasa, mode terang & gelap).
-
-### 1.2 Elevator Pitch (30 Detik untuk Assessor)
-> "Untuk **tim gudang & sales** pada perusahaan menengah yang membutuhkan sistem multi-warehouse dengan **jejak audit**, **kontrol otorisasi ketat**, dan **UI yang nyaman di segala kondisi cahaya & bahasa**, aplikasi ini adalah **Inventory & Order Management System berbasis PHP Native**. Berbeda dengan solusi berbasis framework atau template admin siap pakai, aplikasi kami memperlihatkan **arsitektur berlapis yang dapat diaudit langsung dari kode**, transaksi stok yang **safe dari race condition**, dan **antarmuka dua bahasa (ID/EN) + dua tema (light/dark)** yang dibangun tanpa CSS framework."
 
 ### 1.3 Positioning Statement (Formal)
 ```
@@ -34,9 +31,6 @@ OUR PRODUCT membuktikan bahwa clean code, safe concurrency, i18n,
             dan aksesibilitas tema dapat dibangun murni dengan PHP
             Native + Vanilla JS + custom CSS
 ```
-
-### 1.4 Metaphor (Untuk Ice-Breaking Defense)
-> "Bayangkan sistem ini seperti **buku besar seorang akuntan** yang menyatu dengan **register kasir**: setiap barang masuk (goods receipt) dan keluar (goods issue) menghasilkan **baris tinta** di ledger yang tak bisa dihapus, sementara register kasir (ProductStock) mencerminkan saldo terbaru. Kalau dua kasir sedang antri melayani pelanggan, mereka mustahil menjual barang yang sudah habis di lemari — karena register punya **kunci saat menghitung sisa**. Dan register itu punya **dua wajah** — satu berbahasa Indonesia, satu berbahasa Inggris — dengan **dua mode pencahayaan** agar nyaman dipakai kasir shift pagi maupun malam."
 
 ---
 
@@ -68,7 +62,7 @@ Tim gudang dan sales pada organisasi menengah membutuhkan satu aplikasi untuk:
 Selain nilai bisnis, produk ini adalah **assessment authority** dari program Intermediate Programmer PT Neuronworks Indonesia.
 
 - **Sisi Bisnis:** menyelesaikan P1–P8.
-- **Sisi Rekayasa:** membuktikan Clean Code, Clean Architecture, Testing sebagai bagian desain, kemampuan defense, **dan kemampuan menghadirkan i18n + theming tanpa CSS framework**.
+- **Sisi Rekayasa:** membuktikan Clean Code, Clean Architecture, Testing sebagai bagian desain, **dan kemampuan menghadirkan i18n + theming tanpa CSS framework**.
 
 ---
 
@@ -391,7 +385,6 @@ Semua keputusan trade-off HARUS mendukung North Star ini.
 | M2 | Critical failure (§8.2 Brief) | **0** |
 | M3 | Demo produk (12–15 mnt) dari Docker bersih | ✅ Lulus |
 | M4 | Engineering evidence (5–7 mnt) lengkap & jelas | ✅ Lulus |
-| M5 | Technical defense (10–12 mnt) tanpa AI | ✅ Lulus |
 
 ### 6.2 Metrik Rekayasa
 | # | Metrik | Target |

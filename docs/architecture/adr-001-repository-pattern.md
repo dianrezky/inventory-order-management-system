@@ -15,7 +15,6 @@ Brief §3.1 mewajibkan **arsitektur 3 lapis** (Controller → Service → Reposi
 1. **Testability** — Business logic harus bisa di-unit-test tanpa DB nyata.
 2. **Substitutability** — Repository MySQL bisa diganti Fake/InMemory saat pengujian.
 3. **Clean separation** — HTTP routing, domain logic, dan persistence punya peran masing-masing.
-4. **Memudahkan penjelasan ke assessor** — Layer terlihat jelas, tidak ada "magic" yang tersembunyi.
 
 Constraint dari CLAUDE.md Rule #11: **Tidak ada `new PDO()` di Service class**. Ini adalah invariant yang harus dijaga otomatis atau melalui code review.
 
@@ -100,7 +99,6 @@ PDO di-instantiate di `app/Core/Database.php` (satu tempat) lalu di-pass ke Base
 - **Unit test bersih** — Service diuji pakai FakeRepository, tidak butuh MySQL. ARCH-01 AC2 ✓.
 - **Code review invariant sederhana** — `grep -r 'new PDO' app/Service/` harusnya kosong.
 - **Sesuai Brief & CLAUDE.md** — tidak ada framework ORM, tidak ada DI container, tidak ada runtime annotation.
-- **Mudah dijelaskan ke assessor** — Layer terlihat jelas di class diagram.
 
 ### Negatif / Trade-off yang kami terima
 - **Lebih banyak file** — 1 entity = 1 interface + 2 implementasi + 1 service. ~15-20 entity × 4 file = 60-80 file. Trade-off yang worth it untuk testability.
