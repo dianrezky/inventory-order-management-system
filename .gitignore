@@ -1,0 +1,56 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Composer
+composer.phar
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+/logs/*
+!/logs/.gitkeep
+
+# Cache
+/cache/*
+!/cache/.gitkeep
+/var/cache/
+
+# Testing
+.phpunit.result.cache
+/.phpunit.cache/
+/coverage/
+/tests/tmp/
+/var/
+
+# Build
+/build/
+/dist/
+
+# Uploads (runtime uploaded files should not be committed)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# Docker
+docker-compose.override.yml
+
+# Static analysis
+/phpstan-tmp/
+
+# docker/php/entrypoint.sh first-start composer install lock
+/.composer-install.lock

@@ -1,0 +1,2216 @@
+/* Reusable component library built on tokens.css custom properties; specs in docs/planning/ux-ui-spec.md §2. */
+
+/* BUTTONS */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* Buttons that pair an icon <svg> with a text node (e.g. "Receive Goods") rely on
+       this gap for spacing — without it the icon renders flush against the text. */
+    gap: var(--space-2);
+    height: 32px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-md);
+    border: none;
+    font-family: inherit;
+    font-size: var(--font-size-label-md);
+    font-weight: var(--font-weight-label-md);
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn svg {
+    flex-shrink: 0;
+}
+
+.btn:disabled {
+    opacity: 0.40;
+    cursor: not-allowed;
+}
+
+.btn--primary {
+    background: var(--color-primary-container);
+    color: var(--color-on-primary);
+    font-weight: var(--font-weight-label-sm);
+}
+
+.btn--primary:hover:not(:disabled) {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+}
+
+.btn--secondary {
+    background: var(--color-surface-container-lowest);
+    border: 1px solid var(--color-outline-variant);
+    color: var(--color-on-surface);
+}
+
+.btn--secondary:hover:not(:disabled) {
+    background: var(--color-surface-container-low);
+}
+
+.btn--tertiary {
+    background: transparent;
+    color: var(--color-primary-container);
+}
+
+.btn--tertiary:hover:not(:disabled) {
+    background: var(--color-primary-fixed);
+}
+
+.btn--destructive {
+    background: var(--color-error);
+    color: var(--color-on-error);
+}
+
+.btn--destructive:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-error) 80%, black);
+}
+
+.btn--block {
+    width: 100%;
+}
+
+/* ICON BUTTON */
+
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-height: 32px;
+    min-width: 32px;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-md);
+    border: none;
+    background: transparent;
+    color: var(--color-on-surface-variant);
+    font-size: var(--font-size-label-md);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.icon-btn:hover {
+    background: var(--color-surface-container-low);
+    color: var(--color-on-surface);
+}
+
+.icon-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    flex-shrink: 0;
+}
+
+/* Focus management — applies to all interactive elements */
+.icon-btn:focus-visible,
+.btn:focus-visible,
+.input:focus-visible,
+a:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--color-primary-container);
+    outline-offset: 2px;
+}
+
+/* Icon-only button */
+.icon-btn--icon-only {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+}
+
+/* Display-only (user name in header) */
+.icon-btn--display {
+    cursor: default;
+    color: var(--color-on-surface-variant);
+}
+
+/* Sidebar rail icon button */
+.icon-btn--sidebar-rail {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+}
+
+/* CARD — white surface, border, shadow-sm (Stitch spec) */
+
+.card {
+    background: var(--color-surface-container-lowest);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    padding: var(--space-6);
+}
+
+.card--narrow {
+    width: 100%;
+    max-width: 420px;
+}
+
+/* CARD TITLE — used in .card contexts (e.g. login, reports) */
+.card__title {
+    font-size: var(--font-size-h1);
+    line-height: var(--line-height-h1);
+    font-weight: var(--font-weight-h1);
+    color: var(--color-on-surface);
+    margin: 0 0 var(--space-3) 0;
+}
+
+/* FORM FIELD / INPUT / LABEL / HELPER / ERROR */
+
+.form-field {
+    margin-bottom: var(--space-4);
+}
+
+.form-field__label {
+    display: block;
+    font-size: var(--font-size-label-sm);
+    font-weight: var(--font-weight-label-sm);
+    letter-spacing: var(--letter-spacing-label-xs);
+    text-transform: uppercase;
+    color: var(--color-on-surface-variant);
+    margin-bottom: var(--space-2);
+}
+
+.input {
+    display: block;
+    width: 100%;
+    height: 40px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--color-outline);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-container-lowest);
+    color: var(--color-on-surface);
+    font-family: inherit;
+    font-size: var(--font-size-body);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.input--error {
+    border-color: var(--color-error);
+}
+
+/* Some fields are <textarea class="input"> (e.g. product/category
+   Description) so they share the input's look but keep multi-line
+   editing. Their height is fixed at the size the field was manually
+   resized to, resizing is disabled, and content longer than that gets
+   its own scrollbar instead of growing the box or letting overflow
+   fall through the layout. */
+textarea.input {
+    height: 224px;
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
+    line-height: 1.5;
+    resize: none;
+    overflow-y: auto;
+}
+
+/* text-transform is inherited, so a field styled uppercase for its typed
+   value (e.g. the SKU input, style="text-transform:uppercase" — SKUs are
+   stored uppercase) would otherwise shout its placeholder text in full caps
+   too ("PLEASE ENTER THE SKU CODE HERE..."). Placeholders should always stay
+   in the sentence/title case they're written in, regardless of how the
+   input itself transforms typed characters, so this is intentionally
+   unscoped to override any current or future uppercase input. */
+.input::placeholder,
+.textarea::placeholder {
+    text-transform: none;
+}
+
+/* Width-constrained input variants used inside tables */
+.input--xs  { width: 40px; }
+.input--sm  { width: 100px; }
+.input--md  { width: 150px; }
+.input--lg  { width: 200px; }
+
+/* Sort column indicators — toggled by stock-ledger.js */
+.sort-asc,
+.sort-desc {
+    position: relative;
+    padding-right: var(--space-4);
+}
+.sort-asc::after  { content: ' \2191'; } /* ↑ */
+.sort-desc::after { content: ' \2193'; } /* ↓ */
+
+/* Image preview — large variant (product detail page) */
+.image-preview--lg {
+    width: 160px;
+    height: 160px;
+}
+
+/* Badge with left margin offset (used in dashboard stats) */
+.badge--offset {
+    margin-left: var(--space-2);
+}
+
+.badge--offset-sm {
+    margin-left: var(--space-1);
+}
+
+/* Textarea */
+.textarea {
+    display: block;
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: var(--font-size-body);
+    line-height: 1.5;
+    resize: none;
+}
+
+.textarea:focus {
+    outline: none;
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-primary) 30%, transparent);
+}
+
+.form-field__helper {
+    font-size: var(--font-size-caption);
+    line-height: var(--line-height-caption);
+    color: var(--color-text-secondary);
+    margin-top: var(--space-1);
+}
+
+/* INFO ICON + TOOLTIP */
+.form-field__label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-1);
+}
+
+.field-info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-border);
+    color: var(--color-text-secondary);
+    cursor: help;
+    flex-shrink: 0;
+    position: relative;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 600;
+    font-family: system-ui, sans-serif;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.field-info-icon:hover {
+    background: var(--color-brand-primary);
+    color: #fff;
+}
+
+.field-tooltip {
+    /* Anchored to the icon's RIGHT edge (not centered) and growing leftward.
+       The info icon now always sits at the far right of its label row, so a
+       centered tooltip (old: left:50%/translateX(-50%)) could extend ~130px
+       past the icon's own tiny 16px box — on a narrow column (e.g. the
+       4-column Reports filter grid) that pushed past the viewport's right
+       edge entirely. Because nothing in the ancestor chain clips horizontal
+       overflow, that invisible (visibility:hidden when closed) sliver still
+       counted toward the page's scrollWidth, giving the WHOLE page a
+       horizontal scrollbar with nothing visible in the extra space.
+       max-width keeps it from doing the same thing on very narrow viewports. */
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    left: auto;
+    background: var(--color-text-primary);
+    color: var(--color-bg-primary);
+    font-size: var(--font-size-caption);
+    line-height: 1.5;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    width: 260px;
+    max-width: min(260px, calc(100vw - 24px));
+    white-space: normal;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    text-align: left;
+    font-weight: 400;
+}
+
+.field-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 8px;
+    left: auto;
+    border: 6px solid transparent;
+    border-top-color: var(--color-text-primary);
+}
+
+.field-info-icon:hover .field-tooltip,
+.field-info-icon:focus .field-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.form-field__error {
+    font-size: var(--font-size-caption);
+    line-height: var(--line-height-caption);
+    color: var(--color-status-error);
+    margin-top: var(--space-1);
+}
+
+/* FORM GRID — full-width span */
+
+.form-grid__full {
+    grid-column: 1 / -1;
+}
+
+/* FIELDSET (used in sales order form for item table) */
+
+.fieldset {
+    border: none;
+    padding: 0;
+    margin: var(--space-6) 0 0;
+    /* <fieldset> defaults to min-width:min-content, so the items table
+       widened the whole page on a phone instead of scrolling in its wrapper */
+    min-width: 0;
+}
+
+.fieldset__legend {
+    font-size: var(--font-size-h3);
+    font-weight: var(--font-weight-h3);
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-3);
+    padding: 0;
+}
+
+/* FORM ACTIONS — spacing variant (for non-card forms like sales order) */
+
+.form-actions--top-gap {
+    margin-top: var(--space-6);
+}
+
+/* ALERT / BANNER — Stitch spec */
+
+.alert {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-body-sm);
+    margin-bottom: var(--space-4);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+
+.alert svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+}
+
+.alert--error {
+    border: 1px solid var(--color-error-container);
+    background: var(--color-error-container);
+    color: var(--color-error);
+}
+
+.alert--error svg {
+    color: var(--color-error);
+}
+
+.alert--warning {
+    border: 1px solid var(--color-warning-container);
+    background: var(--color-warning-container);
+    color: var(--color-warning);
+}
+
+.alert--info {
+    border: 1px solid var(--color-info-container);
+    background: var(--color-info-container);
+    color: var(--color-info);
+}
+
+.alert--success {
+    border: 1px solid var(--color-success-container);
+    background: var(--color-success-container);
+    color: var(--color-success);
+}
+
+/* BADGE / CHIP — Stitch spec */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-label-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    /* Fallback: visible even without modifier class */
+    background: color-mix(in srgb, var(--color-on-surface-variant) 15%, transparent);
+    color: var(--color-on-surface-variant);
+}
+
+.badge--active {
+    background: var(--color-success-container);
+    color: var(--color-success);
+}
+
+.badge--inactive {
+    background: var(--color-error-container);
+    color: var(--color-error);
+}
+
+.badge--neutral {
+    background: color-mix(in srgb, var(--color-on-surface-variant) 12%, transparent);
+    color: var(--color-on-surface-variant);
+}
+
+.badge--info {
+    background: var(--color-info-container);
+    color: var(--color-info);
+}
+
+.badge--primary {
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+}
+
+.badge--warning {
+    background: var(--color-warning-container);
+    color: var(--color-warning);
+}
+
+.badge--success {
+    background: var(--color-success-container);
+    color: var(--color-success);
+}
+
+.badge--error {
+    background: var(--color-error-container);
+    color: var(--color-error);
+}
+
+/* Badge — status chip (Stitch dashboard style) */
+.badge--status {
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-label-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* TABLE — Stitch spec (white bg, border, sticky header) */
+
+.table-wrap {
+    /* Containing block for absolutely positioned cell content (.sr-only
+       labels): without it they resolved against <body> and escaped the
+       horizontal scroll, widening the page on narrow screens */
+    position: relative;
+    overflow-x: auto;
+    background: var(--color-surface-container-lowest);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 520px;
+}
+
+.table thead th {
+    position: sticky;
+    top: 0;
+    text-align: left;
+    font-size: var(--font-size-label-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-on-surface-variant);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-outline-variant);
+    background: var(--color-surface-container-low);
+    white-space: nowrap;
+}
+
+.table tbody td {
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-outline-variant);
+    font-size: var(--font-size-body-sm);
+    vertical-align: middle;
+    background: var(--color-surface-container-lowest);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table__actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: flex-end;
+}
+
+/* Row-actions overflow menu — one icon-only trigger per row (View/Edit/
+   Activate-Deactivate/Delete collapsed into a single "more actions" button),
+   used by every master-data list page in place of a row of separate buttons.
+   Markup: .row-actions > button.row-actions__trigger + div.row-actions__menu
+   > (a|button).row-actions__item*. Toggled by app.js (RowActions). */
+.row-actions {
+    position: relative;
+    display: inline-flex;
+    justify-content: flex-end;
+}
+
+.row-actions__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-outline-variant);
+    background: var(--color-surface-container-lowest);
+    color: var(--color-on-surface-variant);
+    cursor: pointer;
+}
+
+.row-actions__trigger:hover,
+.row-actions__trigger[aria-expanded="true"] {
+    background: var(--color-surface-container-low);
+    color: var(--color-on-surface);
+}
+
+.row-actions__menu {
+    /* Fixed (not absolute) + top/right set by RowActions JS on open, from the
+       trigger's own bounding rect — .table-wrap needs overflow-x: auto for
+       narrow viewports, which also clips overflow-y per the CSS spec, so an
+       absolutely-positioned menu near the last row would be cut off. Fixed
+       positioning escapes that ancestor clipping entirely. */
+    position: fixed;
+    z-index: 20;
+    width: 160px;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-outline-variant);
+    background: var(--color-surface-container-lowest);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.row-actions__menu[hidden] {
+    display: none;
+}
+
+/* A form wrapping a single .row-actions__item button (Activate/Deactivate,
+   Delete) shouldn't generate its own box — the button should lay out
+   directly as a menu row like the plain <a> items around it. */
+.row-actions__menu form {
+    display: contents;
+}
+
+/* Each item is a solid, colored, full-width pill — same fixed width as its
+   siblings regardless of label length, since .row-actions__menu has a fixed
+   width and every item stretches to fill it (width: 100%, box-sizing:
+   border-box so the shared padding doesn't push any one item wider). */
+.row-actions__item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-container-low);
+    color: var(--color-on-surface);
+    font-family: inherit;
+    font-size: var(--font-size-label-md);
+    font-weight: var(--font-weight-label-md);
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.row-actions__item:hover {
+    filter: brightness(0.92);
+}
+
+.row-actions__item svg {
+    flex-shrink: 0;
+}
+
+/* Semantic action colors — solid fill, white text/icon. */
+.row-actions__item--view {
+    background: #3B82F6;
+    color: #FFFFFF;
+}
+
+.row-actions__item--edit {
+    background: #F97316;
+    color: #FFFFFF;
+}
+
+.row-actions__item--activate {
+    background: #14B8A6;
+    color: #FFFFFF;
+}
+
+.row-actions__item--destructive {
+    background: var(--color-error, #DC2626);
+    color: #FFFFFF;
+}
+
+.row-actions__item:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.row-actions__item:disabled:hover {
+    filter: none;
+}
+
+.row-actions__item:disabled:hover {
+    background: none;
+}
+
+.table__thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    background: var(--color-surface-container-low);
+    border: 1px solid var(--color-outline-variant);
+    margin-bottom: var(--space-2);
+}
+
+.table__total td {
+    text-align: right;
+    font-weight: 600;
+}
+
+/* EMPTY STATE — card style (Stitch spec) */
+
+.empty-state-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: var(--space-2);
+    padding: var(--space-12) var(--space-6);
+    background: var(--color-surface-container-lowest);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.empty-state-card svg {
+    width: 48px;
+    height: 48px;
+    stroke: var(--color-outline);
+    fill: none;
+}
+
+.empty-state-card p {
+    margin: 0;
+    color: var(--color-on-surface);
+    font-size: var(--font-size-body-sm);
+}
+
+.empty-state-card__hint {
+    color: var(--color-on-surface-variant) !important;
+    font-size: var(--font-size-small) !important;
+}
+
+.empty-state-card strong {
+    font-weight: 600;
+}
+
+/* PAGINATION */
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+    padding: var(--space-3);
+}
+
+.pagination[hidden] {
+    display: none;
+}
+
+.pagination__info {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-small);
+}
+
+/* Sortable table-header control — a <button type="submit"> (posts the list
+   page's filter form) styled to read exactly like the plain text/arrow link
+   it replaces. */
+.th-sort-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+/* FORM LAYOUT — grid / actions / image preview */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 var(--space-4);
+}
+
+/* List-page filter panels (Products, Sales/Purchase Orders, Customers,
+   Suppliers, Warehouses, Users, Categories) — 2 fields per row so a panel
+   with 3-4 discrete filters wraps into a compact block instead of one
+   full-width field per row. */
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 var(--space-4);
+}
+
+.form-actions {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+}
+
+/* Every button sharing a .form-actions row (Search / Reset / Export CSV /
+   Filter, ...) renders at the same height regardless of label length or
+   icon presence, so the row reads as one aligned group. */
+.form-actions .btn {
+    min-height: 44px;
+}
+
+/* Filter card: Search button on the right (Reset left, Search right via row-reverse) */
+.form-actions--search-right {
+    flex-direction: row-reverse;
+}
+
+/* Standalone actions row below filter — Add button sits left */
+.actions-row {
+    display: flex;
+    align-items: center;
+    margin-top: var(--space-4);
+    gap: var(--space-3);
+}
+
+/* ============================================================
+   MULTI-SELECT — custom tag-based dropdown
+   Replaces native <select multiple> for filter forms.
+   ============================================================ */
+
+.ms-wrapper {
+    position: relative;
+}
+
+/* Tag pill inside the input */
+.ms-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px 2px 8px;
+    background: var(--color-primary-container, #1e3a8a);
+    color: var(--color-on-primary-container, #90a8ff);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ms-tag__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 50%;
+    opacity: 0.7;
+    transition: opacity 0.1s;
+    flex-shrink: 0;
+}
+.ms-tag__remove:hover {
+    opacity: 1;
+}
+
+/* The visible input row */
+.ms-input {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    min-height: 36px;
+    padding: 4px 8px;
+    background: var(--color-bg-surface, #fff);
+    border: 1px solid var(--color-outline, #c4c9d4);
+    border-radius: var(--radius-md, 6px);
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ms-input:focus-within,
+.ms-wrapper.is-open .ms-input {
+    border-color: var(--color-primary, #3b5bdb);
+    box-shadow: 0 0 0 2px rgba(59, 91, 219, 0.15);
+    outline: none;
+}
+
+/* Placeholder text */
+.ms-placeholder {
+    color: var(--color-text-secondary, #6b7280);
+    font-size: 14px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+/* Search input inside multi-select */
+.ms-search {
+    border: none;
+    outline: none;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    color: var(--color-on-surface, #111827);
+    min-width: 80px;
+    flex: 1;
+    padding: 0;
+}
+.ms-search::placeholder {
+    color: var(--color-text-secondary, #6b7280);
+}
+
+/* Dropdown panel */
+.ms-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: var(--color-bg-surface, #fff);
+    border: 1px solid var(--color-outline, #c4c9d4);
+    border-radius: var(--radius-md, 6px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+}
+.ms-wrapper.is-open .ms-dropdown {
+    display: block;
+}
+
+/* Each option row */
+.ms-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--color-on-surface, #111827);
+    transition: background-color 0.1s;
+}
+.ms-option:hover {
+    background: var(--color-surface-container, #f3f4f6);
+}
+.ms-option.is-selected {
+    background: rgba(59, 91, 219, 0.08);
+    color: var(--color-primary, #3b5bdb);
+    font-weight: 500;
+}
+
+/* Checkmark for selected items */
+.ms-option__check {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--color-outline, #c4c9d4);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.1s, border-color 0.1s;
+}
+.ms-option.is-selected .ms-option__check {
+    background: var(--color-primary, #3b5bdb);
+    border-color: var(--color-primary, #3b5bdb);
+}
+.ms-option__check svg {
+    display: none;
+    width: 10px;
+    height: 10px;
+}
+.ms-option.is-selected .ms-option__check svg {
+    display: block;
+}
+
+/* Hidden native select — used for form submission */
+.ms-native-select {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    left: -9999px;
+}
+
+/* Empty dropdown state */
+.ms-dropdown__empty {
+    padding: 12px;
+    text-align: center;
+    color: var(--color-text-secondary, #6b7280);
+    font-size: 13px;
+}
+
+
+.actions-row--right {
+    margin-top: 0;
+}
+
+.image-preview {
+    width: 96px;
+    height: 96px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-primary);
+    display: block;
+    margin-bottom: var(--space-2);
+}
+
+/* DETAIL GRID — label/value typography for dt/dd nested anywhere inside .detail-grid
+   (actual column layout for this selector is defined once, below, under "DETAIL GRID 2-COLUMN") */
+
+.detail-grid dt {
+    font-size: var(--font-size-label);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-label);
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--space-1) 0;
+}
+
+.detail-grid dd {
+    margin: 0 0 var(--space-4) 0;
+    font-size: var(--font-size-body);
+}
+
+/* DETAIL CARD — section within a .detail-grid layout */
+
+.detail-card {
+    padding: var(--space-5);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.detail-card--full {
+    grid-column: 1 / -1;
+}
+
+.detail-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3) var(--space-6);
+}
+
+/* ACTION BAR — row of action buttons/forms at bottom of detail pages */
+
+.action-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
+}
+
+.action-bar__form {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+
+/* JS hooks for PO form dynamic rows — no visual styles needed, but class must exist to avoid "undefined class" warnings in CSS validators */
+tr.po-item-row { /* intentionally empty — used as JS DOM hook */ }
+.btn.po-item-remove { /* intentionally empty — used as JS event target */ }
+.btn.so-item-remove { /* intentionally empty — used as JS event target */ }
+
+/* SECTION HEADING — h2 within a card (e.g. "Items" section in PO detail) */
+
+.section-title {
+    font-size: var(--font-size-h2);
+    font-weight: var(--font-weight-h2);
+    margin: var(--space-6) 0 var(--space-4);
+    color: var(--color-text-primary);
+}
+
+/* PROGRESS BAR — used in purchase order detail receipt progress */
+
+.progress-bar {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    width: 100px;
+    height: 8px;
+}
+
+.progress-bar__fill {
+    background: var(--color-status-success);
+    height: 100%;
+}
+
+/* FORM UTILITY — inline / tight-spaced forms (e.g. deactivate forms in table rows) */
+
+.form--inline {
+    margin: 0 !important;
+}
+
+/* TEXT UTILITIES */
+
+.text--center { text-align: center; }
+.text--right  { text-align: right; }
+.text--muted  { color: var(--color-text-secondary); }
+.font-mono    { font-family: var(--font-family-mono); }
+.text--danger {
+    color: var(--color-danger);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* AVATAR — initials-based avatar used in profile page */
+.avatar-initials {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* PROFILE HEADER — avatar + name block above the profile form */
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+/* RESPONSIVE OVERRIDES */
+
+.report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: var(--space-6);
+}
+
+.report-form {
+    margin-top: var(--space-4);
+}
+
+/* Inline form row — two fields side-by-side, wrap on small screens */
+.form__row--inline {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-4);
+}
+
+.form__row--inline .form-field {
+    flex: 1;
+    min-width: 140px;
+    margin-bottom: 0;
+}
+
+/* CARD DESCRIPTION — used in report cards */
+
+.card__desc {
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-4);
+}
+
+/* RESPONSIVE OVERRIDES */
+
+@media (max-width: 640px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-card--full {
+        grid-column: auto;
+    }
+
+    .detail-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* DETAIL GRID 2-COLUMN (main + side) — used by product detail page */
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: var(--space-6);
+}
+
+.detail-grid__main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.detail-grid__side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+@media (max-width: 1024px) {
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* CARD HEADER — flex row (title + pill), used by the product detail
+   "Network Stock Position" card */
+
+.card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+/* PAGE HEADER PILLS */
+
+.page-header__pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* NETWORK STOCK POSITION CARD — product detail page */
+
+.stock-network-card {
+    padding: var(--space-5);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.stock-network-card__hero {
+    padding: var(--space-4);
+    background: var(--color-bg-secondary, var(--color-bg-surface));
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.stock-network-card__label {
+    font-size: var(--font-size-label);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-label);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-1);
+}
+
+.stock-network-card__badge {
+    margin-bottom: var(--space-2);
+}
+
+.stock-network-card__value {
+    font-size: 40px;
+    font-weight: var(--font-weight-bold, 700);
+    line-height: 1.1;
+    color: var(--color-text-primary);
+}
+
+.stock-network-card__unit {
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-normal, 400);
+    color: var(--color-text-secondary);
+    margin-left: 0.25rem;
+}
+
+.stock-network-card__delta {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-semibold, 600);
+    color: var(--color-status-error, var(--color-danger));
+}
+
+.stock-network-card__threshold {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px dashed var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+}
+
+.stock-network-card__facilities {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.stock-network-card__facility {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-primary, var(--color-bg-surface));
+}
+
+.stock-network-card__facility-main {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.stock-network-card__facility-name {
+    font-weight: var(--font-weight-semibold, 600);
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stock-network-card__facility-code {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+    margin-left: var(--space-1);
+}
+
+.stock-network-card__facility-qty {
+    font-size: var(--font-size-body);
+    color: var(--color-text-primary);
+}
+
+.stock-network-card__facility-meta {
+    flex-shrink: 0;
+}
+
+/* CALLOUT — governance / policy notice block (Stitch-style footer banner) */
+
+.callout {
+    padding: var(--space-4);
+    background: var(--color-bg-secondary, var(--color-bg-surface));
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-small);
+}
+
+.callout strong {
+    color: var(--color-text-primary);
+}
+
+/* DASHBOARD CHART GRID — SVG bar charts for PO/SO status distribution */
+
+.dashboard-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-3);
+}
+
+.chart-card {
+    padding: var(--space-4);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.chart-card__title {
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-semibold, 600);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--space-3) 0;
+}
+
+.chart-card svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* TABLE FOOTER — totals row (e.g. Stock by Warehouse Total Network Stock) */
+
+.table tfoot td {
+    padding: var(--space-4) var(--space-5);
+    background: var(--color-bg-secondary, var(--color-bg-surface));
+    border-top: 2px solid var(--color-border);
+    font-weight: var(--font-weight-semibold, 600);
+    color: var(--color-text-primary);
+}
+
+/* WORKFLOW STEPPER — PO/SO lifecycle progress */
+
+.workflow-stepper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-bottom: var(--space-5);
+    padding: var(--space-4);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+}
+
+.workflow-stepper__step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.workflow-stepper__dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-bg-secondary, var(--color-bg-surface));
+    border: 2px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: var(--font-weight-bold, 700);
+}
+
+.workflow-stepper__step.is-done .workflow-stepper__dot {
+    background: var(--color-status-success, #10B981);
+    border-color: var(--color-status-success, #10B981);
+    color: #FFFFFF;
+}
+
+.workflow-stepper__step.is-current .workflow-stepper__dot {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+}
+
+.workflow-stepper__step.is-cancelled .workflow-stepper__dot {
+    background: var(--color-status-error, #EF4444);
+    border-color: var(--color-status-error, #EF4444);
+    color: #FFFFFF;
+}
+
+.workflow-stepper__label {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.workflow-stepper__step.is-done .workflow-stepper__label,
+.workflow-stepper__step.is-current .workflow-stepper__label {
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold, 600);
+}
+
+.workflow-stepper__bar {
+    flex: 1;
+    height: 2px;
+    background: var(--color-border);
+    min-width: 16px;
+}
+
+.workflow-stepper__bar.is-done {
+    background: var(--color-status-success, #10B981);
+}
+
+.workflow-stepper__bar.is-cancelled {
+    background: var(--color-status-error, #EF4444);
+}
+
+/* FULFILLMENT PROGRESS — PO receiving bar + tiles */
+
+.fulfillment-progress {
+    margin-bottom: var(--space-4);
+}
+
+.fulfillment-progress__bar {
+    display: flex;
+    height: 12px;
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    background: var(--color-bg-secondary, var(--color-bg-surface));
+    border: 1px solid var(--color-border);
+    margin-bottom: var(--space-3);
+}
+
+.fulfillment-progress__received {
+    background: var(--color-primary);
+    transition: width 0.3s ease;
+}
+
+.fulfillment-progress__remaining {
+    background: var(--color-border);
+}
+
+.fulfillment-progress__legend {
+    display: flex;
+    gap: var(--space-4);
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    flex-wrap: wrap;
+}
+
+.fulfillment-progress__legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.fulfillment-progress__dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+.fulfillment-progress__dot--received {
+    background: var(--color-primary);
+}
+
+.fulfillment-progress__dot--remaining {
+    background: var(--color-border);
+}
+
+.fulfillment-progress__tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+}
+
+.fulfillment-progress__tile {
+    padding: var(--space-3);
+    background: var(--color-bg-secondary, var(--color-bg-surface));
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.fulfillment-progress__tile-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-label, 0.05em);
+    color: var(--color-text-secondary);
+}
+
+.fulfillment-progress__tile-value {
+    font-size: 22px;
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--color-text-primary);
+    margin: 0.25rem 0;
+}
+
+.fulfillment-progress__tile-hint {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+/* AUDIT TIMELINE — vertical timeline for Stock Ledger entries */
+
+.audit-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+
+.audit-timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--color-border);
+}
+
+.audit-timeline__entry {
+    display: flex;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    position: relative;
+}
+
+.audit-timeline__dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 2px;
+    background: var(--color-primary);
+    border: 3px solid var(--color-bg-surface);
+    box-shadow: 0 0 0 1px var(--color-border);
+    z-index: 1;
+}
+
+.audit-timeline__dot--receipt { background: var(--color-status-success, #10B981); }
+.audit-timeline__dot--issue { background: var(--color-status-warning, #F59E0B); }
+.audit-timeline__dot--adjustment { background: var(--color-primary); }
+
+.audit-timeline__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.audit-timeline__head {
+    font-size: 13px;
+    color: var(--color-text-primary);
+    line-height: 1.5;
+}
+
+.audit-timeline__head em {
+    font-style: normal;
+    font-weight: var(--font-weight-semibold, 600);
+}
+
+.audit-timeline__meta {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+}
+
+/* ============================================================
+   MODAL DIALOG — generic overlay + panel, used by any page that
+   needs an Add/Edit or confirmation dialog (first used by the
+   Categories master-data screen's Add/Edit Category modal).
+   ============================================================ */
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 28, 48, 0.45);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+}
+
+.modal-backdrop[hidden] {
+    display: none;
+}
+
+.modal-panel {
+    background: var(--color-surface-container-lowest);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--radius-lg, 12px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 32rem;
+    max-height: calc(100vh - var(--space-8, 32px));
+    display: flex;
+    flex-direction: column;
+    animation: modal-panel-in 0.15s ease;
+}
+
+@keyframes modal-panel-in {
+    from { opacity: 0; transform: scale(0.97) translateY(4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-6);
+    border-bottom: 1px solid var(--color-outline-variant);
+    background: var(--color-surface-container-low);
+    border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+}
+
+.modal-header__title {
+    font-size: var(--font-size-headline-sm, 18px);
+    font-weight: 700;
+    color: var(--color-on-surface);
+    margin: 0;
+}
+
+.modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    color: var(--color-on-surface-variant);
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    background: var(--color-surface-container);
+}
+
+.modal-body {
+    padding: var(--space-6);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-6);
+    border-top: 1px solid var(--color-outline-variant);
+}
+
+.modal-footer .btn {
+    min-height: 44px;
+}
+
+/* Field validation state (05_VALIDATION_ERROR): aria-invalid drives the
+   visual state so the accessible state and the visual state can never
+   drift apart. */
+.input[aria-invalid="true"] {
+    border-color: var(--color-error);
+}
+
+.input[aria-invalid="true"]:focus-visible {
+    outline-color: var(--color-error);
+}
+
+/* Mutation-level error banner inside the modal (12_MUTATION_ERROR) */
+.modal-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-danger-container);
+    color: var(--color-on-danger-container);
+    border: 1px solid var(--color-error);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-label-sm);
+}
+
+.modal-alert svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.text-muted {
+    color: var(--color-on-surface-variant);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REPORTS PAGE — Operational Reports with Data Visualization
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Report Filter Card ─────────────────────────────────────── */
+.report-filter-card {
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.report-filter-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.report-filter-card__title {
+    font-size: var(--font-size-body-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    letter-spacing: 0.01em;
+}
+
+.report-filter-card__preset {
+    font-size: var(--font-size-caption);
+    font-family: monospace;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.04em;
+}
+
+.report-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+@media (max-width: 1024px) {
+    .report-filter-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+    .report-filter-grid { grid-template-columns: 1fr; }
+}
+
+.report-filter-card__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+}
+
+.btn-report-action-reset {
+    font-size: var(--font-size-body-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    padding: 0 var(--space-3);
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: var(--radius-md);
+    transition: color 0.15s ease;
+}
+.btn-report-action-reset:hover {
+    color: var(--color-text-primary);
+}
+
+/* ── KPI Summary Cards ───────────────────────────────────────── */
+.report-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+@media (max-width: 1024px) {
+    .report-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+    .report-kpi-grid { grid-template-columns: 1fr; }
+}
+
+.report-kpi-card {
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.report-kpi-card__label {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    margin-bottom: var(--space-2);
+    letter-spacing: 0.01em;
+}
+
+.report-kpi-card__value {
+    font-size: var(--font-size-h3);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    line-height: 1.2;
+    margin-bottom: var(--space-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.report-kpi-card__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.report-kpi-card__change {
+    font-size: var(--font-size-label-xs);
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+}
+
+.report-kpi-card__change--up {
+    color: #15803D;
+    background: #DCFCE7;
+}
+
+.report-kpi-card__change--down {
+    color: #DC2626;
+    background: #FEE2E2;
+}
+
+.report-kpi-card__change--warn {
+    color: #B45309;
+    background: #FEF3C7;
+}
+
+.report-kpi-card__sub {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
+}
+
+/* ── Visual Analytics Card ───────────────────────────────────── */
+.report-visual-card {
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.report-visual-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.report-visual-card__title {
+    font-size: var(--font-size-h3);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 var(--space-1) 0;
+}
+
+.report-visual-card__subtitle {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.report-insight-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: #EFF6FF;
+    color: #1E3A8A;
+    font-size: var(--font-size-caption);
+    font-weight: 600;
+    padding: var(--space-2) var(--space-3);
+    border-radius: 4px;
+    border: 1px solid #BFDBFE;
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+}
+
+/* View Tabs */
+.report-view-tabs {
+    display: flex;
+    gap: var(--space-1);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+}
+
+.report-view-tab {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-body-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+    border-radius: 4px 4px 0 0;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: -1px;
+}
+
+.report-view-tab:hover {
+    color: var(--color-text-primary);
+}
+
+.report-view-tab--active {
+    color: #1E3A8A;
+    border-bottom-color: #1E3A8A;
+    font-weight: 600;
+    background: #EFF6FF;
+}
+
+/* Chart Legend */
+.report-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.report-chart-legend__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
+}
+
+.report-chart-legend__dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.report-chart-legend__line {
+    width: 20px;
+    height: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* Category Bar (stacked progress) */
+.report-category-bar {
+    display: flex;
+    height: 24px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: var(--space-4);
+    background: var(--color-surface);
+}
+
+.report-category-bar__segment {
+    transition: opacity 0.15s ease;
+    min-width: 2px;
+}
+
+.report-category-bar__segment:hover {
+    opacity: 0.8;
+}
+
+/* Category Grid */
+.report-category-header {
+    font-size: var(--font-size-body-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-4);
+}
+
+.report-category-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+}
+
+@media (max-width: 1024px) {
+    .report-category-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+    .report-category-grid { grid-template-columns: 1fr; }
+}
+
+.report-category-item {
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.report-category-item__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.report-category-item__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.report-category-item__name {
+    font-size: var(--font-size-body-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.report-category-item__pct {
+    font-size: var(--font-size-h3);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    line-height: 1.1;
+}
+
+.report-category-item__valuation {
+    font-size: var(--font-size-body-sm);
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+.report-category-item__sku {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+}
+
+.report-category-item__velocity {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
+    margin-top: var(--space-2);
+    font-weight: 500;
+}
+
+.report-category-item__velocity--leader {
+    color: #15803D;
+}
+
+/* Warehouse */
+.report-warehouse-header {
+    font-size: var(--font-size-body-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-4);
+}
+
+/* Empty state */
+.report-empty-state {
+    text-align: center;
+    padding: var(--space-8);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-body-sm);
+}
+
+/* ── Table Card ─────────────────────────────────────────────── */
+.report-table-card {
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.report-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.report-table-toolbar__search {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+    max-width: 360px;
+}
+
+.report-table-toolbar__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.report-table-toolbar__counter {
+    font-size: var(--font-size-caption);
+    font-family: monospace;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.report-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.report-pagination__info {
+    font-size: var(--font-size-body-sm);
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+

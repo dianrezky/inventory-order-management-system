@@ -1,0 +1,137 @@
+services:
+  app:
+    build: .
+    container_name: iom_app
+    ports:
+      - "${APP_PORT:-8090}:8080"
+    volumes:
+      - .:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-inventory_order_management}
+      DB_USER: ${DB_USER:-iom_app}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-en}
+      SESSION_NAME: ${SESSION_NAME:-iom_session}
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-3600}
+      # parallel php -S workers
+      PHP_CLI_SERVER_WORKERS: ${PHP_CLI_SERVER_WORKERS:-4}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: ${MEMCACHED_PORT:-11211}
+      # External MinIO (portfolio-minio) — shared service, not managed by this
+      # compose; the browser loads images from MINIO_PUBLIC_URL.
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://host.docker.internal:9000}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY must be set in .env}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY must be set in .env}
+      MINIO_BUCKET: ${MINIO_BUCKET:-portfolio-uploads}
+      # URL the browser loads images from
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
+      ID_OBFUSCATION_KEY: ${ID_OBFUSCATION_KEY:?ID_OBFUSCATION_KEY must be set in .env}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      memcached:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/login') === false ? 1 : 0);"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - iom_net
+
+  # Low-stock job: same image as app, command replaced with cron -f
+  cron:
+    build: .
+    container_name: iom_cron
+    # The cron daemon needs root; override the image's default www-data user.
+    user: root
+    command: ["cron", "-f"]
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-inventory_order_management}
+      DB_USER: ${DB_USER:-iom_app}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - iom_net
+
+  db:
+    image: mysql:8.0
+    container_name: iom_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-inventory_order_management}
+      MYSQL_USER: ${DB_USER:-iom_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD must be set in .env}
+    ports:
+      - "3307:3306"
+    volumes:
+      - iom_db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - iom_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: iom_redis
+    restart: unless-stopped
+    volumes:
+      - iom_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - iom_net
+
+  memcached:
+    image: memcached:1.6-alpine
+    container_name: iom_memcached
+    restart: unless-stopped
+    ports:
+      - "${MEMCACHED_HOST_PORT:-11211}:11211"
+    command: memcached -m 64
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "11211"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - iom_net
+
+  # MinIO is not run here; it reuses portfolio-minio from the monorepo:
+  #   docker compose -f ../deploy/minio-docker-compose.yml up -d
+
+networks:
+  iom_net:
+    driver: bridge
+
+volumes:
+  iom_db_data:
+  iom_redis_data:

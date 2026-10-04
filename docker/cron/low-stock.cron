@@ -1,0 +1,13 @@
+# JOB-01 — low-stock scheduled job (bonus feature: "Scheduled Job — Notifikasi
+# stok rendah"). Runs scripts/check-low-stock.php every 15 minutes inside the
+# "cron" service (see docker-compose.yaml), which shares the exact same image
+# as the "app" service — same PHP, same code, same DB connection — so this is
+# the same script you'd run by hand with:
+#   docker compose exec app php scripts/check-low-stock.php
+# just automated. /etc/cron.d entries need a user column (root, since this
+# container runs as root) and a trailing blank line, or cron silently ignores
+# the file.
+#
+# minute hour day-of-month month day-of-week  user  command
+*/15 * * * * root cd /var/www/html && php scripts/check-low-stock.php >> /proc/1/fd/1 2>> /proc/1/fd/2
+

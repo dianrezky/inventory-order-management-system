@@ -1,0 +1,33 @@
+# Version control & editor
+.git
+.gitignore
+.vscode
+.idea
+.claude
+
+# Secrets & local env (must never enter the image)
+.env
+.env.*
+
+# Dependencies (installed during build)
+vendor
+node_modules
+
+# Runtime & cache
+var
+logs
+*.log
+.phpunit.cache
+
+# Dev-only: not needed in the runtime image
+tests
+docs
+references
+*.md
+phpunit.xml
+phpstan.neon
+
+# Docker meta files themselves
+Dockerfile
+docker-compose.yaml
+.dockerignore

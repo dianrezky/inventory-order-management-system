@@ -1,0 +1,9 @@
+parameters:
+    level: 5
+    paths:
+        - app/
+        - public/
+        - scripts/
+    excludePaths:
+        - app/Repository/Fake/
+    treatPhpDocTypesAsCertain: false

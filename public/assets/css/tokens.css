@@ -1,0 +1,216 @@
+/* Design tokens. Load order: tokens.css → components.css → main.css. Light theme only. */
+
+:root {
+    /* COLOR — Material Design 3 Inspired Enterprise Palette */
+
+    /* Surface layers (light theme — default) */
+    --color-surface-bright:     #ffffff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low:  #eff4ff;
+    --color-surface-container:      #e5eeff;
+    --color-surface-container-high: #dce9ff;
+    --color-surface-container-highest: #d3e4fe;
+    --color-surface:               #f8f9ff;
+    --color-surface-dim:          #cbdbf5;
+    --color-surface-tint:          #4059aa;
+
+    /* Primary — deep navy (WCAG 7.8:1 on white) */
+    --color-primary:              #00236f;
+    --color-primary-container:     #1e3a8a;
+    --color-on-primary:            #ffffff;
+    --color-on-primary-container:  #90a8ff;
+    --color-primary-fixed:         #dce1ff;
+    --color-on-primary-fixed:      #00164e;
+    --color-primary-fixed-dim:     #b6c4ff;
+
+    /* Secondary */
+    --color-secondary:            #565e74;
+    --color-secondary-container:    #dae2fd;
+    --color-on-secondary:          #ffffff;
+    --color-on-secondary-container:#5c647a;
+    --color-secondary-fixed:       #dae2fd;
+    --color-on-secondary-fixed:    #131b2e;
+    --color-secondary-fixed-dim:   #bec6e0;
+
+    /* Tertiary */
+    --color-tertiary:              #002d48;
+    --color-tertiary-container:    #004469;
+    --color-on-tertiary:           #ffffff;
+    --color-on-tertiary-container: #56b3f9;
+    --color-tertiary-fixed:       #cce5ff;
+    --color-on-tertiary-fixed:     #001d31;
+    --color-tertiary-fixed-dim:    #93ccff;
+
+    /* Error */
+    --color-error:                #ba1a1a;
+    --color-error-container:       #ffdad6;
+    --color-on-error:             #ffffff;
+    --color-on-error-container:   #93000a;
+
+    /* Text — on surface */
+    --color-on-surface:            #0b1c30;
+    --color-on-surface-variant:   #444651;
+    --color-outline:              #757682;
+    --color-outline-variant:      #c5c5d3;
+    --color-inverse-surface:      #213145;
+    --color-inverse-on-surface:   #eaf1ff;
+    --color-inverse-primary:      #b6c4ff;
+
+    /* Surface tint / surface variant */
+    --color-surface-tint:         #4059aa;
+    --color-surface-variant:      #d3e4fe;
+
+    /* Status — operational semantic scale */
+    --color-success:              #059669;
+    --color-success-container:    #ecfdf5;
+    --color-on-success:           #ffffff;
+    --color-on-success-container: #065f46;
+    --color-warning:              #d97706;
+    --color-warning-container:    #fffbeb;
+    --color-on-warning:          #ffffff;
+    --color-on-warning-container: #92400e;
+    --color-info:                 #0284c7;
+    --color-info-container:       #f0f9ff;
+    --color-on-info:              #ffffff;
+    --color-on-info-container:    #0369a1;
+
+    /* Danger = Error */
+    --color-danger:               #dc2626;
+    --color-danger-container:     #fef2f2;
+    --color-on-danger:            #ffffff;
+    --color-on-danger-container:  #991b1b;
+
+    /* Aliases for legacy / component usage */
+    --color-bg-primary:           var(--color-surface);
+    --color-bg-surface:           var(--color-surface-container-lowest);
+    --color-brand-primary:        var(--color-primary);
+    --color-brand-secondary:      var(--color-secondary);
+    --color-text-primary:        var(--color-on-surface);
+    --color-text-secondary:      var(--color-on-surface-variant);
+    --color-border:              var(--color-outline-variant);
+    --color-status-error:         var(--color-error);
+    --color-status-success:       var(--color-success);
+    --color-status-warning:       var(--color-warning);
+    --color-status-info:          var(--color-info);
+    --color-on-accent:           var(--color-on-primary);
+
+    /* TYPOGRAPHY */
+
+    /* Font stacks */
+    --font-family-base: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-family-mono: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+
+    /* Display — page hero */
+    --font-size-display: 32px;
+    --line-height-display: 40px;
+
+    /* Headline scale */
+    --font-size-headline-xl: 24px;
+    --line-height-headline-xl: 32px;
+    --font-weight-headline-xl: 700;
+
+    --font-size-headline-lg: 20px;
+    --line-height-headline-lg: 28px;
+    --font-weight-headline-lg: 600;
+
+    --font-size-headline-md: 16px;
+    --line-height-headline-md: 24px;
+    --font-weight-headline-md: 600;
+
+    --font-size-headline-sm: 14px;
+    --line-height-headline-sm: 20px;
+    --font-weight-headline-sm: 600;
+
+    /* Body */
+    --font-size-body: 13px;
+    --line-height-body: 18px;
+    --font-weight-body: 400;
+
+    --font-size-body-sm: 13px;
+    --line-height-body-sm: 18px;
+
+    /* Labels (all uppercase / small UI labels) */
+    --font-size-label-lg: 14px;
+    --line-height-label-lg: 20px;
+    --font-weight-label-lg: 500;
+
+    --font-size-label-md: 13px;
+    --line-height-label-md: 18px;
+    --font-weight-label-md: 500;
+
+    --font-size-label-sm: 12px;
+    --line-height-label-sm: 16px;
+    --font-weight-label-sm: 600;
+
+    --font-size-label-xs: 11px;
+    --line-height-label-xs: 14px;
+    --font-weight-label-xs: 600;
+    --letter-spacing-label-xs: 0.04em;  /* +4% track for label readability */
+
+    /* Captions */
+    --font-size-caption: 12px;
+    --line-height-caption: 16px;
+
+    --font-size-small: 12px;
+    --line-height-heading: var(--line-height-headline-lg);
+
+    /* Legacy aliases */
+    --font-size-h1: var(--font-size-headline-xl);
+    --line-height-h1: var(--line-height-headline-xl);
+    --font-weight-h1: var(--font-weight-headline-xl);
+    --font-size-h2: var(--font-size-headline-lg);
+    --line-height-h2: var(--line-height-headline-lg);
+    --font-weight-h2: var(--font-weight-headline-lg);
+    --font-size-h3: var(--font-size-headline-md);
+    --line-height-h3: var(--line-height-headline-md);
+    --font-weight-h3: var(--font-weight-headline-md);
+    --font-size-label: var(--font-size-label-sm);
+    --line-height-label: var(--line-height-label-sm);
+    --font-weight-label: var(--font-weight-label-sm);
+    --letter-spacing-label: var(--letter-spacing-label-xs);
+    --font-weight-normal: 400;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* Mono / numeric (tabular data) */
+    --font-size-mono-md: 13px;
+    --line-height-mono-md: 18px;
+    --font-size-mono-sm: 12px;
+    --line-height-mono-sm: 16px;
+
+    /* SPACING — 8pt grid system */
+
+    --space-1:   4px;   /* micro pad / icon gap */
+    --space-2:   8px;   /* button gap / list item */
+    --space-3:  12px;   /* card padding / input gap */
+    --space-4:  16px;   /* standard gutter */
+    --space-5:  20px;   /* section gap small */
+    --space-6:  24px;   /* section gap (outer) */
+    --space-7:  28px;   /* compact button height */
+    --space-8:  32px;   /* container gap */
+    --space-10: 40px;   /* section large */
+    --space-12: 48px;   /* view container */
+    --space-16: 64px;   /* layout unit */
+
+    /* RADIUS & ELEVATION */
+
+    --radius-sm:  4px;
+    --radius-md:  8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+    --radius-pill: var(--radius-full);
+
+    /* Elevation shadows */
+    --elevation-card-resting: 0 1px 2px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+    --elevation-card-hover:   0 2px 6px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+    --elevation-sidebar:     1px 0 0 0 var(--color-outline-variant);
+    --elevation-modal:      0 12px 32px rgba(0,0,0,0.18);
+    --elevation-drawer:     0 8px 24px rgba(0,0,0,0.20);
+    --shadow-sm: var(--elevation-card-resting);
+
+    /* Font weights */
+    --font-weight-normal:   400;
+    --font-weight-semibold: 600;
+    --font-weight-bold:     700;
+}

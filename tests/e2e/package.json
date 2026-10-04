@@ -1,0 +1,25 @@
+{
+  "name": "ioms-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Ad-hoc Playwright E2E scripts for manual QA passes (not part of the PHPUnit suite).",
+  "scripts": {
+    "test:dashboard": "node dashboard.spec.js",
+    "test:categories": "node categories.spec.js",
+    "test:suppliers": "node suppliers.spec.js",
+    "test:purchase-orders": "node purchase-orders.spec.js",
+    "test:stock-ledger": "node stock-ledger.spec.js",
+    "test:sales-orders": "node sales-orders.spec.js",
+    "test:reports": "node reports.spec.js",
+    "test:users": "node users.spec.js",
+    "test:all": "node dashboard.spec.js && node categories.spec.js && node warehouses.spec.js && node customers.spec.js && node suppliers.spec.js && node purchase-orders.spec.js && node stock-ledger.spec.js && node sales-orders.spec.js && node reports.spec.js && node users.spec.js && node no-query-string.spec.js && node crawl.spec.js && node regressions.spec.js && node responsive.spec.js && node csv-export.spec.js",
+    "test:no-query-string": "node no-query-string.spec.js",
+    "test:crawl": "node crawl.spec.js",
+    "test:regressions": "node regressions.spec.js",
+    "test:warehouses": "node warehouses.spec.js",
+    "test:customers": "node customers.spec.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}

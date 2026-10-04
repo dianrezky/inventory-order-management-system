@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l app/Controller/BaseController.php)",
+      "PowerShell(docker --version)",
+      "PowerShell(docker compose version)"
+    ]
+  }
+}
