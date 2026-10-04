@@ -1,6 +1,6 @@
 # Command Runner — Demo Docker
 
-Hanya perintah, urut sesuai [`DOCKER-PRESENTATION.md`](DOCKER-PRESENTATION.md). Jalankan dari root proyek, PowerShell.
+Hanya perintah. Jalankan dari root proyek, PowerShell.
 
 ## 1. Cek Docker terpasang
 
