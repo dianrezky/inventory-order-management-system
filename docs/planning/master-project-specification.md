@@ -80,13 +80,13 @@ exists to carry that proof.
 
 | ID | Objective | Verified by |
 |---|---|---|
-| O-1 | Complete core flow: Login → Master Data → PO → SO → Stock Ledger → Dashboard/Report → Logout | Demo §42 |
+| O-1 | Complete core flow: Login → Master Data → PO → SO → Stock Ledger → Dashboard/Report → Logout | Demo |
 | O-2 | `ProductStock` always reconciles with `StockLedger` after any completed transaction | Integration tests §26 |
 | O-3 | Concurrent goods issue cannot oversell | ARCH-02 test §26.3 |
 | O-4 | Segregation of duties enforced server-side | BR-SOD-01 test §26.1 |
 | O-5 | Business logic testable with no real database | ARCH-01, Fake repositories |
 | O-6 | Runs from a clean environment via `docker compose up --build` | §35 |
-| O-7 | Every design decision defensible without AI assistance | §42 |
+| O-7 | Every design decision defensible without AI assistance | ADRs and spec sections |
 
 ### 1.5 Target Users
 
@@ -3325,7 +3325,7 @@ non-original snippet, package or asset must be attributed (brief §6.1).
 ### 38.5 The defense constraint that shapes everything
 
 Because §8.2 fails a participant who cannot explain their own architecture, every AI-assisted decision
-in this specification carries a defense line in §42. If a decision cannot be explained in the
+in this specification must be explainable by the participant. If a decision cannot be explained in the
 participant's own words, it should not be in the project — regardless of how technically sound it is.
 That is the honest test for TD-01, TD-03, TD-10 and TD-11 in particular.
 
@@ -3567,48 +3567,6 @@ Every mandatory requirement has at least one artifact **and** one demo scenario.
 
 ---
 
-## 42. DEFENSE PREPARATION
-
-Brief §8.1: demo 12–15 min · engineering evidence 5–7 min · technical defense 10–12 min. The defense
-segment covers the critique exercise, the ARCH-02 explanation, diagram→code tracing, and a
-safe-refactor demo.
-
-| Question | Answer | Evidence | Code location |
-|---|---|---|---|
-| **Why layered architecture?** | Each layer has one reason to change, and the split is what makes business logic testable without HTTP or MySQL. Controller handles HTTP, Service holds rules, Repository holds SQL. | §11 | `app/Controller`, `app/Service`, `app/Repository` |
-| **Why repository abstraction?** | So a Service depends on a capability, not on PDO. That is what lets the same service run against MySQL in production and an in-memory fake in unit tests, with no branching. | ADR-001 | `app/Repository/Interface/` |
-| **Why constructor injection?** | Dependencies become explicit and substitutable. A hidden `new PDO()` inside a Service would make it untestable and invert the dependency arrow. | §12.3 | `GoodsIssueService::__construct` |
-| **Why MySQL for stock consistency?** | It is the only store here with ACID transactions and row-level locking. Stock correctness is a data-integrity guarantee, and it belongs where the transaction boundary is. | §15 | `ProductStockMySQLRepository` |
-| **Why `SELECT … FOR UPDATE` and not optimistic locking or a conditional update?** | It keeps the sufficiency decision in the Service where it reads as a business rule; it supports all-or-nothing pre-validation for multi-line orders; and because `uniq_product_warehouse` is unique, it locks exactly one row. Optimistic locking would need retry orchestration; the conditional update hides the rule in a `WHERE` clause. | §15.3, §15.4, ADR-002 | `lockForUpdate()` |
-| **Why Redis for session?** | Externalized session state with real TTL semantics. **Honest caveat: the brief does not require it, and the project would satisfy the brief without it.** | ADR-005, §22 | `SessionManager` |
-| **Why Memcached for read cache?** | A pure, regeneratable cache with no persistence semantics to reason about — which suits a cache and makes accidental reliance on it harder. | ADR-005, §23 | `CacheService` |
-| **Why not use Redis as the general cache too?** | To keep the boundary sharp. Redis is authoritative for session; if it also held domain caches, the temptation to cache stock in the store that gates authentication becomes real. | §10, §23.2 | — |
-| **What happens if Redis is unavailable?** | It must fall back to file-based sessions so login keeps working. ~~As-built this fallback is missing — that is TD-01/C-02~~ **Resolved 2026-09-17: `SessionManager::start()` probes Redis and falls back to file sessions.** | §22.7 | `SessionManager::start()` |
-| **What happens if Memcached is unavailable?** | Every read goes to MySQL. `CacheService` marks itself unavailable and returns null on get, so a miss is just a database read. | §25 | `CacheService::connect()` |
-| **How is session expiration handled?** | TTL 3600 on the Redis key; an expired or absent key is treated as unauthenticated — fail-closed, so expiry and absence are indistinguishable. | §22.3 | `SessionManager` |
-| **How is cache invalidated?** | Delete the affected key **after** the transaction commits. Delete rather than overwrite, because delete is idempotent and cannot store a wrong value. | §24 | §24.2 map |
-| **How does SoD work?** | `SalesOrderPolicy::assertCanDecide(bool $isActorAdmin)` throws `SalesApprovalForbiddenException` if the actor is not Admin (BR-SOD-02 total role denial). Admin may approve any order including their own. Sales may never approve any order. The button being hidden in the UI is not the mechanism. | §16 | `SalesOrderPolicy` |
-| **Why is SoD creator-based rather than role-based?** | The brief's BR-SOD-01 ("creator cannot approve own SO") is enforced at the **submit** gate (only the creator may submit). At the **approve** gate, only BR-SOD-02 applies — total role denial. Admin self-approval is explicitly permitted. | §16.1 | `SalesOrderPolicy` |
-| **How does `ProductStock` stay consistent with `StockLedger`?** | Both writes happen inside one Service-owned transaction. There is no code path that writes one without the other, and any exception rolls back both. INV-2 is asserted directly in the integration tests. | §14, INV-2 | `GoodsIssueService`, `GoodsReceiptService` |
-| **How do unit tests avoid MySQL?** | Every repository interface has a fake in-memory implementation, and `FakeTransactionManager` satisfies the transaction interface, so the service runs its real code path with no I/O. | §12.2 | `app/Repository/Fake/` |
-| **How do integration tests use MySQL?** | They run inside the Docker network against the real `db` service; the concurrency test spawns a second OS process so two transactions genuinely race. | §26.2, §26.3 | `tests/Integration/` |
-| **What changed from initial to as-built?** | `SalesOrderPolicy` was extracted for the SoD rule; `TransactionManagerInterface` was introduced to make the boundary testable; all 14 repository interfaces have both MySQL and Fake implementations. Permission layer added (`PermissionService`, `role_permissions` table). Dark theme removed (light only). | §29.3 | — |
-| **What did you refactor?** | Three entries: Extract Class for the SoD policy, Extract Method plus a transaction abstraction for duplicated stock mutation, and Replace Type Code with Enum for statuses. | §31 | `docs/quality/refactor-log.md` |
-| **What technical debt remains?** | Items in §33. Remaining items: no Redis fallback (P0), session TTL mismatch (P0), TDB-007/008/009/010 (controllers bypass service / raw SQL in controller). All previously blocking items resolved: `docs/testing/` created (C-05), `docs/quality/critique.md` created (C-04). I18N-01 is no longer mandatory scope (CF-02 resolved 2026-09-08). | §33 | `docs/quality/tech-debt.md` |
-| **Explain one index.** | `uniq_product_warehouse` on `(product_id, warehouse_id)`. It enforces one stock row per pair, and it is the access path that makes the locking read lock a single row rather than a range — so it serves both the invariant and the concurrency design. | §9.3 | `database/schema.sql` |
-| **Safe-refactor demo** | Rename a method or extract a small private helper inside a Service, run `composer test`, show green. Practise on `DashboardService` — it is well covered by unit tests and has no transaction. | §26 | — |
-
-### Two questions to be ready for that are uncomfortable
-
-1. *"The brief asks for app + MySQL. Why are there four services?"* — Answer with ADR-005 and say
-   plainly that Redis and Memcached are optional additions, that MySQL remains sole source of truth,
-   and that the system satisfies the brief without them. Do not oversell them.
-2. *"Is i18next an allowed dependency?"* — **Resolved 2026-09-08:** I18N-01 (locale switching) is
-   out of scope for the current release, so this question is moot for defense purposes unless the
-   assessor asks about pre-existing, non-mandatory code. See CF-02 (§46, resolved).
-
----
-
 ## 43. FULL TRACEABILITY
 
 ```
@@ -3632,7 +3590,7 @@ Tests (§26)  +  Static analysis (§27)
       ↓
 Evidence (§41)
       ↓
-Defense (§42)
+Defense
 ```
 
 ### Traceability spot-check on the highest-risk chain
@@ -3653,7 +3611,6 @@ Defense (§42)
 | Implementation | `GoodsIssueService`, `ProductStockMySQLRepository::lockForUpdate()` |
 | Test | `ARCH02ConcurrencyTest`, `GoodsIssueConcurrencyTest`, `support/goods_issue_worker.php` |
 | Evidence | concurrency scenario output in `docs/testing/concurrency/` |
-| Defense | "Why `FOR UPDATE`?" and "How does stock stay consistent with the ledger?" (§42) |
 
 Every mandatory requirement answers the four questions:
 
@@ -3662,7 +3619,6 @@ Every mandatory requirement answers the four questions:
 | Where implemented? | §04 matrix 4A (Controller/Service/Repository/DB columns) |
 | How tested? | §04 matrix 4B + §26 |
 | What evidence? | §41 |
-| What defense point? | §42 |
 
 ---
 
@@ -3705,7 +3661,6 @@ Status values: COMPLETE · PARTIAL · MISSING · CONFLICT · EXTRA · AMBIGUOUS.
 | Git | PARTIAL | conventions and history fine; **`*.md` globally gitignored (C-10 — verified still live 2026-09-17: 53 `.md` files on disk under `docs/`, only 20 tracked)** |
 | AI | COMPLETE | log present; must include this spec and the design audit (§38.4) |
 | Evidence | PARTIAL *(narrowed)* | `docs/testing/` now exists (C-05 resolved 2026-09-17); the 9 evidence rows' per-requirement subfolders are not yet populated (see §41 amendment) |
-| Defense | COMPLETE | question map in §42 |
 
 ### Consolidated findings
 
@@ -3807,7 +3762,7 @@ Each row is a brief §8.2 clause.
 | CF-M | Stock changed outside service/ledger ⇒ ledger diverges from `ProductStock` | Only the two stock services write `product_stocks`; ledger append-only; no stock field in any form | grep every write to `product_stocks`; assert INV-2 in integration tests | `GoodsReceiptTest` | PASS |
 | CF-N | Goods issue/receipt non-transactional ⇒ reproducible oversell | One transaction wrapping both writes; `SELECT … FOR UPDATE`; two-pass lock-then-mutate | `ARCH02ConcurrencyTest` with a real second process | concurrency output | PASS |
 | CF-O | Class diagram doesn't match code and can't be traced | As-built produced from actual code; §29.4 traceability rule | trace 3 random classes from diagram to code on the final tag | diagrams | **C-03 (diagram location) resolved 2026-09-17** — `docs/planning/class-diagram-initial.md` exists. The trace-3-classes verification itself has not been re-run in this pass. |
-| CF-P | Participant can't explain their own architecture, or plagiarism | §42 question map; every decision has an ADR or a spec section | rehearse the defense unaided | §42 | Preparation required |
+| CF-P | Participant can't explain their own architecture, or plagiarism | every decision has an ADR or a spec section | rehearse the defense unaided | ADRs, spec sections | Preparation required |
 | CF-Q | Material AI or external source use hidden | `ai-usage-log.md`; this spec and the design audit disclosed (§38.4) | review the log for completeness | log | **Must update** |
 
 ### Verification commands for the mechanical checks
@@ -3903,7 +3858,7 @@ still requires the lock. Worth saying at defense — it strengthens the ARCH-02 
 | 43 | Git strategy complete | ⚠️ §39 — **C-10 still open, verified still live 2026-09-17**: 53 `.md` files exist under `docs/` on disk, only 20 are `git`-tracked; `docs/quality/critique.md`, all of `docs/testing/`, and this spec file itself are untracked despite the `!inventory-order-management-system/docs/**/*.md` negation rule in the root `.gitignore` |
 | 44 | Vertical slices complete | ✅ §40 — 17 slices with DoD; Slice 14 and Slice 16 now `DONE`, Slice 15 and Slice 17 `PARTIAL` with a narrower remaining list (see §40) |
 | 45 | Evidence matrix complete | ✅ §41 — **C-05 resolved**, verified on disk: `docs/testing/` contains `README.md`, `unit-test-results.md`, `integration-test-results.md`, `phpstan-results.md` |
-| 46 | Defense mapping complete | ✅ §42 — 22 questions |
+| 46 | Defense mapping complete | N/A — question map removed |
 | 47 | Full traceability complete | ✅ §43 |
 | 48 | Completeness audit passed | ⚠️ §44 — not re-run in this pass; findings dated to the original audit, several now stale (see resolved items above) |
 | 49 | Extra requirement audit passed | ✅ §45 — **CF-02 resolved 2026-09-08** |
