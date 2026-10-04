@@ -142,6 +142,14 @@ The integration command reuses the dedicated `ioms-e2e` database and test app; i
 
 On 2026-10-04, the standalone runner passed 19 scenarios/153 assertions, PHPUnit Unit passed 132 tests/404 assertions, and isolated Integration passed 17 tests/143 assertions against an image built from this workspace. The release results below remain historical. See [current verification and limitations](docs/testing/README.md).
 
+### PHPUnit Output
+
+Screenshots below display saved output from the verified 2026-10-04 runs; no tests were rerun to produce these images. See [test evidence and raw output](docs/testing/README.md#phpunit-output-screenshots--2026-10-04) for capture context and expected injected-failure logs.
+
+![PHPUnit Unit: 132 tests, 404 assertions passed](docs/testing/screenshots/phpunit-unit-2026-10-04.png)
+
+![PHPUnit isolated Integration: 17 tests, 143 assertions passed](docs/testing/screenshots/phpunit-integration-2026-10-04.png)
+
 ## SonarQube Results
 
 The screenshots and measurement context are also documented in [SonarQube dashboard evidence](docs/quality/sonarqube-results-2026-10-04.md).

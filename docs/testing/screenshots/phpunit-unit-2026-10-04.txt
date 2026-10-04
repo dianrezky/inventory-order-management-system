@@ -1,0 +1,15 @@
+PHPUnit 10.5.64 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.20
+Configuration: /var/www/html/phpunit.xml
+
+...............................................................  63 / 132 ( 47%)
+............................................................... 126 / 132 ( 95%)
+......                                                          132 / 132 (100%)
+
+Time: 00:00.864, Memory: 10.00 MB
+
+OK (132 tests, 404 assertions)
+Product availability lookup failed.
+Product stock lookup failed.
+Could not retrieve the order export.

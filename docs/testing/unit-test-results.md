@@ -2,6 +2,8 @@
 
 **Current remediation run (2026-10-04): PASS — 132 tests, 404 assertions.** PHP 8.3.20 / PHPUnit 10.5.64 in a fresh workspace image; see [current environment and evidence](README.md). Everything below retains its historical date and output.
 
+[Current PHPUnit output screenshot](screenshots/phpunit-unit-2026-10-04.png) · [Saved output](screenshots/phpunit-unit-2026-10-04.txt)
+
 **Date:** 2026-09-25
 **Command:** `docker compose exec app ./vendor/bin/phpunit --testsuite Unit --testdox`
 **Runtime:** PHP 8.3.20 / PHPUnit 10.5.64

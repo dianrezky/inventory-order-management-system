@@ -44,6 +44,26 @@ For a manually provisioned test environment, set `TEST_DB_NAME` explicitly and e
 
 Source inventory now contains **132 named test methods in 15 Unit files** and **17 methods in 6 Integration files**. These counts are static source inventory, not runtime test counts or passing results.
 
+## PHPUnit output screenshots — 2026-10-04
+
+These screenshots display the saved output from the verified final workspace-image runs. They were captured from a readable log view for documentation, rather than from a new PHPUnit execution. The image revision and capture provenance are printed in each screenshot.
+
+### Unit suite
+
+**PASS: 132 tests, 404 assertions.** The final three log messages come from deliberately injected dependency failures; they are expected and do not indicate failing assertions.
+
+![PHPUnit Unit output: 132 tests and 404 assertions passed](screenshots/phpunit-unit-2026-10-04.png)
+
+[Saved Unit output](screenshots/phpunit-unit-2026-10-04.txt)
+
+### Isolated Integration suite
+
+**PASS: 17 tests, 143 assertions.** This is the PHPUnit result portion of the saved integration command output; Docker build/startup messages are outside this excerpt.
+
+![PHPUnit Integration output: 17 tests and 143 assertions passed](screenshots/phpunit-integration-2026-10-04.png)
+
+[Saved Integration output excerpt](screenshots/phpunit-integration-2026-10-04.txt)
+
 ## Current regression coverage
 
 The [standalone runner](../../tests/Regression/run-reference-gaps.php) and PHPUnit adapters exercise public workflows:
