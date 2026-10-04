@@ -5,6 +5,8 @@ Final Project - Intermediate Programmer
 
 An inventory and order management web application supporting multiple warehouses, three roles (Admin / Sales / Warehouse Staff), Purchase Orders, Sales Orders, a Stock Ledger, KPI dashboards, CSV reporting, and a Product Availability API. Product images are stored in MinIO (S3-compatible). The UI uses English and a single light theme.
 
+**Online access:** the application is deployed at **https://ioms.aetherxusory.my.id/**. Sign in with one of the accounts listed under [Seed Data](#seed-data).
+
 ## Tech Stack (Required)
 - **Backend:** PHP 8.3 Native OOP (brief: 8.2+), Controller → Service → Repository
 - **Frontend:** HTML, CSS, Vanilla JavaScript + Fetch API
@@ -99,15 +101,15 @@ open http://localhost:8090
 ## Architecture
 
 ```
-Controller â”€â”€â–º Service â”€â”€â–º Repository (MySQL / Fake)
-     â”‚            â”‚
-     â”‚            â””â”€â”€ SalesOrderPolicy (BR-001 segregation)
-     â”‚            â””â”€â”€ DashboardService (per-role KPI)
-     â”‚            â””â”€â”€ CsvExportService (RFC 4180)
-     â”‚
-     â””â”€â”€ AuthService + SessionManager (Redis-backed, CSRF)
-     â””â”€â”€ CacheService (Memcached — product-by-SKU & permission cache)
-     â””â”€â”€ ImageUploadService + MinioClient (product images)
+Controller ──► Service ──► Repository (MySQL / Fake)
+     │            │
+     │            └── SalesOrderPolicy (BR-001 segregation)
+     │            └── DashboardService (per-role KPI)
+     │            └── CsvExportService (RFC 4180)
+     │
+     └── AuthService + SessionManager (Redis-backed, CSRF)
+     └── CacheService (Memcached — product-by-SKU & permission cache)
+     └── ImageUploadService + MinioClient (product images)
 ```
 
 ## Key Business Rules
