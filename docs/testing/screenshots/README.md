@@ -20,6 +20,8 @@ App: http://localhost:8090
 | 13 | `13-notifications/` | `(root)` | Notification list, mark-all-read |
 | 14 | `14-profile/` | `admin/ sales/` | Admin profile edit/save; Sales profile view |
 
+PHPUnit run output (2026-10-04) sits directly in this folder: `phpunit-unit-*` and `phpunit-integration-*` as `.png` (screenshot), `.txt` (saved output) and `.html` (the readable log view the screenshot was captured from).
+
 ## Folder structure
 ```
 docs/testing/screenshots/
