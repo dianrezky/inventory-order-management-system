@@ -26,10 +26,19 @@ jobs:
           VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
           VM_PORT: ${{ secrets.VM_PORT }}
         run: |
+          for name in VM_HOST VM_SSH_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Repository secret $name is empty or missing (Settings > Secrets and variables > Actions > Repository secrets)."
+              exit 1
+            fi
+          done
           install -m 700 -d ~/.ssh
           printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "${VM_PORT:-22}" -H "$VM_HOST" >> ~/.ssh/known_hosts
+          if ! ssh-keyscan -T 10 -p "${VM_PORT:-22}" -H "$VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null || [ ! -s ~/.ssh/known_hosts ]; then
+            echo "::error::Cannot reach $VM_HOST on SSH port ${VM_PORT:-22} from GitHub (wrong VM_HOST, wrong VM_PORT, or the VM firewall blocks it)."
+            exit 1
+          fi
 
       - name: Pull and deploy on the VM
         env:
@@ -37,5 +46,6 @@ jobs:
           VM_USER: ${{ secrets.VM_USER }}
           VM_PORT: ${{ secrets.VM_PORT }}
         run: |
+          if [ -z "$VM_USER" ]; then echo "::error::Repository secret VM_USER is empty or missing."; exit 1; fi
           ssh -i ~/.ssh/deploy_key -p "${VM_PORT:-22}" -o BatchMode=yes "$VM_USER@$VM_HOST" \
             'git -C /opt/ioms pull --ff-only && sudo bash /opt/ioms/scripts/deploy-vps.sh'
