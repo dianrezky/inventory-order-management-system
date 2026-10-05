@@ -31,6 +31,7 @@ code { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size:8
 .cb::before { content:"☐ "; }
 .inf { color:#a15c00; font-weight:600; }
 .lead { color:var(--muted); }
+.detail { font-size:8.8pt; line-height:1.38; margin-top:3mm; } .detail h3 { margin:2mm 0 .5mm; font-size:9.3pt; } .detail ul { margin-left:4.5mm; } .detail li { margin:.3mm 0; } .shot.sm img { max-height:48mm; }
 .flow { page-break-before:always; page-break-after:auto; min-height:0; }
 </style>
 </head>
@@ -50,10 +51,19 @@ code { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size:8
 </div></section>
 
 <section class="page"><div class="bar"><span class="tag">LOGIN</span>Langkah 1 — Login</div><div class="body">
-<div class="shot"><img src="assets/step-01.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<div class="shot sm"><img src="assets/step-01.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
 <h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Tampilkan halaman login. Masukkan email &amp; password, klik Masuk.</li></ul>
 <h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Pertama saya login. Saya ketik email dan password lalu Masuk."</div>
-<div class="why"><b class="t">💡 Selip alasan — Sesi &amp; Redis — ucapkan di momen ini</b>"Saat login berhasil, identitas saya disimpan sebagai sesi. Sesi ini saya simpan di <b>Redis</b> — bukan di database utama — karena sesi butuh masa berlaku otomatis dan harus cepat dibaca di setiap halaman. Kalau Redis kebetulan mati, aplikasi otomatis beralih ke penyimpanan file, jadi login tetap jalan." · Keamanan: password dicek dengan <b>bcrypt</b>, tidak pernah disimpan polos. <br><b>Penjelasan lengkap kalimat ini ada di Lampiran A.</b></div>
+<div class="why"><b class="t">💡 Selip alasan — Sesi &amp; Redis — ucapkan di momen ini</b>"Saat login berhasil, identitas saya disimpan sebagai sesi. Sesi ini saya simpan di <b>Redis</b> — bukan di database utama — karena sesi butuh masa berlaku otomatis dan harus cepat dibaca di setiap halaman. Kalau Redis kebetulan mati, aplikasi otomatis beralih ke penyimpanan file, jadi login tetap jalan." · Keamanan: password dicek dengan <b>bcrypt</b>, tidak pernah disimpan polos.</div>
+<div class="box detail"><b class="t">Maksud kedua kalimat di atas (terverifikasi di kode)</b>
+<h3>1. "Redis mati → beralih ke file, login tetap jalan"</h3>
+<ul><li><b>Sesi</b> = data "siapa yang sedang login" (<code>user_id</code>, <code>role</code>, <code>last_activity</code>) di sisi server; browser hanya memegang cookie berisi ID acak. Normalnya disimpan di <b>Redis</b> (cepat, kedaluwarsa otomatis 3600 dtk, tidak membebani MySQL). Hanya sesi di Redis — bukan data bisnis/stok.</li>
+<li>Tiap request, <code>SessionManager</code> mengecek koneksi ke Redis (timeout 0,5 dtk). Gagal → tulis peringatan di log dan pakai <b>sesi berbasis file</b> (<code>session.save_handler=files</code>). Tanpa ini, Redis mati membuat semua request gagal/menggantung dan tak ada yang bisa login. Sudah diuji: dengan Redis palsu, sesi tetap aktif di mode file.</li>
+<li><b>Batasan jujur</b> <span class="inf">(inferensi dari kode)</span>: sesi lama tidak ikut pindah, jadi pengguna yang sudah login harus login ulang saat Redis mati; login baru bisa, tapi sesinya tersimpan di file lokal.</li></ul>
+<h3>2. "Password dicek dengan bcrypt, tidak pernah disimpan polos"</h3>
+<ul><li>Saat user dibuat/ganti password: <code>password_hash($pw, PASSWORD_BCRYPT)</code> → di DB hanya hash <code>$2y$10$…</code> (60 karakter, salt acak, sengaja lambat). Password asli tidak ada di DB, sesi, maupun log.</li>
+<li>Saat login: <code>password_verify($pw, hash)</code> — hash tidak bisa "dibalik"; dibandingkan, bukan didekripsi. Salah/akun nonaktif/email tak dikenal → pesan sama.</li></ul>
+Versi lebih lengkap: Lampiran A.</div>
 </div></section>
 
 <section class="page"><div class="bar"><span class="tag">LOGIN</span>Langkah 1b — (opsional) login gagal</div><div class="body">
@@ -64,11 +74,18 @@ code { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size:8
 </div></section>
 
 <section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 2 — Dashboard Admin (login sebagai Rita)</div><div class="body">
-<div class="shot"><img src="assets/step-03.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<div class="shot sm"><img src="assets/step-03.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
 <h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Tampilkan dashboard Admin: ringkasan stok, pesanan, aktivitas.</li>
 <li>Tunjuk menu kiri LENGKAP: Dashboard, Master Data (Products, Categories, Warehouses, Suppliers, Customers), Procurement, Sales, Inventory, Reports, Administration (Users).</li></ul>
 <h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Saya masuk sebagai Admin. Dashboard menampilkan ringkasan kondisi gudang dan pesanan. Perhatikan menu di kiri — Admin punya akses penuh ke semua modul."</div>
-<div class="why"><b class="t">💡 Selip alasan — Role &amp; otorisasi — ucapkan di momen ini</b>"Menu yang muncul ditentukan izin role saya. Tapi menyembunyikan menu saja bukan keamanan — setiap halaman tetap dicek di server. Nanti saya tunjukkan kalau role lain memaksa buka menu terlarang, dia tetap ditolak." <br><b>Tentang cache:</b> angka-angka dashboard dibaca <u>langsung dari MySQL setiap kali halaman dibuka</u> (badge "LIVE SYNCED") — <b>tidak</b> di-cache. Memcached dipakai untuk data lain; rinciannya di <b>Lampiran B</b>.</div>
+<div class="why"><b class="t">💡 Selip alasan — Role &amp; otorisasi — ucapkan di momen ini</b>"Menu yang muncul ditentukan izin role saya. Tapi menyembunyikan menu saja bukan keamanan — setiap halaman tetap dicek di server. Nanti saya tunjukkan kalau role lain memaksa buka menu terlarang, dia tetap ditolak."</div>
+<div class="box detail"><b class="t">Soal cache Memcached — data apa tepatnya?</b>
+Angka dashboard (nilai inventori, low stock, jumlah PO/SO, antrean) dibaca <u>langsung dari MySQL tiap halaman dibuka</u> (badge "LIVE SYNCED") — <b>tidak di-cache</b>. Yang di-cache Memcached hanya tiga hal:
+<table><tr><th>Key</th><th>Isi</th><th>TTL</th><th>Invalidasi</th></tr>
+<tr><td><code>product:&lt;SKU&gt;</code></td><td>Satu produk per SKU (dipakai API <code>/api/products/{sku}/availability</code>); bukan stok</td><td>5 menit</td><td>Dihapus saat produk diubah / dinonaktifkan / diaktifkan</td></tr>
+<tr><td><code>role_permissions.grouped</code></td><td>Tabel izin role (menu &amp; guard akses)</td><td>1 jam</td><td>Hanya kedaluwarsa TTL</td></tr>
+<tr><td><code>file_validation.rules</code></td><td>Aturan tipe gambar upload produk</td><td>1 jam</td><td>Hanya kedaluwarsa TTL</td></tr></table>
+<b>Stok tidak pernah di-cache</b> (selalu MySQL + <code>SELECT … FOR UPDATE</code>) agar anti-oversell tak bergantung data usang. Bila Memcached mati, aplikasi tetap jalan penuh dari MySQL. Versi lengkap: Lampiran B.</div>
 </div></section>
 
 <section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 3 — Admin menyiapkan data induk (Products)</div><div class="body">
