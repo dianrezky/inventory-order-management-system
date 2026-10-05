@@ -218,7 +218,7 @@ All 6 slices complete. Docker clean rebuild verified. PHPUnit Unit 101/101 + Int
 
 **Remediation update (2026-10-04):** conditional order transitions prevent stale status overwrites; quantity/date/reorder validation rejects malformed and out-of-range input; Draft Sales Orders can be edited by their creator or an Admin; product sorting and displayed order-number search are available; availability dependency errors return 500; report valuation retains cents and shares the stock-value aggregate. Lock-order regressions now cover both Goods Issue and Goods Receipt. PHPStan level 5 passed against this working tree. Current Unit and isolated MySQL/HTTP Integration passed. A dedicated MySQL cancellation-race case, clean-clone build, complete role/mobile demo, VPS image-storage verification, and revision-matched Sonar evidence remain pending.
 
-The 2026-09-25 release/build/test results above are historical snapshots and do not verify the current uncommitted remediation. Sonar screenshots are preserved with their original measurement context. The [reference audit](docs/quality/reference-gap-audit-2026-10-04.md) records current source fixes and remaining evidence or requirement decisions.
+The 2026-09-25 release/build/test results above are historical snapshots and do not verify the current uncommitted remediation. Sonar screenshots are preserved with their original measurement context. The [remediation notes (TDB-R14)](docs/quality/tech-debt.md) records current source fixes and remaining evidence or requirement decisions.
 
 Architecture notes are available in [ADR-002 — Concurrency Strategy](docs/architecture/adr-002-concurrency-strategy.md); outstanding technical debt is tracked in [Tech Debt](docs/quality/tech-debt.md).
 

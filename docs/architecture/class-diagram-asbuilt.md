@@ -382,4 +382,4 @@ QueryBuilder exposes findAll/findOne/countAll/scalar/insert/update/delete and na
 
 ## Verification limits and design history
 
-The original design remains in [class-diagram-initial.md](../planning/class-diagram-initial.md). [ADR-001](adr-001-repository-pattern.md) describes repository boundaries and [ADR-002](adr-002-concurrency-strategy.md) describes locking. The current behavior and unresolved requirement decisions are tracked in the [reference audit](../quality/reference-gap-audit-2026-10-04.md). This source snapshot does not claim an HTTP demo, real database concurrency run, Docker build, or fresh Sonar scan.
+The original design remains in [class-diagram-initial.md](../planning/class-diagram-initial.md). [ADR-001](adr-001-repository-pattern.md) describes repository boundaries and [ADR-002](adr-002-concurrency-strategy.md) describes locking. The current behavior and unresolved requirement decisions are tracked in the [remediation notes (TDB-R14)](../quality/tech-debt.md). This source snapshot does not claim an HTTP demo, real database concurrency run, Docker build, or fresh Sonar scan.

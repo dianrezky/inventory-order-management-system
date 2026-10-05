@@ -175,7 +175,7 @@ Both workflows contain similar line validation and normalization. Purchase and s
 
 ### TDB-015: Current release/runtime evidence pending
 
-**Status:** Open. Current source fixes have passing standalone regressions, Unit (132 tests/404 assertions), isolated Integration (17 tests/143 assertions), and PHPStan evidence. Dedicated MySQL cancellation-race coverage, clean-clone build, role/mobile demo, VPS image-storage verification and a revision-matched Sonar run remain pending. The previously inspected active container mounted another checkout. See [current test evidence](../testing/README.md) and [reference audit](reference-gap-audit-2026-10-04.md). No passing historical result is promoted to proof of the current working tree.
+**Status:** Open. Current source fixes have passing standalone regressions, Unit (132 tests/404 assertions), isolated Integration (17 tests/143 assertions), and PHPStan evidence. Dedicated MySQL cancellation-race coverage, clean-clone build, role/mobile demo, VPS image-storage verification and a revision-matched Sonar run remain pending. The previously inspected active container mounted another checkout. See [current test evidence](../testing/README.md) and remediation entry TDB-R14. No passing historical result is promoted to proof of the current working tree.
 
 ### TDB-016: Assessment provenance and dependency interpretation
 
@@ -266,4 +266,4 @@ Both goods workflows sort lines by ascending productId before stock locking. New
 
 ### TDB-R14: Confirmed reference audit code/documentation gaps (source verified 2026-10-04)
 
-Conditional status updates now reject stale transitions; raw integer/date/price validation rejects malformed and schema-out-of-range values; PHPStan assignment failures are fixed. Draft SO editing, product sort, display-number search, API failure classification, shared inventory valuation and decimal presentation have been implemented. Unit session/cache boundaries are isolated, integration DB selection is explicit, API/as-built/testing documentation matches current source, and asset notices are distributed. See the [remediation audit](reference-gap-audit-2026-10-04.md) for individual findings and limits. Outstanding runtime/provenance decisions remain open in TDB-015/TDB-016.
+Conditional status updates now reject stale transitions; raw integer/date/price validation rejects malformed and schema-out-of-range values; PHPStan assignment failures are fixed. Draft SO editing, product sort, display-number search, API failure classification, shared inventory valuation and decimal presentation have been implemented. Unit session/cache boundaries are isolated, integration DB selection is explicit, API/as-built/testing documentation matches current source, and asset notices are distributed. See the remediation entry TDB-R14 for individual findings and limits. Outstanding runtime/provenance decisions remain open in TDB-015/TDB-016.

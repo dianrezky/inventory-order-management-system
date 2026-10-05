@@ -91,7 +91,7 @@ Sales cannot approve any Sales Order. Admin can approve, including an order they
 - [Historical unit results](unit-test-results.md)
 - [Historical integration results](integration-test-results.md)
 - [Current and historical PHPStan results](phpstan-results.md)
-- [Reference audit and remediation status](../quality/reference-gap-audit-2026-10-04.md)
+- [Remediation status (TDB-R14)](../quality/tech-debt.md)
 
 The initial audit did not run PHPUnit. The user later explicitly requested Unit and isolated Integration, which now pass. The active developer iom_app mounts another checkout and was not used as evidence. The verified workspace image is sha256:12c35c978219ea15d25d30a1cde183b58469d3aaef0f224d31a1479e188b417f. Unit used the integration-tests service with --no-deps and an overridden PHPUnit Unit command; PHPStan used the same image with phpstan.neon mounted read-only. Intentional error logs from injected failures are expected.
 
