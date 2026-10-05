@@ -103,3 +103,14 @@ Putting both in the same store invites exactly the failure this ADR exists to pr
 - `docs/quality/tech-debt.md` TDB-R09 (C-01/C-02), TDB-R10 (C-08)
 - `app/Core/SessionManager.php`, `app/Core/CacheService.php`, `app/Service/ProductService.php`
 - ADR-002 (concurrency strategy — the boundary this ADR protects)
+
+---
+
+## Amendment (2026-10-05): role-permission cache moved to Redis
+
+`role_permissions.grouped` (1 h TTL, TTL-only expiry) is now cached in **Redis** through
+`RedisCacheService`, using logical database 1 (`REDIS_CACHE_DATABASE`, default 1) and the `cache:` key
+prefix, so it never shares a keyspace with sessions (database 0). Memcached keeps only `product:<sku>`
+and `file_validation.rules`. `RedisCacheService` degrades to a no-op when Redis is unreachable (0.5 s
+timeout), so permissions are then read straight from MySQL and login/menus keep working. The boundary
+above still holds: stock is never cached, and Redis is never a concurrency mechanism.

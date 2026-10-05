@@ -11,7 +11,7 @@ An inventory and order management web application supporting multiple warehouses
 - **Backend:** PHP 8.3 Native OOP (brief: 8.2+), Controller → Service → Repository
 - **Frontend:** HTML, CSS, Vanilla JavaScript + Fetch API
 - **Database:** MySQL 8, PDO prepared statements, InnoDB transactions
-- **Container:** Docker + Docker Compose (5 services: `app` — PHP 8.3, `cron` — low-stock check, `db` — MySQL 8, `redis` — sessions, `memcached` — product & permission cache). Object storage uses external MinIO (`portfolio-minio`; see `MINIO_*` in `docker-compose.yaml`).
+- **Container:** Docker + Docker Compose (5 services: `app` — PHP 8.3, `cron` — low-stock check, `db` — MySQL 8, `redis` — sessions & role-permission cache, `memcached` — product & file-validation cache). Object storage uses external MinIO (`portfolio-minio`; see `MINIO_*` in `docker-compose.yaml`).
 - **Testing:** PHPUnit (Unit + Integration), PHPStan level 5 ✅
 
 ## `.env` Configuration (Required Before Startup)
@@ -108,7 +108,8 @@ Controller ──► Service ──► Repository (MySQL / Fake)
      │            └── CsvExportService (RFC 4180)
      │
      └── AuthService + SessionManager (Redis-backed, CSRF)
-     └── CacheService (Memcached — product-by-SKU & permission cache)
+     └── CacheService (Memcached — product-by-SKU & file-validation cache)
+     └── RedisCacheService (Redis db 1 — role-permission cache)
      └── ImageUploadService + MinioClient (product images)
 ```
 

@@ -59,6 +59,8 @@ $globalConfig = [
     'redis' => [
         'host' => $_ENV['REDIS_HOST'],
         'port' => (int) $_ENV['REDIS_PORT'],
+        // sessions use database 0; the read cache (role permissions) uses its own database
+        'cache_database' => (int) ($_ENV['REDIS_CACHE_DATABASE'] ?? 1),
     ],
     'memcached' => [
         'host' => $_ENV['MEMCACHED_HOST'],

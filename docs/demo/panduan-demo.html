@@ -80,12 +80,11 @@ Versi lebih lengkap: Lampiran A.</div>
 <h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Saya masuk sebagai Admin. Dashboard menampilkan ringkasan kondisi gudang dan pesanan. Perhatikan menu di kiri — Admin punya akses penuh ke semua modul."</div>
 <div class="why"><b class="t">💡 Selip alasan — Role &amp; otorisasi — ucapkan di momen ini</b>"Menu yang muncul ditentukan izin role saya. Tapi menyembunyikan menu saja bukan keamanan — setiap halaman tetap dicek di server. Nanti saya tunjukkan kalau role lain memaksa buka menu terlarang, dia tetap ditolak."</div>
 <div class="box detail"><b class="t">Soal cache Memcached — data apa tepatnya?</b>
-Angka dashboard (nilai inventori, low stock, jumlah PO/SO, antrean) dibaca <u>langsung dari MySQL tiap halaman dibuka</u> (badge "LIVE SYNCED") — <b>tidak di-cache</b>. Yang di-cache Memcached hanya tiga hal:
+Angka dashboard (nilai inventori, low stock, jumlah PO/SO, antrean) dibaca <u>langsung dari MySQL tiap halaman dibuka</u> (badge "LIVE SYNCED") — <b>tidak di-cache</b>. Yang di-cache <b>Memcached</b> hanya dua hal (izin role dipindah ke Redis, lihat bawah tabel):
 <table><tr><th>Key</th><th>Isi</th><th>TTL</th><th>Invalidasi</th></tr>
 <tr><td><code>product:&lt;SKU&gt;</code></td><td>Satu produk per SKU (dipakai API <code>/api/products/{sku}/availability</code>); bukan stok</td><td>5 menit</td><td>Dihapus saat produk diubah / dinonaktifkan / diaktifkan</td></tr>
-<tr><td><code>role_permissions.grouped</code></td><td>Tabel izin role (menu &amp; guard akses)</td><td>1 jam</td><td>Hanya kedaluwarsa TTL</td></tr>
 <tr><td><code>file_validation.rules</code></td><td>Aturan tipe gambar upload produk</td><td>1 jam</td><td>Hanya kedaluwarsa TTL</td></tr></table>
-<b>Stok tidak pernah di-cache</b> (selalu MySQL + <code>SELECT … FOR UPDATE</code>) agar anti-oversell tak bergantung data usang. Bila Memcached mati, aplikasi tetap jalan penuh dari MySQL. Versi lengkap: Lampiran B.</div>
+<b>Stok tidak pernah di-cache</b> (selalu MySQL + <code>SELECT … FOR UPDATE</code>) agar anti-oversell tak bergantung data usang. Bila Memcached mati, aplikasi tetap jalan penuh dari MySQL. Tabel izin role (<code>role_permissions.grouped</code>, 1 jam) kini di-cache di <b>Redis</b> (database terpisah dari sesi), bukan Memcached. Versi lengkap: Lampiran B.</div>
 </div></section>
 
 <section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 3 — Admin menyiapkan data induk (Products)</div><div class="body">
@@ -240,7 +239,7 @@ Angka dashboard (nilai inventori, low stock, jumlah PO/SO, antrean) dibaca <u>la
 <p class="cap">Langkah bicara / persiapan — tidak perlu layar tertentu</p>
 <h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Rangkum perjalanan: Sales buat → Admin setujui → Warehouse keluarkan. Siap masuk tanya jawab.</li></ul>
 <h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Jadi tadi satu pesanan berjalan lengkap: Sales membuatnya, Admin menyetujuinya, Warehouse mengeluarkan barangnya — dan di setiap langkah, aplikasi menjaga siapa yang berhak, mencatat jejaknya, dan memastikan stok tidak pernah minus. Itulah inti dari Inventory &amp; Order Management System ini. Saya siap untuk pertanyaan."</div>
-<div class="why"><b class="t">💡 Jika ditanya "kenapa Redis DAN Memcached" — ucapkan di momen ini</b>Jujur: Redis untuk sesi (butuh TTL), Memcached untuk cache baca. Keduanya sebenarnya tidak wajib — saya pakai untuk mendemonstrasikan externalized session &amp; cache-aside, dengan peran yang dipisah jelas (ADR-005). Lihat Lampiran A dan B.</div>
+<div class="why"><b class="t">💡 Jika ditanya "kenapa Redis DAN Memcached" — ucapkan di momen ini</b>Jujur: Redis untuk sesi (butuh TTL) dan cache izin role, Memcached untuk cache baca produk &amp; aturan validasi file. Keduanya sebenarnya tidak wajib — saya pakai untuk mendemonstrasikan externalized session &amp; cache-aside, dengan peran yang dipisah jelas (ADR-005). Lihat Lampiran A dan B.</div>
 </div></section>
 
 <!-- ===================== LAMPIRAN A ===================== -->
@@ -251,7 +250,7 @@ Angka dashboard (nilai inventori, low stock, jumlah PO/SO, antrean) dibaca <u>la
 <ul>
 <li>Setelah login berhasil, server menyimpan <code>user_id</code>, <code>role</code>, <code>user_name</code>, dan <code>last_activity</code> di sesi PHP. Browser hanya memegang <i>cookie</i> berisi ID sesi acak (<code>iom_session</code>) — bukan data pengguna.</li>
 <li>Penyimpanan sesi default PHP adalah file di server. Aplikasi ini menggantinya ke <b>Redis</b> (<code>session.save_handler=redis</code>, alamat <code>tcp://redis:6379?database=0</code>) agar: (1) sesi kedaluwarsa otomatis oleh Redis (TTL), (2) cepat dibaca di tiap halaman karena di memori, (3) tidak membebani MySQL, dan (4) tidak terikat satu server/kontainer.</li>
-<li>Redis <b>hanya</b> untuk sesi. Data bisnis (termasuk stok) tidak pernah disimpan di Redis; sesi bisa hilang tanpa merusak data — dampaknya cuma pengguna harus login ulang (ADR-005).</li>
+<li>Redis dipakai untuk sesi (database 0) dan cache izin role (database 1, Lampiran B). Data bisnis (termasuk stok) tidak pernah disimpan di Redis; sesi bisa hilang tanpa merusak data — dampaknya cuma pengguna harus login ulang (ADR-005).</li>
 <li>Masa berlaku: <code>SESSION_LIFETIME</code> = 3600 detik (default di <code>docker-compose.yaml</code>). Selain cookie, server juga memeriksa <b>idle timeout</b>: bila selisih <code>last_activity</code> dengan sekarang melebihi lifetime, sesi dihancurkan dan pengguna dianggap belum login (<code>AuthService::currentUser()</code>).</li>
 <li>Cookie sesi diamankan: <code>HttpOnly</code> (tidak terbaca JavaScript), <code>SameSite=Lax</code>, dan flag <code>Secure</code> aktif di produksi bila lewat HTTPS (termasuk di balik reverse proxy Caddy via header <code>X-Forwarded-Proto</code>).</li>
 <li>Saat login ID sesi diganti (<code>session_regenerate_id(true)</code>) untuk mencegah <i>session fixation</i>, dan token CSRF dibuat baru.</li>
@@ -281,17 +280,17 @@ Pilihan handler dibuat <b>per request</b> dan sesi tidak dipindahkan antar penyi
 <!-- ===================== LAMPIRAN B ===================== -->
 <section class="page flow"><div class="bar"><span class="tag">LAMPIRAN B</span>Apa yang sebenarnya di-cache Memcached</div><div class="body">
 <div class="box bad"><b class="t">Koreksi penting</b>Kalimat di versi sebelumnya — "sebagian data dashboard yang sering dibaca &amp; jarang berubah dipercepat dengan cache Memcached" — <b>tidak sesuai kode</b>. <code>DashboardService</code> dan <code>SalesDashboardService</code> tidak memakai cache sama sekali; seluruh angka dashboard (nilai inventori, low stock, jumlah PO/SO per status, antrean) dibaca langsung dari MySQL tiap kali halaman dibuka. Kalimat itu sudah diganti di Langkah 2.</div>
-<p>Hanya <b>tiga</b> jenis data yang di-cache (pola cache-aside lewat <code>CacheService</code>; sumber: <code>ProductService</code>, <code>PermissionService</code>, <code>FileValidationService</code>, ADR-005):</p>
+<p>Hanya <b>dua</b> jenis data yang di-cache di Memcached (pola cache-aside lewat <code>CacheService</code>; sumber: <code>ProductService</code>, <code>FileValidationService</code>, ADR-005). Cache izin role ada di Redis (lihat kotak di bawah tabel):</p>
 <table><tr><th>Data (key)</th><th>Isi &amp; dipakai di mana</th><th>TTL</th><th>Invalidasi</th></tr>
 <tr><td><code>product:&lt;SKU&gt;</code> (SKU huruf besar)</td><td>Satu produk hasil pencarian per SKU (<code>ProductService::findBySku</code>). Dipakai mis. oleh endpoint <code>GET /api/products/{sku}/availability</code>. Hanya data produk — <b>bukan stok</b>.</td><td>300 detik (5 menit)</td><td>Dihapus (<code>delete</code>) saat produk diubah, dinonaktifkan atau diaktifkan (<code>invalidateSkuCache</code>); bila SKU berubah, key lama dan baru dihapus.</td></tr>
-<tr><td><code>role_permissions.grouped</code></td><td>Seluruh tabel izin role (siapa boleh apa), dibaca sekali lalu dipakai untuk menentukan menu sidebar dan guard <code>requirePermission()</code> di tiap request.</td><td>3600 detik (1 jam)</td><td>Tidak ada invalidasi manual — hanya kedaluwarsa TTL. Mengubah isi <code>role_permissions</code> baru berlaku maksimal ±1 jam kemudian (atau saat Memcached di-restart).</td></tr>
 <tr><td><code>file_validation.rules</code></td><td>Aturan tipe gambar yang diizinkan saat upload produk (ekstensi, MIME, byte header/footer) dari tabel <code>file_validation_rules</code>.</td><td>3600 detik (1 jam)</td><td>Hanya TTL. Bila hasil kosong, upload ditolak (bukan diizinkan semua).</td></tr></table>
+<div class="box"><b class="t">Cache izin role ada di Redis, bukan Memcached</b><code>role_permissions.grouped</code> (seluruh tabel izin role: menu sidebar &amp; guard <code>requirePermission()</code>) disimpan lewat <code>RedisCacheService</code> di Redis <b>database 1</b> (sesi di database 0), key berawalan <code>cache:</code>, TTL 3600 detik (1 jam). Tidak ada invalidasi manual — hanya kedaluwarsa TTL; perubahan isi <code>role_permissions</code> berlaku paling lama ±1 jam kemudian (atau segera bila key dihapus / database 1 di-flush). Bila Redis mati, <code>RedisCacheService</code> menjadi no-op dan izin dibaca langsung dari MySQL, sehingga login dan menu tetap berfungsi.</div>
 <h2>Yang sengaja TIDAK di-cache</h2>
 <ul><li><b>Stok</b> (<code>product_stocks</code>) dan ketersediaan — selalu dibaca langsung dari MySQL; penjaga konsistensinya adalah transaksi + <code>SELECT … FOR UPDATE</code> (ADR-002), bukan cache. Alasannya agar syarat ARCH-02 (anti-oversell) tidak pernah bergantung pada data usang.</li>
 <li>Dashboard, daftar produk/SO/PO, laporan, Stock Ledger — semuanya langsung dari database.</li></ul>
 <h2>Perilaku bila Memcached mati</h2>
 <p><code>CacheService</code> mengecek koneksi saat dibuat (timeout 500 ms). Jika ekstensi/ server tidak tersedia, ia menandai diri "tidak tersedia" dan semua <code>get</code> mengembalikan kosong, <code>set/delete</code> tidak melakukan apa-apa — aplikasi tetap berfungsi penuh, hanya membaca dari MySQL. Cache bukan sumber kebenaran dan tidak pernah write-through.</p>
-<div class="box"><b class="t">Redis vs Memcached — ringkas untuk tanya-jawab</b>Redis = sesi login (butuh TTL, hilang tak merusak data). Memcached = cache baca yang bisa dibangun ulang dari MySQL. Dipisah agar kelak tak ada yang "sekalian" menyimpan stok di store yang juga menjaga login.</div>
+<div class="box"><b class="t">Redis vs Memcached — ringkas untuk tanya-jawab</b>Redis = sesi login (butuh TTL, hilang tak merusak data). Memcached = cache baca produk &amp; aturan validasi file; cache izin role juga di Redis (database terpisah dari sesi). Semuanya bisa dibangun ulang dari MySQL. Dipisah agar kelak tak ada yang "sekalian" menyimpan stok di store yang juga menjaga login.</div>
 </div></section>
 
 <!-- ===================== LAMPIRAN C ADMIN ===================== -->
@@ -438,7 +437,7 @@ Pilihan handler dibuat <b>per request</b> dan sesi tidak dipindahkan antar penyi
 <tr><td>reports.purchase_orders.view</td><td>✔</td><td>✘</td><td>✘</td></tr></table>
 <h2>F.2 Koreksi yang dilakukan pada panduan ini</h2>
 <table><tr><th>Versi lama</th><th>Fakta terverifikasi</th></tr>
-<tr><td>Dashboard sebagian di-cache Memcached</td><td>Dashboard tidak di-cache; Memcached hanya untuk <code>product:&lt;SKU&gt;</code>, izin role, aturan validasi file (Lampiran B).</td></tr>
+<tr><td>Dashboard sebagian di-cache Memcached</td><td>Dashboard tidak di-cache; Memcached hanya untuk <code>product:&lt;SKU&gt;</code> dan aturan validasi file; izin role di Redis (Lampiran B).</td></tr>
 <tr><td>Menu Sales: "Sales Orders, Customers, Reports"</td><td>Sidebar Sales: Dashboard, Products, Sales Orders, Reports. Customers tidak ada di sidebar (hanya via URL).</td></tr>
 <tr><td>Menu Warehouse: "Purchase Orders, Sales Orders (untuk issue), Stock Ledger"</td><td>Tidak ada menu Sales Orders. Issue dilakukan lewat Goods Issue Queue di dashboard. Sidebar juga memuat Products dan Reports.</td></tr>
 <tr><td>Admin menu: "Master Data, Procurement, Sales, Inventory, Reports, Users"</td><td>Lengkap: ditambah Dashboard; Master Data berisi Products, Categories, Warehouses, Suppliers, Customers; Users ada di grup Administration.</td></tr>
@@ -447,7 +446,7 @@ Pilihan handler dibuat <b>per request</b> dan sesi tidak dipindahkan antar penyi
 <tr><td>Sesi "bila Redis mati login tetap jalan"</td><td>Benar, dengan batasan: sesi lama tidak ikut pindah (Lampiran A.2).</td></tr></table>
 <h2>F.3 Catatan jujur untuk tanya-jawab</h2>
 <ul><li>Halaman daftar Categories, Warehouses, Suppliers, dan Products hanya butuh login; Sales &amp; Warehouse yang mengetik URL-nya melihat data read-only (tanpa tombol kelola). Yang dijaga ketat di server adalah aksi tulis. <code>/customers</code> dijaga <code>customers.view</code> (Warehouse → 403).</li>
-<li>Menu disembunyikan lewat <code>PermissionService</code> (yang di-cache 1 jam); guard server memakai data izin yang sama. Perubahan izin di database dapat tertunda hingga TTL habis.</li>
+<li>Menu disembunyikan lewat <code>PermissionService</code> (yang di-cache 1 jam di Redis); guard server memakai data izin yang sama. Perubahan izin di database dapat tertunda hingga TTL habis.</li>
 <li>Menandai <span class="inf">inferensi</span> = disimpulkan dari pembacaan kode, belum dijalankan end-to-end.</li></ul>
 </div></section>
 

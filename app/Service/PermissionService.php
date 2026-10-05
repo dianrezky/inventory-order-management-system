@@ -7,7 +7,7 @@ use App\Core\Result;
 use App\Repository\Interface\PermissionRepositoryInterface;
 
 // DB-backed replacement for hardcoded Role checks. Reads role_permissions once
-// per cache TTL (data is reference/near-static) and answers whether a role
+// per cache TTL (cached in Redis via RedisCacheService; data is reference/near-static) and answers whether a role
 // holds a given permission_key.
 class PermissionService
 {

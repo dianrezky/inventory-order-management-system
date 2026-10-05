@@ -114,6 +114,16 @@ class Container // NOSONAR
         );
     }
 
+    // Redis-backed cache, used for role permissions (separate logical DB from sessions).
+    public function getRedisCacheService()
+    {
+        return $this->instances[RedisCacheService::class] ??= new RedisCacheService(
+            (string) $this->config['redis']['host'],
+            (int) $this->config['redis']['port'],
+            (int) $this->config['redis']['cache_database'],
+        );
+    }
+
     public function getClock()
     {
         return $this->instances[ClockInterface::class] ??= new SystemClock();
@@ -262,7 +272,7 @@ class Container // NOSONAR
     {
         return $this->instances[PermissionService::class] ??= new PermissionService(
             $this->getPermissionRepository(),
-            $this->getCacheService(),
+            $this->getRedisCacheService(),
         );
     }
 
