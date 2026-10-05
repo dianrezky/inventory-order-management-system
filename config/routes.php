@@ -544,6 +544,14 @@ return [
                     'defaults' => ['controller' => ReportController::class, 'action' => 'exportOrdersAction'],
                 ],
             ],
+            'preview-orders' => [
+                'type' => ROUTE_TYPE_LITERAL,
+                'options' => [
+                    'route' => '/reports/preview/orders',
+                    'method' => ['POST'],
+                    'defaults' => ['controller' => ReportController::class, 'action' => 'previewOrdersAction'],
+                ],
+            ],
         ],
     ],
 

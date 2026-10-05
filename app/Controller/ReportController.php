@@ -11,6 +11,7 @@ class ReportController extends BaseController
     // ROUTE CONSTANTS
     // ================================================================
     public const ROUTE_REPORTS = '/reports';
+    public const PAGE_TITLE = 'Reports';
 
     // ================================================================
     // TEMPLATE CONSTANTS
@@ -28,6 +29,9 @@ class ReportController extends BaseController
     // ================================================================
     public const FILE_STOCK_LEDGER = 'stock-ledger.csv';
     public const FILE_ORDERS = 'orders.csv';
+
+    // Rows per page of the order-export preview on the Reports page.
+    public const PREVIEW_PER_PAGE = 10;
 
     // Thin by design: the filter form is read here, every number comes from
     // ReportService → ReportRepositoryInterface (no SQL in this controller).
@@ -63,6 +67,7 @@ class ReportController extends BaseController
         // computed or rendered: the role only exports its own orders.
         if (!$canExport) {
             return $this->view(self::TEMPLATE_ORDERS_ONLY, [
+                'pageTitle'       => self::PAGE_TITLE,
                 'dateFrom'        => $params['date_from'],
                 'dateTo'          => $params['date_to'],
                 'canExportOrders' => $canExportOrders,
@@ -76,6 +81,7 @@ class ReportController extends BaseController
         $dashboard = $reportService->getDashboard($params, $warehouses);
 
         return $this->view(self::TEMPLATE_INDEX, $dashboard + [
+            'pageTitle'       => self::PAGE_TITLE,
             'reportType'      => $params['report_type'],
             'dateFrom'        => $params['date_from'],
             'dateTo'          => $params['date_to'],
@@ -127,6 +133,55 @@ class ReportController extends BaseController
 
     public function exportOrdersAction()
     {
+        $guard = $this->orderExportRows();
+        if (!is_array($guard)) {
+            return $guard;
+        }
+
+        try {
+            $csv = $this->container->getCsvExportService()->exportOrderStatus($guard);
+
+            return $this->csv($csv, self::FILE_ORDERS);
+        } catch (\App\Service\Exception\DomainException $e) {
+            return $this->badRequest($this->t($e->getMessage()));
+        }
+    }
+
+    // Preview of exactly what exportOrdersAction would download: same
+    // permission, scope (Sales = own orders), date policy and columns, paged
+    // so a wide range does not flood the page.
+    public function previewOrdersAction()
+    {
+        $csrfError = $this->requireAuthWithCsrf();
+        if ($csrfError !== null) {
+            return $csrfError;
+        }
+
+        $rows = $this->orderExportRows();
+        if (!is_array($rows)) {
+            return $rows;
+        }
+
+        $table = $this->container->getCsvExportService()->orderStatusTable($rows);
+        $total = count($table['rows']);
+        $perPage = self::PREVIEW_PER_PAGE;
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $page = min(max(1, (int) $this->requestParam('page', 1)), $totalPages);
+
+        return $this->json([
+            'headers'    => $table['headers'],
+            'rows'       => array_slice($table['rows'], ($page - 1) * $perPage, $perPage),
+            'total'      => $total,
+            'page'       => $page,
+            'perPage'    => $perPage,
+            'totalPages' => $totalPages,
+        ]);
+    }
+
+    // Authorises the request and loads the order rows for the posted range.
+    // Returns the rows, or a Response when the request must be rejected.
+    private function orderExportRows()
+    {
         $authError = $this->requireAuth();
         if ($authError !== null) {
             return $authError;
@@ -142,15 +197,11 @@ class ReportController extends BaseController
 
         // Lack of permission takes precedence over a missing date range, matching
         // the original guard order (403 before 400).
-        $guardError = null;
         if (!$canViewSalesOrders && !$canViewPurchaseOrders) {
-            $guardError = $this->forbidden();
-        } elseif ($from === '' || $to === '') {
-            $guardError = $this->badRequest($this->t(self::MESSAGE_DATE_RANGE_REQUIRED));
+            return $this->forbidden();
         }
-
-        if ($guardError !== null) {
-            return $guardError;
+        if ($from === '' || $to === '') {
+            return $this->badRequest($this->t(self::MESSAGE_DATE_RANGE_REQUIRED));
         }
 
         // Same Warehouse Location scope as the Reports screen (SO source /
@@ -162,11 +213,7 @@ class ReportController extends BaseController
             $rows = [];
 
             if ($canViewSalesOrders) {
-                if ($currentUser->role === Role::Sales) {
-                    $userId = $currentUser->id;
-                } else {
-                    $userId = null;
-                }
+                $userId = $currentUser->role === Role::Sales ? $currentUser->id : null;
                 $rows = array_merge($rows, $this->container->getSalesOrderService()->findForExport($from, $to, $userId, $warehouseFilter));
             }
 
@@ -174,13 +221,10 @@ class ReportController extends BaseController
                 $rows = array_merge($rows, $this->container->getPurchaseOrderService()->findForExport($from, $to, $warehouseFilter));
             }
 
-            $csv = $this->container->getCsvExportService()->exportOrderStatus($rows);
-
-            $response = $this->csv($csv, self::FILE_ORDERS);
+            return $rows;
         } catch (\App\Service\Exception\DomainException $e) {
-            $response = $this->badRequest($this->t($e->getMessage()));
+            return $this->badRequest($this->t($e->getMessage()));
         }
-        return $response;
     }
 
     private function dateParam(string $primaryKey, string $fallbackKey): string

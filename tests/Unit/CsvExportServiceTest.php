@@ -318,4 +318,37 @@ final class CsvExportServiceTest extends TestCase
         // Must use CRLF per RFC 4180
         $this->assertStringContainsString("\r\n", $csv);
     }
+
+    public function testOrderStatusTableMatchesCsvColumnsAndValues(): void
+    {
+        $svc = $this->makeService();
+        $rows = [[
+            'order_type' => 'SO',
+            'id' => 12,
+            'order_date' => '2026-10-01',
+            'party_name' => 'PT Maju',
+            'warehouse_name' => 'WH-JKT',
+            'status' => 'Approved',
+            'items_count' => 3,
+            'total_value' => '150000.00',
+            'creator' => 'Beni',
+        ], [
+            'order_type' => 'PO',
+            'id' => 7,
+            'order_date' => '2026-10-02',
+            'status' => 'PartiallyReceived',
+        ]];
+
+        $table = $svc->orderStatusTable($rows);
+
+        $this->assertCount(9, $table['headers']);
+        $this->assertSame(['SO', '12', '2026-10-01', 'PT Maju', 'WH-JKT', 'Approved', '3', '150000.00', 'Beni'], $table['rows'][0]);
+        $this->assertSame('Partially Received', $table['rows'][1][5]);
+        $this->assertSame('—', $table['rows'][1][7]);
+
+        // The CSV is built from the very same table.
+        $csv = explode("\r\n", $svc->exportOrderStatus($rows));
+        $this->assertCount(3, $csv);
+        $this->assertSame(implode(',', $table['headers']), $csv[0]);
+    }
 }

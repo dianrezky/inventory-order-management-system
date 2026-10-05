@@ -21,7 +21,7 @@
     </div>
 
     <p class="page-header__subtitle">
-        Export your sales orders within a date range as CSV.
+        Preview your sales orders within a date range, then export them as CSV.
     </p>
 </div>
 
@@ -32,7 +32,8 @@
     </div>
 
     <form method="post" action="/reports/export/orders" id="report-filter-form" novalidate>
-        <div class="report-filter-grid">
+        <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;">
             <div class="form-field">
                 <div class="form-field__label-row">
                     <label class="form-field__label" for="date_from">Date Range <span aria-hidden="true" style="color:#DC2626;">*</span></label>
@@ -49,10 +50,23 @@
             </div>
 
             <?php if ($canExportOrders): ?>
-            <button type="submit" class="btn btn--primary" id="export-orders-btn" style="min-height:44px;display:inline-flex;align-items:center;gap:var(--space-2);padding:0 var(--space-5);">
-                Export Orders
-            </button>
+            <div style="display:flex;gap:var(--space-2);">
+                <?php // Preview is type="button" and listed after nothing: Enter in a date field must not start a download, so Export stays the only submit button. ?>
+                <button type="button" class="btn btn--secondary" id="order-preview-btn" style="min-height:44px;padding:0 var(--space-5);">
+                    Preview
+                </button>
+                <button type="submit" class="btn btn--primary" id="export-orders-btn" style="min-height:44px;display:inline-flex;align-items:center;gap:var(--space-2);padding:0 var(--space-5);">
+                    Export Orders
+                </button>
+            </div>
             <?php endif; ?>
         </div>
+        <p class="text--muted" style="margin:var(--space-3) 0 0;font-size:var(--font-size-body-sm);">
+            Preview shows the same rows and columns as the CSV file.
+        </p>
     </form>
 </div>
+
+<?php if ($canExportOrders): ?>
+<?php require __DIR__ . '/_order-preview.php'; ?>
+<?php endif; ?>

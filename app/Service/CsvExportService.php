@@ -70,15 +70,28 @@ class CsvExportService
 
     public function exportOrderStatus($rows, $locale = 'en')
     {
+        $table = $this->orderStatusTable($rows, $locale);
+
+        $lines = [$this->csvLine($table['headers'])];
+        foreach ($table['rows'] as $fields) {
+            $lines[] = $this->csvLine($fields);
+        }
+
+        return implode("\r\n", $lines);
+    }
+
+    // Headers + display rows of the order export. Shared by the CSV download and
+    // the Reports page preview so both always show the same columns and values.
+    public function orderStatusTable($rows, $locale = 'en')
+    {
         // Column order/labels per PROJECT_REFERENCE.md REPORT-01 CSV Columns:
         // No. Order, Tanggal, Customer/Supplier, Gudang, Status, Items Count,
         // Total Nilai, Dibuat Oleh. Type is kept as a leading extra column —
         // it's not in the documented spec, but PO and SO rows are merged into
         // one file here, so dropping it would make "No. Order" ambiguous
         // (SO #12 and PO #12 both exist).
-        $typeLabel = $locale === 'id' ? 'Tipe' : 'Type';
         $headers = [
-            $typeLabel,
+            $locale === 'id' ? 'Tipe' : 'Type',
             $locale === 'id' ? 'No. Pesanan' : 'Order No.',
             $locale === 'id' ? 'Tanggal' : 'Date',
             'Customer/Supplier',
@@ -89,23 +102,22 @@ class CsvExportService
             $locale === 'id' ? 'Dibuat Oleh' : 'Created By',
         ];
 
-        $lines = [$this->csvLine($headers)];
-
+        $tableRows = [];
         foreach ($rows as $row) {
-            $lines[] = $this->csvLine([
-                $row['order_type'],
+            $tableRows[] = [
+                (string) $row['order_type'],
                 (string) $row['id'],
                 (string) $row['order_date'],
                 (string) ($row['party_name'] ?? ''),
                 (string) ($row['warehouse_name'] ?? ''),
                 $this->tStatus($row['status'], $locale),
                 (string) ($row['items_count'] ?? 0),
-                ($row['total_value'] ?? '') !== '' ? ($row['total_value'] ?? '') : '—',
+                ($row['total_value'] ?? '') !== '' ? (string) $row['total_value'] : '—',
                 (string) ($row['creator'] ?? ''),
-            ]);
+            ];
         }
 
-        return implode("\r\n", $lines);
+        return ['headers' => $headers, 'rows' => $tableRows];
     }
 
     private function csvLine($fields)
