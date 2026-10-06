@@ -1100,6 +1100,18 @@ img {
         padding: var(--space-3) var(--space-4);
     }
 
+    /* Breadcrumb root link + separator wrap into 3 lines on phones; keep only the current page, truncated */
+    .app-header__breadcrumb a,
+    .app-header__breadcrumb-sep {
+        display: none;
+    }
+
+    .app-header__breadcrumb-current {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     /* UI-01 AC4: touch targets ≥ 44×44px at mobile breakpoint (360px–768px) */
     .btn {
         height: 44px;
