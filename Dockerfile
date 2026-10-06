@@ -61,6 +61,10 @@ RUN if [ -f composer.json ]; then composer dump-autoload --optimize; fi
 COPY docker/cron/low-stock.cron /etc/cron.d/low-stock
 RUN chmod 0644 /etc/cron.d/low-stock
 
+# Password-reset email schedule (every 3 minutes)
+COPY docker/cron/password-reset.cron /etc/cron.d/password-reset
+RUN chmod 0644 /etc/cron.d/password-reset
+
 # Entrypoint: installs vendor/ on a clean clone
 COPY docker/php/entrypoint.sh /usr/local/bin/iom-entrypoint
 RUN sed -i 's/\r$//' /usr/local/bin/iom-entrypoint && chmod +x /usr/local/bin/iom-entrypoint

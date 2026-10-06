@@ -33,6 +33,9 @@ class AuthController extends BaseController
         return $this->view(self::TEMPLATE_LOGIN, [
             'error' => null,
             'email' => '',
+            'notice' => $this->pullFlash(PasswordResetController::FLASH_PASSWORD_RESET) === true
+                ? 'Your password has been changed. Please sign in with your new password.'
+                : null,
         ]);
     }
 

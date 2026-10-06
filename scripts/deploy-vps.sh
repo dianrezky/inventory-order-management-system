@@ -115,6 +115,15 @@ MINIO_SECRET_KEY='$MS'
 MINIO_BUCKET=portfolio-uploads
 MINIO_PUBLIC_URL='$MINIO_PUBLIC'
 ID_OBFUSCATION_KEY='$(openssl rand -hex 32)'
+APP_URL='https://$DOMAIN'
+MAIL_TRANSPORT=smtp
+MAIL_HOST=
+MAIL_PORT=587
+MAIL_ENCRYPTION=tls
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_FROM_ADDRESS=
+MAIL_FROM_NAME='Inventory & Order Management'
 EOF
     umask 022
     ok ".env written (chmod 600, DB passwords + ID_OBFUSCATION_KEY generated)"
@@ -169,6 +178,13 @@ else
         die "Caddyfile did not validate after edit; restored $latest"
     fi
 fi
+
+# ── 4b. Database migrations + mail settings ──────────────────────────────────
+step "Database migrations"
+docker exec iom_app php scripts/migrate.php || die "database migration failed"
+for key in APP_URL MAIL_HOST MAIL_FROM_ADDRESS; do
+    [ -n "$(env_get "$key" || true)" ] || warn "$key is empty in .env: password-reset emails will not be sent until it is set (see .env.production.example), then: ${COMPOSE[*]} restart app cron"
+done
 
 # ── 5. Smoke tests (inside the app container) ────────────────────────────────
 step "Smoke tests"

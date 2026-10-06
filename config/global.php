@@ -46,25 +46,38 @@ if (!defined('ROUTE_TYPE_SEGMENT')) {
 
 $globalConfig = [
     'db' => [
-        'host'     => $_ENV['DB_HOST'],
-        'port'     => (int) $_ENV['DB_PORT'],
-        'name'     => $_ENV['DB_NAME'],
-        'user'     => $_ENV['DB_USER'],
-        'password' => $_ENV['DB_PASSWORD'],
+        'host'     => $_ENV['DB_HOST'] ?? 'db', // defaults let the cron job (which does not inherit container env) run from .env alone
+        'port'     => (int) ($_ENV['DB_PORT'] ?? 3306),
+        'name'     => $_ENV['DB_NAME'] ?? 'inventory_order_management',
+        'user'     => $_ENV['DB_USER'] ?? 'iom_app',
+        'password' => $_ENV['DB_PASSWORD'] ?? '',
     ],
     'session' => [
-        'name'     => $_ENV['SESSION_NAME'],
-        'lifetime' => (int) $_ENV['SESSION_LIFETIME'],
+        'name'     => $_ENV['SESSION_NAME'] ?? 'iom_session',
+        'lifetime' => (int) ($_ENV['SESSION_LIFETIME'] ?? 3600),
     ],
     'redis' => [
-        'host' => $_ENV['REDIS_HOST'],
-        'port' => (int) $_ENV['REDIS_PORT'],
+        'host' => $_ENV['REDIS_HOST'] ?? 'redis',
+        'port' => (int) ($_ENV['REDIS_PORT'] ?? 6379),
         // sessions use database 0; the read cache (role permissions) uses its own database
         'cache_database' => (int) ($_ENV['REDIS_CACHE_DATABASE'] ?? 1),
     ],
     'memcached' => [
-        'host' => $_ENV['MEMCACHED_HOST'],
-        'port' => (int) $_ENV['MEMCACHED_PORT'],
+        'host' => $_ENV['MEMCACHED_HOST'] ?? 'memcached',
+        'port' => (int) ($_ENV['MEMCACHED_PORT'] ?? 11211),
+    ],
+    // Public base URL used to build links in emails (e.g. https://ioms.example.com, no trailing slash).
+    'app_url' => $_ENV['APP_URL'] ?? '',
+    // Outbound mail. MAIL_TRANSPORT=smtp sends through MAIL_HOST; =file writes .eml files to storage/mail (local dev).
+    'mail' => [
+        'transport' => $_ENV['MAIL_TRANSPORT'] ?? 'smtp',
+        'host' => $_ENV['MAIL_HOST'] ?? '',
+        'port' => (int) ($_ENV['MAIL_PORT'] ?? 587),
+        'encryption' => $_ENV['MAIL_ENCRYPTION'] ?? 'tls', // tls (STARTTLS), ssl (implicit TLS) or none
+        'username' => $_ENV['MAIL_USERNAME'] ?? '',
+        'password' => $_ENV['MAIL_PASSWORD'] ?? '',
+        'from_address' => $_ENV['MAIL_FROM_ADDRESS'] ?? '',
+        'from_name' => $_ENV['MAIL_FROM_NAME'] ?? 'Inventory & Order Management',
     ],
     'id_obfuscation' => [
         'key' => $_ENV['ID_OBFUSCATION_KEY'] ?? '',

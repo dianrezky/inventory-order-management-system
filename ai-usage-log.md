@@ -306,6 +306,19 @@ Peserta tetap bertanggung jawab penuh atas solusi dan mampu menjelaskan setiap k
 
 ---
 
+### 2026-10-06 — Forgot-password flow with 3-minute email cron
+
+- Tool: Claude Code (Claude Sonnet 5.5), sesi cloud atas permintaan pemilik repo.
+- Tujuan: fitur lupa password; permintaan hanya disimpan (status 0 = email belum dikirim), cron setiap 3 menit mengirim email konfirmasi hanya untuk status 0 lalu mengubahnya menjadi terkirim.
+- Prompt (sanitasi): "Buat proses forget password; konfirmasi pembaruan password dikirim ke email lewat cronjob setiap 3 menit, hanya saat status 0 (email belum dikirim)."
+- Output yang digunakan: migrasi + tabel `password_reset_requests`/`password_reset_attempts`, `PasswordResetService`/Repository (MySQL + Fake), klien SMTP native + transport file untuk dev, `PasswordResetController`, view lupa/reset password, script `send-password-reset-emails.php` + jadwal cron `*/3`, `scripts/migrate.php`, langkah migrasi di `deploy-vps.sh`, konfigurasi `.env`, README, unit test.
+- Output yang ditolak/dimodifikasi: token tidak disimpan saat request (hash tidak bisa dikembalikan menjadi token untuk email); token dibuat saat cron mengirim dan hanya hash-nya yang disimpan. Library email pihak ketiga tidak dipakai agar tetap sesuai batasan stack.
+- Review: alur dilacak dari route → controller → service → repository → skema; kontrol keamanan (respons generik, rate limit, token sekali pakai, CSRF, token di URL fragment agar tidak masuk log) diperiksa manual.
+- Verifikasi: PHP lint seluruh file baru; unit test (25 skenario) dijalankan dengan runner sementara karena PHPUnit tidak dapat diunduh di sandbox; alur end-to-end (request → cron → email .eml → reset → login) dan 4-6 proses cron paralel pada MySQL 8 nyata (tidak ada email ganda); pengecekan fragmen token di Chromium.
+- Test: PHPUnit/PHPStan resmi, build Docker, dan pengiriman SMTP ke server sungguhan belum dijalankan di sesi ini.
+
+---
+
 ## Kebijakan Data
 - TIDAK PERNAH mengirim source code proprietary klien / data client / PII / credential ke layanan AI publik.
 - Snippet yang dikirim untuk pertanyaan wajib disanitasi (nama, credential, path lokal disembunyikan).

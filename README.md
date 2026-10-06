@@ -11,7 +11,7 @@ An inventory and order management web application supporting multiple warehouses
 - **Backend:** PHP 8.3 Native OOP (brief: 8.2+), Controller → Service → Repository
 - **Frontend:** HTML, CSS, Vanilla JavaScript + Fetch API
 - **Database:** MySQL 8, PDO prepared statements, InnoDB transactions
-- **Container:** Docker + Docker Compose (5 services: `app` — PHP 8.3, `cron` — low-stock check, `db` — MySQL 8, `redis` — sessions & role-permission cache, `memcached` — product & file-validation cache). Object storage uses external MinIO (`portfolio-minio`; see `MINIO_*` in `docker-compose.yaml`).
+- **Container:** Docker + Docker Compose (5 services: `app` — PHP 8.3, `cron` — low-stock check + password-reset emails, `db` — MySQL 8, `redis` — sessions & role-permission cache, `memcached` — product & file-validation cache). Object storage uses external MinIO (`portfolio-minio`; see `MINIO_*` in `docker-compose.yaml`).
 - **Testing:** PHPUnit (Unit + Integration), PHPStan level 5 ✅
 
 ## `.env` Configuration (Required Before Startup)
@@ -97,6 +97,17 @@ docker compose up --build -d
 # if 8090 is already taken on your machine)
 open http://localhost:8090
 ```
+
+## Forgot Password
+
+Login page → **Forgot your password?** → enter email → the app only stores a request (`password_reset_requests`, `status = 0`) and answers with the same generic message whether or not the email exists. The `cron` container runs `scripts/send-password-reset-emails.php` **every 3 minutes** (`docker/cron/password-reset.cron`), picks only `status = 0` rows, emails the link and sets `status = 1`.
+
+- **Token:** 256-bit random, generated at send time; only its SHA-256 is stored. Valid 30 minutes, single use. The link carries it in the URL fragment (`/reset-password#token=…`), so it never reaches access logs or `Referer`.
+- **No double send:** each row is claimed with an atomic conditional `UPDATE` (plus `flock` on the cron line). A failed send is retried with back-off (3, 6, 9… minutes) up to 5 attempts, then `status = 2`. Requests not sent within 60 minutes are abandoned (`status = 2`).
+- **Rate limit:** 3 requests/hour per email and 10/hour per IP (`password_reset_attempts`); excess requests get the same generic answer and create nothing.
+- **Mail config (`.env`):** `APP_URL`, `MAIL_TRANSPORT` (`smtp` | `file`), `MAIL_HOST`, `MAIL_PORT`, `MAIL_ENCRYPTION` (`tls` | `ssl` | `none`), `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`. For local dev without SMTP use `MAIL_TRANSPORT=file`: emails are written to `storage/mail/*.eml`.
+- **Existing database:** `database/schema.sql` only runs on a fresh volume, so apply the new tables with `docker compose exec app php scripts/migrate.php` (idempotent; `scripts/deploy-vps.sh` does it on every deploy). The `cron` image must be rebuilt (`docker compose up -d --build`) to pick up the schedule.
+- **Manual run / test:** `docker compose exec cron php scripts/send-password-reset-emails.php`.
 
 ## Architecture
 
@@ -193,7 +204,7 @@ public/
   assets/        — CSS, JS, icons
 views/           — PHP templates
 database/        — schema.sql, seed.sql
-scripts/         — check-low-stock.php (CLI)
+scripts/         — check-low-stock.php, send-password-reset-emails.php, migrate.php (CLI)
 tests/
   Unit/          — Policy tests, Service tests
   Integration/   — Real MySQL transactions

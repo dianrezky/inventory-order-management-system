@@ -62,3 +62,6 @@ docker-compose.override.yml
 .scannerwork/
 coverage.xml
 junit.xml
+
+# Local-dev mail transport output (MAIL_TRANSPORT=file)
+/storage/mail/

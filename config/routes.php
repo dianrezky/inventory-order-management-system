@@ -25,6 +25,7 @@
 require_once __DIR__ . '/global.php'; // NOSONAR
 
 use App\Controller\AuthController;
+use App\Controller\PasswordResetController;
 use App\Controller\CategoryController;
 use App\Controller\CustomerController;
 use App\Controller\DashboardController;
@@ -141,6 +142,46 @@ return [
                     'route' => '/login',
                     'method' => ['POST'],
                     'defaults' => ['controller' => AuthController::class, 'action' => 'loginAction'],
+                ],
+            ],
+        ],
+    ],
+
+    'forgot-password' => [
+        'type' => ROUTE_TYPE_LITERAL,
+        'options' => [
+            'route' => '/forgot-password',
+            'method' => ['GET'],
+            'defaults' => ['controller' => PasswordResetController::class, 'action' => 'showForgotAction'],
+        ],
+        'may_terminate' => true,
+        'child_routes' => [
+            'submit' => [
+                'type' => ROUTE_TYPE_LITERAL,
+                'options' => [
+                    'route' => '/forgot-password',
+                    'method' => ['POST'],
+                    'defaults' => ['controller' => PasswordResetController::class, 'action' => 'requestAction'],
+                ],
+            ],
+        ],
+    ],
+
+    'reset-password' => [
+        'type' => ROUTE_TYPE_LITERAL,
+        'options' => [
+            'route' => '/reset-password',
+            'method' => ['GET'],
+            'defaults' => ['controller' => PasswordResetController::class, 'action' => 'showResetAction'],
+        ],
+        'may_terminate' => true,
+        'child_routes' => [
+            'submit' => [
+                'type' => ROUTE_TYPE_LITERAL,
+                'options' => [
+                    'route' => '/reset-password',
+                    'method' => ['POST'],
+                    'defaults' => ['controller' => PasswordResetController::class, 'action' => 'resetAction'],
                 ],
             ],
         ],

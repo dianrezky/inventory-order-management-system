@@ -2,11 +2,15 @@
 
 namespace App\Core;
 
+use App\Core\Mail\FileMailer;
+use App\Core\Mail\MailerInterface;
+use App\Core\Mail\SmtpMailer;
 use App\Repository\Interface\CategoryRepositoryInterface;
 use App\Repository\Interface\CustomerRepositoryInterface;
 use App\Repository\Interface\EventLogRepositoryInterface;
 use App\Repository\Interface\FileValidationRepositoryInterface;
 use App\Repository\Interface\NotificationRepositoryInterface;
+use App\Repository\Interface\PasswordResetRepositoryInterface;
 use App\Repository\Interface\ProductRepositoryInterface;
 use App\Repository\Interface\ProductStockRepositoryInterface;
 use App\Repository\Interface\PermissionRepositoryInterface;
@@ -24,6 +28,7 @@ use App\Repository\MySQL\CustomerMySQLRepository;
 use App\Repository\MySQL\EventLogMySQLRepository;
 use App\Repository\MySQL\FileValidationMySQLRepository;
 use App\Repository\MySQL\NotificationMySQLRepository;
+use App\Repository\MySQL\PasswordResetMySQLRepository;
 use App\Repository\MySQL\PermissionMySQLRepository;
 use App\Repository\MySQL\ProductMySQLRepository;
 use App\Repository\MySQL\ProductStockMySQLRepository;
@@ -50,6 +55,7 @@ use App\Service\GoodsIssueService;
 use App\Service\ImageUploadService;
 use App\Service\LowStockService;
 use App\Service\NotificationService;
+use App\Service\PasswordResetService;
 use App\Service\PermissionService;
 use App\Service\ProductService;
 use App\Service\ProductStockService;
@@ -150,6 +156,53 @@ class Container // NOSONAR
             $this->getSessionManager(),
             $this->getEventLogService(),
             $this->getClock(),
+        );
+    }
+
+    public function getPasswordResetRepository()
+    {
+        return $this->instances[PasswordResetRepositoryInterface::class] ??= new PasswordResetMySQLRepository(
+            $this->getDatabase(),
+        );
+    }
+
+    public function getMailer()
+    {
+        if (isset($this->instances[MailerInterface::class])) {
+            return $this->instances[MailerInterface::class];
+        }
+
+        $mail = $this->config['mail'] ?? [];
+        $fromAddress = (string) ($mail['from_address'] ?? '');
+        $fromName = (string) ($mail['from_name'] ?? '');
+
+        if (($mail['transport'] ?? 'smtp') === 'file') {
+            $mailer = new FileMailer(dirname(__DIR__, 2) . '/storage/mail', $fromAddress, $fromName);
+        } else {
+            $mailer = new SmtpMailer(
+                (string) ($mail['host'] ?? ''),
+                (int) ($mail['port'] ?? 587),
+                (string) ($mail['encryption'] ?? 'tls'),
+                (string) ($mail['username'] ?? ''),
+                (string) ($mail['password'] ?? ''),
+                $fromAddress,
+                $fromName,
+            );
+        }
+
+        return $this->instances[MailerInterface::class] = $mailer;
+    }
+
+    public function getPasswordResetService()
+    {
+        return $this->instances[PasswordResetService::class] ??= new PasswordResetService(
+            $this->getUserRepository(),
+            $this->getPasswordResetRepository(),
+            $this->getMailer(),
+            $this->getDatabase(),
+            $this->getClock(),
+            $this->getEventLogService(),
+            (string) ($this->config['app_url'] ?? ''),
         );
     }
 
