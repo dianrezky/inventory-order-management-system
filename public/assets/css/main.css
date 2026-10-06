@@ -1106,6 +1106,17 @@ img {
         display: none;
     }
 
+    /* Notification panel is anchored to the bell, which sits mid-header on
+       phones, so right:0 pushed it off the left edge; pin it to the viewport */
+    .notif-menu__dropdown {
+        position: fixed;
+        top: 60px;
+        left: var(--space-2);
+        right: var(--space-2);
+        width: auto;
+        max-width: none;
+    }
+
     .app-header__breadcrumb-current {
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1165,7 +1176,10 @@ img {
 
 .dashboard-split {
     display: grid;
-    grid-template-columns: 7fr 5fr;
+    /* minmax(0, …): plain fr tracks can't shrink below min-content, so the
+       nowrap quick-action buttons pushed the right column past the viewport
+       at ~1280px */
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     gap: var(--space-4);
     align-items: start;
 }
@@ -1211,7 +1225,7 @@ img {
     text-decoration: none;
     transition: background-color 0.15s, border-color 0.15s;
     min-height: 44px;
-    white-space: nowrap;
+    min-width: 0;
 }
 
 .quick-actions__btn:hover {
