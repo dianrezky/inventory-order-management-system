@@ -1,11 +1,14 @@
 services:
   app:
     build: .
+    image: iom_app:latest
     container_name: iom_app
     ports:
       - "${APP_PORT:-8090}:8080"
     volumes:
       - .:/var/www/html
+      # Keep the image's vendor/ (the bind mount would hide it with the host's)
+      - iom_vendor:/var/www/html/vendor
     environment:
       DB_HOST: db
       DB_PORT: "3306"
@@ -53,7 +56,9 @@ services:
 
   # Low-stock job: same image as app, command replaced with cron -f
   cron:
-    build: .
+    image: iom_app:latest
+    # Image is built by the app service; never try to pull it from a registry.
+    pull_policy: never
     container_name: iom_cron
     # The cron daemon needs root; override the image's default www-data user.
     user: root
@@ -61,6 +66,8 @@ services:
     restart: unless-stopped
     volumes:
       - .:/var/www/html
+      # Keep the image's vendor/ (the bind mount would hide it with the host's)
+      - iom_vendor:/var/www/html/vendor
     environment:
       DB_HOST: db
       DB_PORT: "3306"
@@ -68,6 +75,8 @@ services:
       DB_USER: ${DB_USER:-iom_app}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
     depends_on:
+      app:
+        condition: service_started
       db:
         condition: service_healthy
     networks:
@@ -133,5 +142,6 @@ networks:
     driver: bridge
 
 volumes:
+  iom_vendor:
   iom_db_data:
   iom_redis_data:

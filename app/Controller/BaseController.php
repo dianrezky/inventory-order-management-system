@@ -6,6 +6,7 @@ use App\Core\Container;
 use App\Core\Result;
 use App\Core\Response;
 use App\Core\ViewModel;
+use App\Entity\Role;
 
 // BR-017: the auth/role guards here are the only authorization; views never enforce it.
 class BaseController
@@ -41,6 +42,18 @@ class BaseController
                 ? $this->getPermissionService()->grantedKeysForRole($this->currentUser->role->value)
                 : [],
         );
+        // Header notification bell: only Admin and WarehouseStaff see low-stock
+        // notifications (same rule as DashboardController).
+        $notificationsUnread = [];
+        $notificationsUnreadCount = 0;
+        if ($this->currentUser !== null
+            && ($this->currentUser->role === Role::Admin || $this->currentUser->role === Role::WarehouseStaff)) {
+            $notificationService = $this->container->getNotificationService();
+            $notificationsUnread = $notificationService->getUnreadForDashboard();
+            $notificationsUnreadCount = $notificationService->countUnread();
+        }
+        $viewModel->setVariable('notificationsUnread', $notificationsUnread);
+        $viewModel->setVariable('notificationsUnreadCount', $notificationsUnreadCount);
         // So views can encode a raw db id into the same obfuscated token used in
         // {id} route segments (e.g. inside an href, encode(product->id))
         // inside an href) — never print $product->id etc. directly in a URL.
