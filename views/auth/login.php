@@ -1,6 +1,8 @@
 <?php
 /** @var string|null $error */
 /** @var string $email */
+/** @var string|null $notice */
+$notice = $notice ?? null;
 ?>
 <div class="login-page">
     <div class="login-page__card">
@@ -16,6 +18,11 @@
 
         <!-- Form Card -->
         <div class="login-page__form-card">
+            <?php if ($notice !== null): ?>
+                <div class="alert alert--success" role="status">
+                    <span><?= htmlspecialchars($notice, ENT_QUOTES, 'UTF-8') ?></span>
+                </div>
+            <?php endif; ?>
             <?php if ($error !== null): ?>
                 <div class="alert alert--error" role="alert">
                     <svg aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
@@ -56,6 +63,7 @@
                 <button type="submit" class="btn btn--primary btn--block">
                     Sign In
                 </button>
+                <p class="login-demo__hint"><a href="/forgot-password">Forgot your password?</a></p>
             </form>
         </div>
 

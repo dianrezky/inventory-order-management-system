@@ -14,6 +14,6 @@ The baseline is Since 1.0. New issues and accepted issues are 0. Coverage is 0.0
 
 ![SonarQube New Code dashboard](screenshots/sonarqube-new-code-2026-10-04.png)
 
-The displayed Passed status is separate from current PHPUnit results. See [test evidence](../testing/README.md) for verified Unit and isolated Integration runs, and the [reference audit](reference-gap-audit-2026-10-04.md) for remaining verification.
+The displayed Passed status is separate from current PHPUnit results. See [test evidence](../testing/README.md) for verified Unit and isolated Integration runs, and the [remediation notes (TDB-R14)](tech-debt.md) for remaining verification.
 
 [Project README](../../README.md)

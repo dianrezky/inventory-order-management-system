@@ -76,6 +76,9 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
             </button>
             <?php endif; ?>
             <?php if ($canExportOrders): ?>
+            <button type="button" form="report-filter-form" class="btn btn--secondary" style="border-color:#E1E4E8;color:#1A1D23;min-height:44px;padding:0 var(--space-4);" id="order-preview-btn">
+                Preview Orders
+            </button>
             <button type="submit" form="report-filter-form" formaction="/reports/export/orders" formmethod="post" class="btn btn--secondary" style="border-color:#E1E4E8;color:#1A1D23;min-height:44px;display:inline-flex;align-items:center;gap:var(--space-2);padding:0 var(--space-4);" id="export-orders-btn">
                 <span style="width:8px;height:8px;border-radius:2px;background:#15803D;display:inline-block;flex-shrink:0;" aria-hidden="true"></span>
                 Export Orders
@@ -176,6 +179,10 @@ $CATEGORY_COLORS  = ['#1E3A8A', '#0284C7', '#3B82F6', '#64748B', '#94A3B8'];
         </div>
     </form>
 </div>
+
+<?php if ($canExportOrders): ?>
+<?php require __DIR__ . '/_order-preview.php'; ?>
+<?php endif; ?>
 
 <!-- ── KPI Summary Metrics Cards ─────────────────────────────── -->
 <div class="report-kpi-grid">

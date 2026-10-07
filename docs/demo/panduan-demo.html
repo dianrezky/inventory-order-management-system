@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>IOMS — Panduan Demo</title>
+<style>
+@page { size: A4; margin: 0; }
+:root { --navy:#0f2a47; --teal:#1f6f8b; --ink:#1a1d23; --muted:#5b6472; --line:#d9dee5; --soft:#eef4f8; --warn:#fbf6e9; --warnl:#e6d9aa; --ok:#e9f6ee; --bad:#fdeeee; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: Inter, "Segoe UI", "DejaVu Sans", Arial, sans-serif; color:var(--ink); font-size:10.5pt; line-height:1.45; }
+.page { width:210mm; min-height:297mm; page-break-after:always; position:relative; padding-bottom:16mm; }
+.bar { background:var(--navy); color:#fff; padding:5mm 12mm; display:flex; gap:4mm; align-items:center; font-weight:700; font-size:13pt; }
+.tag { background:var(--teal); font-size:8pt; padding:1mm 2.5mm; border-radius:1.5mm; letter-spacing:.05em; }
+.body { padding:6mm 12mm 0; }
+.shot { text-align:center; margin-bottom:2mm; }
+.shot img { max-width:100%; max-height:92mm; border:1px solid var(--line); border-radius:2mm; }
+.cap { text-align:center; font-style:italic; color:var(--muted); font-size:8.5pt; margin-bottom:4mm; }
+h2 { font-size:11pt; margin:4mm 0 1.5mm; color:var(--navy); }
+h3 { font-size:10.5pt; margin:4mm 0 1mm; color:var(--teal); }
+.say { background:var(--soft); border:1px solid #c7d9e5; border-radius:2mm; padding:3mm 4mm; font-style:italic; }
+.why { background:var(--warn); border:1px solid var(--warnl); border-radius:2mm; padding:3mm 4mm; margin-top:3mm; }
+.why b.t, .box b.t { display:block; color:#7a5b00; margin-bottom:1mm; }
+.box { border:1px solid var(--line); border-radius:2mm; padding:3mm 4mm; margin:3mm 0; break-inside:avoid; }
+.box.ok { background:var(--ok); } .box.bad { background:var(--bad); } .box.note { background:var(--warn); border-color:var(--warnl); }
+ul, ol { margin:1mm 0 1mm 5mm; padding:0; } li { margin:.6mm 0; }
+table { width:100%; border-collapse:collapse; margin:2mm 0 3mm; font-size:9pt; break-inside:auto; }
+th { background:var(--navy); color:#fff; text-align:left; padding:1.5mm 2mm; }
+td { border:1px solid var(--line); padding:1.5mm 2mm; vertical-align:top; }
+tr { break-inside:avoid; }
+code { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size:8.6pt; background:#f1f3f5; padding:0 1mm; border-radius:1mm; }
+.cb::before { content:"☐ "; }
+.inf { color:#a15c00; font-weight:600; }
+.lead { color:var(--muted); }
+.detail { font-size:8.8pt; line-height:1.38; margin-top:3mm; } .detail h3 { margin:2mm 0 .5mm; font-size:9.3pt; } .detail ul { margin-left:4.5mm; } .detail li { margin:.3mm 0; } .shot.sm img { max-height:48mm; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:3mm; margin-bottom:3mm; }
+.grid.one { grid-template-columns:1fr; }
+.grid figure { margin:0; break-inside:avoid; }
+.grid img { width:100%; border:1px solid var(--line); border-radius:1.5mm; display:block; }
+.grid img.crop { height:60mm; object-fit:cover; object-position:top left; }
+.grid img.crop2 { height:78mm; object-fit:cover; object-position:top left; }
+.grid figcaption { font-size:8pt; color:var(--muted); text-align:center; margin-top:1mm; font-style:italic; }
+.flow { page-break-before:always; page-break-after:auto; min-height:0; }
+</style>
+</head>
+<body>
+
+<!-- ===================== DEMO FLOW ===================== -->
+<section class="page"><div class="bar"><span class="tag">PERSIAPAN</span>Sebelum mulai — siapkan 3 akun</div><div class="body">
+<p class="cap">Langkah bicara / persiapan — tidak perlu layar tertentu</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2>
+<ul><li>Buka aplikasi IOMS. Siapkan 3 akun: Admin (Rita), Sales (Beni), Warehouse (Wawan).</li>
+<li>Tips: buka 3 jendela / incognito berbeda supaya cepat berpindah peran tanpa logout-login terus.</li>
+<li>Pastikan data demo siap: ada Purchase Order berstatus <b>Ordered</b> (PO baru berstatus Draft dan hanya Admin yang bisa men-<i>submit</i>-nya) dan Sales Order yang bisa dibuat/disetujui.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2>
+<div class="say">"Sebelum demo, perkenalan singkat: aplikasi ini mengelola stok dan pesanan untuk perusahaan dengan beberapa gudang. Ada tiga pengguna — Admin, Sales, dan Warehouse — dan saya akan mendemokan perjalanan sebuah pesanan dari dibuat sampai barangnya keluar, berpindah dari satu peran ke peran berikutnya."</div>
+<div class="why"><b class="t">💡 Kenapa 3 role dipisah — ucapkan di momen ini</b>Ini Segregation of Duties — supaya tidak ada satu orang yang menguasai seluruh proses (membuat sekaligus menyetujui pesanannya sendiri). Kontrol anti-kecurangan klasik.</div>
+<div class="box note"><b class="t">Peta dokumen ini</b>Halaman demo (langkah 1–11, plus sub-langkah "b/c/d/e" untuk tiap fitur Admin, Sales, Warehouse) diikuti lampiran: <b>A</b> Sesi, Redis &amp; bcrypt · <b>B</b> Apa yang di-cache Memcached · <b>C/D/E</b> Checklist "how-to" per role (Admin, Sales, Warehouse) · <b>F</b> Koreksi terhadap versi sebelumnya.</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">LOGIN</span>Langkah 1 — Login</div><div class="body">
+<div class="shot sm"><img src="assets/step-01.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Tampilkan halaman login. Masukkan email &amp; password, klik Masuk.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Pertama saya login. Saya ketik email dan password lalu Masuk."</div>
+<div class="why"><b class="t">💡 Selip alasan — Sesi &amp; Redis — ucapkan di momen ini</b>"Saat login berhasil, identitas saya disimpan sebagai sesi. Sesi ini saya simpan di <b>Redis</b> — bukan di database utama — karena sesi butuh masa berlaku otomatis dan harus cepat dibaca di setiap halaman. Kalau Redis kebetulan mati, aplikasi otomatis beralih ke penyimpanan file, jadi login tetap jalan." · Keamanan: password dicek dengan <b>bcrypt</b>, tidak pernah disimpan polos.</div>
+<div class="box detail"><b class="t">Maksud kedua kalimat di atas (terverifikasi di kode)</b>
+<h3>1. "Redis mati → beralih ke file, login tetap jalan"</h3>
+<ul><li><b>Sesi</b> = data "siapa yang sedang login" (<code>user_id</code>, <code>role</code>, <code>last_activity</code>) di sisi server; browser hanya memegang cookie berisi ID acak. Normalnya disimpan di <b>Redis</b> (cepat, kedaluwarsa otomatis 3600 dtk, tidak membebani MySQL). Hanya sesi di Redis — bukan data bisnis/stok.</li>
+<li>Tiap request, <code>SessionManager</code> mengecek koneksi ke Redis (timeout 0,5 dtk). Gagal → tulis peringatan di log dan pakai <b>sesi berbasis file</b> (<code>session.save_handler=files</code>). Tanpa ini, Redis mati membuat semua request gagal/menggantung dan tak ada yang bisa login. Sudah diuji: dengan Redis palsu, sesi tetap aktif di mode file.</li>
+<li><b>Batasan jujur</b> <span class="inf">(inferensi dari kode)</span>: sesi lama tidak ikut pindah, jadi pengguna yang sudah login harus login ulang saat Redis mati; login baru bisa, tapi sesinya tersimpan di file lokal.</li></ul>
+<h3>2. "Password dicek dengan bcrypt, tidak pernah disimpan polos"</h3>
+<ul><li>Saat user dibuat/ganti password: <code>password_hash($pw, PASSWORD_BCRYPT)</code> → di DB hanya hash <code>$2y$10$…</code> (60 karakter, salt acak, sengaja lambat). Password asli tidak ada di DB, sesi, maupun log.</li>
+<li>Saat login: <code>password_verify($pw, hash)</code> — hash tidak bisa "dibalik"; dibandingkan, bukan didekripsi. Salah/akun nonaktif/email tak dikenal → pesan sama.</li></ul>
+Versi lebih lengkap: Lampiran A.</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">LOGIN</span>Langkah 1b — (opsional) login gagal</div><div class="body">
+<div class="shot"><img src="assets/step-02.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Ketik password salah → muncul pesan umum <i>"The email address or password you entered is incorrect."</i> (tidak menyebut mana yang salah).</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Kalau saya salah memasukkan password, pesannya sengaja dibuat umum — tidak memberi tahu mana yang salah."</div>
+<div class="why"><b class="t">💡 Kenapa pesan umum — ucapkan di momen ini</b>Supaya penyerang tidak bisa menebak email mana yang terdaftar (anti user-enumeration). Percobaan gagal juga dicatat untuk audit (event <code>login_failed</code>; email yang dicoba sengaja <u>tidak</u> ikut disimpan di log). Akun nonaktif mendapat pesan yang sama persis.</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">LOGIN</span>Langkah 1c — Lupa password: minta link reset</div><div class="body">
+<div class="grid"><figure><img class="crop2" src="assets/s/x-fp-login.jpg"><figcaption>Halaman login: tautan <b>Forgot your password?</b> di bawah tombol Sign In</figcaption></figure><figure><img class="crop2" src="assets/s/x-fp-forgot.jpg"><figcaption>Halaman Forgot password (publik, tidak perlu login)</figcaption></figure><figure><img class="crop2" src="assets/s/x-fp-requested.jpg"><figcaption>Setelah submit: pesan umum yang sama</figcaption></figure><figure><img class="crop2" src="assets/s/x-fp-requested-unknown.jpg"><figcaption>Email yang TIDAK terdaftar: jawabannya persis sama</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Di halaman login klik <b>Forgot your password?</b>, isi email (mis. <code>sales1@example.com</code>), klik <b>Send reset link</b>.</li><li>Tampil pesan: <i>"If that email address belongs to an active account, we have queued a password reset email for it…"</i></li><li>Ulangi dengan email yang tidak ada → pesan identik.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Kalau pengguna lupa password, dia minta link reset lewat email. Aplikasi hanya mencatat permintaan dan selalu menjawab dengan kalimat yang sama, baik emailnya terdaftar maupun tidak."</div>
+<div class="why"><b class="t">💡 Kenapa jawabannya selalu sama</b>Anti user-enumeration (sama seperti pesan login gagal): penyerang tidak bisa mengetes email mana yang terdaftar. Email yang tidak valid, tidak terdaftar, nonaktif, atau terkena rate limit tetap dijawab sama (<code>PasswordResetService::requestReset</code>). Server hanya menulis satu baris di <code>password_reset_requests</code> dengan <code>status = 0</code>; email tidak dikirim saat itu juga, melainkan oleh cron (langkah berikutnya).</div>
+</div></section>
+<section class="page"><div class="bar"><span class="tag">LOGIN</span>Langkah 1d — Lupa password: bukti di database, cron, dan email</div><div class="body">
+<div class="grid"><figure><img class="crop" src="assets/s/x-fp-db-attempts.jpg"><figcaption>Tabel <code>password_reset_attempts</code>: tiap permintaan dicatat (email hanya hash) untuk rate limit</figcaption></figure><figure><img class="crop" src="assets/s/x-fp-db-status0.jpg"><figcaption>Tabel <code>password_reset_requests</code> — status 0 = menunggu dikirim; <code>token_hash</code> masih kosong</figcaption></figure><figure><img class="crop" src="assets/s/x-fp-cron.jpg"><figcaption>Cron <code>send-password-reset-emails.php</code>: sent=1</figcaption></figure><figure><img class="crop" src="assets/s/x-fp-db-status1.jpg"><figcaption>Setelah cron: status 1, token tersimpan sebagai HASH, <code>expires_at</code> = 30 menit dari kirim</figcaption></figure></div>
+<div class="grid one"><figure><img class="crop" src="assets/s/x-fp-email.jpg"><figcaption>Email yang dikirim (di lingkungan demo lokal ditulis ke <code>storage/mail/*.eml</code>; di server memakai SMTP). Link memakai <code>#token=…</code></figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>(Opsional, bila ditanya penguji) Perlihatkan baris <code>status = 0</code> lalu jalankan <code>docker compose exec cron php scripts/send-password-reset-emails.php</code> (di produksi cron berjalan otomatis tiap 3 menit) → baris menjadi <code>status = 1</code>.</li><li>Buka email: ada link sekali pakai.</li></ul>
+<h2>🎤 KATAKAN</h2><div class="say">"Pengiriman email dikerjakan proses cron terpisah, jadi permintaan di web cepat dan tidak membocorkan apa pun. Token acak 64 karakter hex hanya dikirim lewat email; di database hanya tersimpan hash-nya."</div>
+<div class="why"><b class="t">💡 Detail keamanan (terverifikasi di kode &amp; README)</b>Token = <code>bin2hex(random_bytes(32))</code>, disimpan sebagai <code>sha256</code>; berlaku <b>30 menit</b> sejak dikirim dan <b>sekali pakai</b>. Rate limit <b>3 permintaan/email</b> dan <b>10/IP</b> per 60 menit. Satu permintaan aktif per user. Pengiriman gagal diulang dengan jeda 3, 6, 9… menit sampai 5 percobaan lalu <code>status = 2</code>; permintaan yang tidak terkirim dalam 60 menit ditinggalkan (<code>status = 2</code>). Klaim baris memakai UPDATE atomik sehingga tidak ada email ganda. Token ditaruh di <i>fragment</i> URL (<code>#token=</code>) — browser tidak mengirim fragment ke server, sehingga token tidak masuk access log; halaman reset membacanya lewat JavaScript (<code>views/auth/reset-password.php</code>). Bahwa access log tidak merekamnya adalah inferensi dari perilaku browser.</div>
+</div></section>
+<section class="page"><div class="bar"><span class="tag">LOGIN</span>Langkah 1e — Lupa password: pilih password baru</div><div class="body">
+<div class="grid"><figure><img class="crop2" src="assets/s/x-fp-reset.jpg"><figcaption>Halaman reset (dibuka dari link email)</figcaption></figure><figure><img class="crop2" src="assets/s/x-fp-reset-short.jpg"><figcaption>Password &lt; 6 karakter ditolak</figcaption></figure><figure><img class="crop2" src="assets/s/x-fp-reset-mismatch.jpg"><figcaption>Konfirmasi tidak sama ditolak</figcaption></figure><figure><img class="crop2" src="assets/s/x-fp-reset-filled.jpg"><figcaption>Form terisi benar (min. 6 karakter, sama)</figcaption></figure><figure><img class="crop2" src="assets/s/x-fp-reset-success.jpg"><figcaption>Sukses: kembali ke login dengan pesan hijau</figcaption></figure><figure><img class="crop2" src="assets/s/x-fp-login-new.jpg"><figcaption>Login dengan password baru berhasil</figcaption></figure><figure><img class="crop2" src="assets/s/x-fp-reuse.jpg"><figcaption>Link yang sama dipakai lagi: ditolak (invalid/expired)</figcaption></figure><figure><img class="crop" src="assets/s/x-fp-db-used.jpg"><figcaption>Tabel setelah dipakai: <code>used_at</code> terisi</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Buka link dari email. Coba password pendek (ditolak), lalu konfirmasi berbeda (ditolak), lalu password valid di kedua kolom → <b>Change password</b>.</li><li>Login memakai password baru → masuk dashboard.</li><li>Buka lagi link yang sama → ditolak: <i>"This password reset link is invalid or has expired. Please request a new one."</i></li></ul>
+<h2>🎤 KATAKAN</h2><div class="say">"Link ini hanya bisa dipakai sekali dan kedaluwarsa dalam 30 menit. Setelah dipakai, link yang sama otomatis tidak berlaku, dan password baru disimpan sebagai bcrypt, sama seperti saat admin membuat user."</div>
+<div class="why"><b class="t">💡 Catatan</b>Password baru di-hash dengan <code>PASSWORD_BCRYPT</code> (<code>password_hash</code>), minimal 6 karakter (aturan yang sama dengan <code>UserService</code>). Hasilnya dicatat di event log sebagai <code>password_reset</code> (tanpa password/token). <b>Setelah demo ini pulihkan password akun demo</b> (mis. <code>sales1@example.com</code> kembali ke <code>sales123</code>) lewat Admin → Users → Edit, agar langkah berikutnya tetap memakai kredensial di halaman Persiapan.</div>
+</div></section>
+<section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 2 — Dashboard Admin (login sebagai Rita)</div><div class="body">
+<div class="shot sm"><img src="assets/step-03.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Tampilkan dashboard Admin: ringkasan stok, pesanan, aktivitas.</li>
+<li>Tunjuk menu kiri LENGKAP: Dashboard, Master Data (Products, Categories, Warehouses, Suppliers, Customers), Procurement, Sales, Inventory, Reports, Administration (Users).</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Saya masuk sebagai Admin. Dashboard menampilkan ringkasan kondisi gudang dan pesanan. Perhatikan menu di kiri — Admin punya akses penuh ke semua modul."</div>
+<div class="why"><b class="t">💡 Selip alasan — Role &amp; otorisasi — ucapkan di momen ini</b>"Menu yang muncul ditentukan izin role saya. Tapi menyembunyikan menu saja bukan keamanan — setiap halaman tetap dicek di server. Nanti saya tunjukkan kalau role lain memaksa buka menu terlarang, dia tetap ditolak."</div>
+<div class="box detail"><b class="t">Soal cache Memcached — data apa tepatnya?</b>
+Angka dashboard (nilai inventori, low stock, jumlah PO/SO, antrean) dibaca <u>langsung dari MySQL tiap halaman dibuka</u> (badge "LIVE SYNCED") — <b>tidak di-cache</b>. Yang di-cache <b>Memcached</b> hanya dua hal (izin role dipindah ke Redis, lihat bawah tabel):
+<table><tr><th>Key</th><th>Isi</th><th>TTL</th><th>Invalidasi</th></tr>
+<tr><td><code>product:&lt;SKU&gt;</code></td><td>Satu produk per SKU (dipakai API <code>/api/products/{sku}/availability</code>); bukan stok</td><td>5 menit</td><td>Dihapus saat produk diubah / dinonaktifkan / diaktifkan</td></tr>
+<tr><td><code>file_validation.rules</code></td><td>Aturan tipe gambar upload produk</td><td>1 jam</td><td>Hanya kedaluwarsa TTL</td></tr></table>
+<b>Stok tidak pernah di-cache</b> (selalu MySQL + <code>SELECT … FOR UPDATE</code>) agar anti-oversell tak bergantung data usang. Bila Memcached mati, aplikasi tetap jalan penuh dari MySQL. Tabel izin role (<code>role_permissions.grouped</code>, 1 jam) kini di-cache di <b>Redis</b> (database terpisah dari sesi), bukan Memcached. Versi lengkap: Lampiran B.</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 2b — Dashboard: apa yang bisa dilakukan</div><div class="body">
+<div class="grid"><figure><img class="crop2" src="assets/s/a2b-dashboard-top.jpg"><figcaption>Dashboard Admin: kartu ringkasan, Critical Inventory Alerts (Create PO), Operational Quick Actions</figcaption></figure><figure><img class="crop2" src="assets/s/a2b-bell.jpg"><figcaption>Bel notifikasi di header (Mark All as Read bila ada peringatan)</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Klik <b>Refresh</b> → angka dimuat ulang (badge "LIVE SYNCED").</li><li>Tunjuk empat kartu: <b>Total Inventory Value</b> (+ jumlah produk terdaftar), <b>Low Stock Alerts</b>, <b>Pending PO Approvals</b> (rincian per status), <b>Pending SO Fulfillment</b> (badge "n Awaiting Approval" bila ada).</li><li>Di panel <b>Critical Inventory Alerts</b>, klik <b>Create PO</b> pada satu produk → terbuka form Purchase Order (kembali dengan Back/menu).</li><li>Tunjuk <b>Recent Transactions</b> (5 PO + 5 SO terbaru, tombol View Detail) dan <b>Recent System Activity</b> (5 aktivitas terakhir: waktu — nama user — aktivitas).</li><li>Tunjuk <b>Operational Quick Actions</b>: New Purchase Order, New Sales Order, Receive Goods, Issue Goods, Add User, Stock Ledger.</li><li>Klik <b>bel notifikasi</b> di header → daftar peringatan stok rendah; klik <b>Mark All as Read</b> → hitungan jadi 0. Tombol <b>Generate Summary Report</b> membuka halaman Reports.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Dashboard ini bukan sekadar tampilan. Dari sini Admin langsung melihat apa yang perlu ditindak: stok yang menipis bisa langsung dibuatkan Purchase Order, pesanan yang menunggu persetujuan terlihat jelas, dan di bawahnya ada jejak aktivitas terakhir untuk audit."</div>
+<div class="why"><b class="t">💡 Selip alasan — Dashboard sebagai pusat tindakan — ucapkan di momen ini</b>"Semua angka ini dibaca langsung dari database setiap halaman dibuka, jadi selalu mutakhir. Notifikasi stok rendah dibuat oleh job terjadwal yang berjalan tiap 15 menit, dan tidak diduplikasi selama notifikasi sebelumnya belum dibaca."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 3 — Admin menyiapkan data induk (Products)</div><div class="body">
+<div class="shot"><img src="assets/step-04.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Buka menu Products (Master Data). Tunjuk daftar produk + ringkasan stok.</li><li>Jelaskan: master data (produk, kategori, gudang, supplier, customer) dikelola Admin — dipakai semua role.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Sebelum ada transaksi, Admin menyiapkan data induk: produk, gudang, supplier, dan customer. Data inilah yang dipakai Sales dan Warehouse nanti."</div>
+<div class="why"><b class="t">💡 Selip alasan — Database &amp; soft-delete — ucapkan di momen ini</b>"Semua data ini tersimpan di MySQL — satu sumber kebenaran. Saya pilih database relasional karena datanya saling terhubung dan butuh transaksi. Dan kalau data induk 'dihapus', sebenarnya hanya dinonaktifkan, bukan hilang — supaya pesanan lama yang merujuknya tidak rusak." <i>(Pengecualian terverifikasi: Kategori punya aksi hapus sungguhan, tetapi ditolak bila masih dipakai produk.)</i></div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 3b — Tambah, ubah, dan nonaktifkan Produk</div><div class="body">
+<div class="grid"><figure><img class="crop" src="assets/s/f-products.jpg"><figcaption>Daftar Products + KPI dan filter</figcaption></figure><figure><img class="crop" src="assets/s/a3b-product-form-filled.jpg"><figcaption>Form Add Product terisi</figcaption></figure><figure><img class="crop" src="assets/s/a3b-product-dup-error.jpg"><figcaption>SKU kembar ditolak</figcaption></figure><figure><img class="crop" src="assets/s/a3b-product-saved.jpg"><figcaption>Produk baru tersimpan</figcaption></figure><figure><img class="crop" src="assets/s/a3b-product-edit.jpg"><figcaption>Edit produk (ubah harga jual)</figcaption></figure><figure><img class="crop" src="assets/s/a3b-deactivated.jpg"><figcaption>Setelah Deactivate: hilang dari daftar default</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Products → <b>Add Product</b>. Isi: SKU (unik), barcode (opsional), nama (min. 3 huruf), deskripsi, kategori, unit, harga beli, harga jual, reorder point, status aktif; opsional gudang &amp; qty awal dan gambar (JPG/PNG/WebP). Simpan → produk muncul di daftar.</li><li><b>Tunjukkan validasi</b>: isi SKU yang sudah ada → ditolak dengan pesan; unggah file bukan gambar → ditolak.</li><li>Cari/filter di daftar: SKU, nama, kategori, gudang, status stok; ubah urutan dan jumlah baris per halaman.</li><li>Buka detail produk → lihat stok per gudang &amp; pergerakan terakhir. Klik <b>Edit</b> → ubah harga atau reorder point → Simpan.</li><li>Klik <b>Deactivate</b> → produk hilang dari daftar default dan dari dropdown PO/SO baru; tampilkan lewat filter status <i>Inactive</i>, lalu <b>Activate</b> untuk mengembalikan.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Admin bisa menambah produk baru lengkap dengan harga, batas minimum stok, dan gambarnya. Kalau SKU kembar, sistem menolak. Kalau saya ubah harga atau batas minimum, tinggal Edit. Dan kalau produk sudah tidak dijual, saya nonaktifkan — bukan dihapus."</div>
+<div class="why"><b class="t">💡 Selip alasan — Validasi &amp; nonaktif — ucapkan di momen ini</b>"Produk tidak pernah dihapus permanen karena sudah terhubung ke riwayat PO/SO; dinonaktifkan agar histori tetap utuh. Upload gambar dicek ekstensi dan isi file (byte signature) — bukan sekadar nama file — dan gambar dikonversi ke WebP."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 3c — Kategori, Gudang, Supplier, Customer</div><div class="body">
+<div class="grid"><figure><img class="crop" src="assets/s/f-categories.jpg"><figcaption>Categories</figcaption></figure><figure><img class="crop" src="assets/s/a3c-category-form.jpg"><figcaption>Add New Category (dialog)</figcaption></figure><figure><img class="crop" src="assets/s/f-warehouses.jpg"><figcaption>Warehouses</figcaption></figure><figure><img class="crop" src="assets/s/a3c-warehouse-detail.jpg"><figcaption>Detail gudang: stok per produk</figcaption></figure><figure><img class="crop" src="assets/s/f-suppliers.jpg"><figcaption>Suppliers</figcaption></figure><figure><img class="crop" src="assets/s/f-customers.jpg"><figcaption>Customers</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Buka menu <b>Master Data</b> satu per satu. Di tiap modul tunjukkan: daftar + pencarian/filter + paging, lalu <b>Add</b> → isi form → Simpan.</li><li>Field form: <b>Categories</b> — kode, nama, deskripsi · <b>Warehouses</b> — kode, nama, lokasi · <b>Suppliers</b> — nama, kontak, email · <b>Customers</b> — nama, kontak, email, telepon.</li><li><b>Edit</b> satu baris → ubah → Simpan. <b>Deactivate</b> → baris berstatus nonaktif dan tidak muncul di dropdown transaksi baru; <b>Activate</b> mengembalikannya.</li><li><b>Categories</b>: tunjukkan <b>Export CSV</b> (mengikuti filter yang sedang dipakai) dan hapus sungguhan — kategori yang masih dipakai produk <u>ditolak</u> dihapus.</li><li><b>Warehouses</b>: buka detail satu gudang → jumlah produk &amp; total stok di gudang itu, tabel stok per produk (ada paging).</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Supplier dipakai Purchase Order, customer dipakai Sales Order, gudang menentukan di mana stok disimpan, dan kategori mengelompokkan produk. Semuanya bisa ditambah, diubah, dan dinonaktifkan oleh Admin saja."</div>
+<div class="why"><b class="t">💡 Selip alasan — Hanya Admin yang mengelola — ucapkan di momen ini</b>"Tombol tambah dan ubah hanya muncul untuk Admin, tetapi yang menjaga sebenarnya server: setiap aksi tulis diperiksa izinnya dan token CSRF-nya. Role lain yang memaksa mengirim permintaan akan ditolak 403."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 3d — Kelola Users (Administration)</div><div class="body">
+<div class="grid"><figure><img class="crop" src="assets/s/f-users.jpg"><figcaption>Daftar Users</figcaption></figure><figure><img class="crop" src="assets/s/a3d-user-form.jpg"><figcaption>Form New User</figcaption></figure><figure><img class="crop" src="assets/s/a3d-user-dup.jpg"><figcaption>Email kembar ditolak</figcaption></figure><figure><img class="crop" src="assets/s/a3d-user-deactivated.jpg"><figcaption>User dinonaktifkan (INACTIVE)</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Menu <b>Users</b> → daftar user dengan filter nama/email.</li><li><b>Add User</b>: nama, email (unik — huruf besar/kecil dianggap sama), role (Admin / Sales / WarehouseStaff), password awal (min. 6 karakter) → Simpan. Email kembar → ditolak.</li><li><b>Edit</b> user → ganti nama/role; kolom password dikosongkan berarti password lama tidak berubah.</li><li><b>Deactivate</b> user → ia tidak bisa login lagi (dan sesi yang sedang aktif ditolak pada request berikutnya); <b>Activate</b> memulihkan. Riwayat transaksinya tetap utuh.</li><li><b>Tunjukkan pengaman</b>: coba nonaktifkan atau ubah role akun Admin sendiri → ditolak ("You cannot deactivate your own account" / "You cannot change your own role").</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Di sinilah Admin mengatur siapa boleh masuk dan perannya. Pengguna tidak dihapus, hanya dinonaktifkan, supaya jejak transaksinya tetap ada. Admin juga tidak bisa mengunci dirinya sendiri."</div>
+<div class="why"><b class="t">💡 Selip alasan — Password &amp; role — ucapkan di momen ini</b>"Password yang diketik Admin langsung di-hash bcrypt sebelum disimpan, jadi Admin pun tidak bisa melihat password siapa pun. Role hanya tiga pilihan tetap; tidak ada role buatan sendiri."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 3e — Purchase Order sisi Admin (buat, submit, batalkan)</div><div class="body">
+<div class="grid"><figure><img class="crop" src="assets/s/a3e-po-form.jpg"><figcaption>Form Create PO</figcaption></figure><figure><img class="crop" src="assets/s/a3e-po-draft.jpg"><figcaption>PO Draft — tombol Submit Order</figcaption></figure><figure><img class="crop" src="assets/s/a3e-po-ordered.jpg"><figcaption>Setelah Submit: Ordered (Receive Goods &amp; Cancel Order)</figcaption></figure><figure><img class="crop" src="assets/s/a3e-po-cancelled.jpg"><figcaption>PO dibatalkan (Cancelled)</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Menu <b>Purchase Orders</b> → daftar + filter status/nomor/supplier/gudang.</li><li><b>Create PO</b>: pilih supplier, gudang tujuan, tanggal, catatan; tambah baris produk (qty ≥ 1, harga beli ≥ 0) → Simpan → status <b>Draft</b>.</li><li>Buka detail PO Draft → klik <b>Submit Order</b> → status <b>Ordered</b> (stepper Draft → Ordered → PartiallyReceived → Received ikut bergerak). Hanya Admin yang melihat tombol ini.</li><li>Tunjuk <b>Cancel Order</b> pada PO yang belum menerima barang → konfirmasi → status Cancelled. PO yang sudah menerima barang tidak bisa dibatalkan.</li><li>Setelah Warehouse menerima barang, kembali ke detail PO → tunjuk progres penerimaan (diterima vs dipesan) dan baris Stock Ledger-nya.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Pembelian dimulai dari Purchase Order. Draft bisa dibuat Admin atau Warehouse, tetapi hanya Admin yang berhak mengirimnya ke supplier dan membatalkannya. Setelah barang datang, progres penerimaan terlihat di sini."</div>
+<div class="why"><b class="t">💡 Selip alasan — Pemisahan wewenang di pembelian — ucapkan di momen ini</b>"Sama seperti penjualan, pembelian juga dipisah: pengusul dan pengesah tidak harus orang yang sama. Submit dan Cancel dijaga izin sendiri-sendiri yang hanya dimiliki Admin."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">SALES</span>Langkah 4 — Pindah ke SALES: menu lebih sedikit</div><div class="body">
+<div class="shot"><img src="assets/step-05.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Login sebagai Sales (Beni). Tunjuk sidebar: hanya <b>Dashboard, Products (lihat saja), Sales Orders, Reports</b>.</li><li>Dashboard Sales hanya menampilkan pesanan miliknya.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Sekarang saya pindah peran menjadi Sales. Lihat bedanya — menunya jauh lebih sedikit. Sales fokus pada Sales Order, dan dashboardnya hanya menampilkan pesanan milik Sales ini sendiri."</div>
+<div class="why"><b class="t">💡 Selip alasan — Role journey — ucapkan di momen ini</b>"Inilah pembagian tugas: Sales fokus membuat pesanan. Data pesanan difilter berdasarkan ID user, jadi Sales tidak melihat pesanan orang lain."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">SALES</span>Langkah 5 — Sales membuat Sales Order</div><div class="body">
+<div class="shot"><img src="assets/step-06.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Menu Sales Orders → tombol buat SO baru (atau Quick Action "Create Sales Order"). Pilih customer, gudang sumber, tanggal.</li><li>Tambah baris barang: pilih produk, isi jumlah &amp; harga. Simpan → jadi Draft.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Tugas utama Sales: membuat pesanan. Saya pilih customer, gudang asal barang, lalu tambah barang beserta jumlah dan harga, lalu Simpan. Pesanan tersimpan sebagai Draft."</div>
+<div class="why"><b class="t">💡 Selip alasan — Transaksi — ucapkan di momen ini</b>"Saat saya tekan Simpan, data dikirim ke server, dicek dulu aturannya — customer dan gudang harus aktif, produk aktif, jumlah minimal 1. Lalu header pesanan dan semua barisnya disimpan dalam satu transaksi, supaya tidak ada pesanan dengan barang separuh. Perhatikan: stok belum dikurangi di sini — stok baru berubah nanti saat barang benar-benar dikeluarkan."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">SALES</span>Langkah 5b — Edit Draft, filter, dan batalkan Sales Order</div><div class="body">
+<div class="grid"><figure><img class="crop" src="assets/s/s-so-list.jpg"><figcaption>Daftar SO milik sendiri</figcaption></figure><figure><img class="crop" src="assets/s/s-so-draft.jpg"><figcaption>Detail Draft: Edit Draft / Submit / Cancel</figcaption></figure><figure><img class="crop" src="assets/s/s-so-edit.jpg"><figcaption>Edit Draft</figcaption></figure><figure><img class="crop" src="assets/s/s-so-invalid.jpg"><figcaption>Validasi (qty 0 ditolak)</figcaption></figure><figure><img class="crop" src="assets/s/s-so-cancel-confirm.jpg"><figcaption>Konfirmasi Cancel Order</figcaption></figure><figure><img class="crop" src="assets/s/s-so-approved.jpg"><figcaption>SO Approved: tidak ada tombol Cancel</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Menu <b>Sales Orders</b> → daftar hanya berisi SO milik Sales ini. Tunjuk filter status, nomor SO, nama customer, gudang, dan urutan tanggal; tombol Search / Reset; paging.</li><li>Buka SO berstatus <b>Draft</b> → klik <b>Edit Draft</b> → ubah qty, tambah/hapus baris, atau ganti customer → Simpan. (Edit hanya mungkin saat Draft.)</li><li><b>Tunjukkan validasi</b>: simpan tanpa satu pun baris item, atau qty 0 → ditolak dengan pesan.</li><li>Buka SO Draft/Pending lain → klik <b>Cancel Order</b> → dialog konfirmasi → status <b>Cancelled</b>.</li><li>Buka SO yang sudah <b>Approved</b> → tombol Cancel <u>tidak ada</u> (pembatalan setelah disetujui harus lewat Admin).</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Sebelum diajukan, pesanan masih bisa saya perbaiki. Kalau salah input, saya edit saja. Kalau pelanggan batal sebelum disetujui, saya bisa membatalkannya sendiri. Tetapi begitu sudah disetujui, hanya Admin yang dapat membatalkan."</div>
+<div class="why"><b class="t">💡 Selip alasan — Kepemilikan data — ucapkan di momen ini</b>"Saya hanya bisa mengubah dan membatalkan pesanan milik saya sendiri. Kalau saya mencoba membuka pesanan Sales lain lewat alamat URL, server menjawab 403."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">SALES</span>Langkah 6 — Sales submit → Pending Approval</div><div class="body">
+<div class="shot"><img src="assets/step-07.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Buka detail SO yang Draft. Tunjuk tombol <b>Submit for Approval</b> (juga ada <b>Edit Draft</b> dan <b>Cancel Order</b>).</li><li>Klik Submit → status berubah ke "Pending Approval".</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Setelah pesanan siap, saya klik Submit. Statusnya berubah menjadi Menunggu Persetujuan. Sekarang pesanan ini keluar dari tangan Sales dan menunggu Admin — ini perpindahan pertama antar-role."</div>
+<div class="why"><b class="t">💡 Selip alasan — Handoff — ucapkan di momen ini</b>"Sales tidak bisa menyetujui pesanannya sendiri. Jadi di titik ini tugas berpindah ke Admin."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">SALES</span>Langkah 6b — BUKTI: Sales tak punya tombol Approve</div><div class="body">
+<div class="shot"><img src="assets/step-08.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Masih sebagai Sales, buka pesanan yang Pending. Tunjuk: TIDAK ada tombol Approve/Reject (hanya Cancel Order).</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Perhatikan baik-baik: sebagai Sales, di pesanan yang menunggu persetujuan ini, saya tidak punya tombol Approve. Ini sengaja."</div>
+<div class="why"><b class="t">💡 Selip alasan — Segregation of Duties — ucapkan di momen ini</b>"Inilah Segregation of Duties — Sales tidak boleh menyetujui pesanan apa pun, termasuk miliknya sendiri. Ini aturan anti-kecurangan, dan ditegakkan di server lewat tabel izin <code>role_permissions</code> dan <code>SalesOrderPolicy</code>, bukan sekadar menyembunyikan tombol."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">SALES</span>Langkah 6c — Reports &amp; Profil Sales</div><div class="body">
+<div class="grid"><figure><img class="crop2" src="assets/s/s-reports.jpg"><figcaption>Reports Sales: preview + Export Orders (milik sendiri)</figcaption></figure><figure><img class="crop" src="assets/s/s-dashboard.jpg"><figcaption>Dashboard Sales</figcaption></figure><figure><img class="crop" src="assets/s/s-products.jpg"><figcaption>Products (read-only)</figcaption></figure><figure><img class="crop" src="assets/s/s-profile.jpg"><figcaption>My Profile</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Menu <b>Reports</b> → halaman versi ringkas: pilih tanggal mulai &amp; akhir (wajib, mulai ≤ akhir) → <b>Preview</b> (tabel contoh isi file) → <b>Export Orders</b> → CSV.</li><li>Tunjuk bahwa isi CSV hanya <b>pesanan milik Sales ini</b>; tidak ada opsi Stock Ledger maupun Purchase Order.</li><li>Dashboard Sales: kartu <b>My Orders Total</b> dan jumlah per status (Draft, Pending Approval, Approved, Fulfilled, Cancelled); Quick Actions "Create Sales Order" dan "My Sales Orders".</li><li>Menu <b>Products</b>: cari/filter katalog dan lihat harga jual &amp; stok — tanpa tombol tambah/ubah.</li><li>Menu akun → <b>My Profile</b> → ubah nama/email → Simpan → <b>Logout</b>.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Sales juga bisa mengambil laporan pesanannya sendiri dalam bentuk CSV untuk rekap. Yang diekspor hanya pesanan saya — bukan seluruh perusahaan."</div>
+<div class="why"><b class="t">💡 Selip alasan — Data dibatasi per pemilik — ucapkan di momen ini</b>"Pembatasan ini ada di server: saat mengekspor, query difilter berdasarkan ID user yang login. Bukan sekadar menyembunyikan pilihan di layar."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 7 — Pindah ke ADMIN: setujui pesanan</div><div class="body">
+<div class="shot"><img src="assets/step-09.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Login sebagai Admin. Buka pesanan yang sama (Pending Approval).</li><li>Sekarang MUNCUL tombol Approve / Reject. Klik Approve → status jadi Approved.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Saya kembali menjadi Admin, dan membuka pesanan yang tadi. Lihat — sekarang tombol Approve dan Reject muncul, karena hanya Admin yang berhak. Saya klik Approve, dan statusnya menjadi Disetujui. Dicatat juga siapa yang menyetujui dan kapan, untuk audit."</div>
+<div class="why"><b class="t">💡 Selip alasan — Otorisasi server — ucapkan di momen ini</b>"Jadi role berbeda, pesanan yang sama persis — tapi tombolnya berbeda tergantung siapa yang login. Itu bukti otorisasi bekerja di level server. Sekarang pesanan siap diserahkan ke Warehouse untuk dikeluarkan barangnya." <i>(Catatan: Reject mengubah status menjadi Cancelled dengan alasan opsional — tidak ada status "Rejected" terpisah.)</i></div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 7b — Reject, Cancel, dan kelola Sales Order sebagai Admin</div><div class="body">
+<div class="grid"><figure><img class="crop" src="assets/s/a7b-so-list.jpg"><figcaption>Daftar SO semua Sales</figcaption></figure><figure><img class="crop" src="assets/s/a7b-so-reject-form.jpg"><figcaption>Detail SO Pending: kolom alasan + Reject</figcaption></figure><figure><img class="crop" src="assets/s/a7b-so-rejected.jpg"><figcaption>Setelah Reject: Cancelled</figcaption></figure><figure><img class="crop" src="assets/s/a7b-so-draft-admin.jpg"><figcaption>Admin melihat SO Draft milik Sales</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Menu <b>Sales Orders</b> → Admin melihat <b>semua</b> SO dari semua Sales. Filter status <i>Pending Approval</i> untuk antrean persetujuan; juga filter nomor SO, customer, gudang, urutan.</li><li>Buka SO Pending lain → klik <b>Reject</b>, isi alasan (opsional tapi disarankan) → status menjadi <b>Cancelled</b> dengan alasan tersimpan (tidak ada status "Rejected" terpisah; Sales perlu membuat SO baru).</li><li>Admin bisa <b>Edit Draft</b> milik Sales mana pun dan <b>Cancel Order</b> pada SO yang belum Fulfilled. SO Fulfilled tidak bisa dibatalkan oleh siapa pun.</li><li>Admin juga boleh membuat SO sendiri dan menyetujuinya — larangan self-approval berlaku untuk role Sales, bukan Admin.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Sebagai Admin saya punya keputusan akhir: menyetujui, menolak dengan alasan, atau membatalkan. Semua keputusan tercatat — siapa dan kapan."</div>
+<div class="why"><b class="t">💡 Selip alasan — Aturan status — ucapkan di momen ini</b>"Setiap perubahan status mengikuti aturan yang tetap: hanya Pending yang bisa disetujui/ditolak, hanya Approved yang bisa dikeluarkan barangnya, dan yang sudah Fulfilled tidak bisa dibatalkan — siapa pun yang mencoba, termasuk Admin."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">ADMIN</span>Langkah 7c — Stock Ledger, Reports, dan Profil</div><div class="body">
+<div class="grid"><figure><img class="crop2" src="assets/s/a7c-ledger-top.jpg"><figcaption>Stock Ledger (filter + tabel)</figcaption></figure><figure><img class="crop2" src="assets/s/a7c-reports.jpg"><figcaption>Reports: parameter, analitik, tabel</figcaption></figure><figure><img class="crop" src="assets/s/a7c-profile.jpg"><figcaption>My Profile</figcaption></figure><figure><img class="crop" src="assets/s/a7c-account-menu.jpg"><figcaption>Menu akun: My Profile &amp; Logout</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Menu <b>Stock Ledger</b>: filter SKU, nama produk, jenis (Receipt / Issue / Adjustment), gudang; urutkan kolom; 25 baris per halaman. Tunjuk baris Receipt dan Issue dari demo tadi.</li><li>Menu <b>Reports</b>: pilih jenis laporan — <i>Stock Valuation &amp; Turnover</i>, <i>Inventory Aging</i>, <i>Slow-Moving &amp; Dead Stock</i>, <i>Movement Ledger Audit</i> — atur rentang tanggal, gudang, kategori, pencarian, urutan → <b>Generate</b>. Tunjuk grafik &amp; tabel.</li><li>Klik <b>Export Stock Ledger</b> → CSV. Isi tanggal mulai &amp; akhir → <b>preview</b> lalu <b>Export Orders</b> → CSV gabungan SO (semua Sales) + semua PO. Tanggal kosong atau mulai &gt; akhir → ditolak.</li><li>Menu akun (pojok kanan atas) → <b>My Profile</b> → ubah nama/email → muncul pesan sukses. Lalu <b>Logout</b>.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Untuk pelaporan, Admin punya analitik stok dan bisa mengekspor data ke CSV untuk dianalisis di luar. Kartu stok adalah rekaman mutlak semua pergerakan barang."</div>
+<div class="why"><b class="t">💡 Selip alasan — Jejak audit &amp; ekspor — ucapkan di momen ini</b>"Ekspor memakai filter yang sama dengan layar, jadi yang diunduh sama dengan yang terlihat. Ganti password tidak lewat profil; Admin melakukannya lewat menu Users."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">WAREHOUSE</span>Langkah 8 — Pindah ke WAREHOUSE: tugas</div><div class="body">
+<div class="shot"><img src="assets/step-10.jpg" style="max-height:105mm"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Login sebagai Warehouse (Wawan). Sidebar: <b>Dashboard, Products (lihat saja), Purchase Orders, Stock Ledger, Reports</b>. <u>Tidak ada menu Sales Orders.</u></li>
+<li>Pintu masuk ke pengeluaran barang adalah Dashboard: tabel <b>Goods Issue Queue</b> (SO Approved, tombol <b>Process Issue</b>) dan <b>Goods Receipt Queue</b> (PO menunggu barang, tombol <b>Receive</b>).</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Sekarang saya menjadi Warehouse Staff. Tugas saya menangani barang fisik: menerima barang dari pembelian, dan mengeluarkan barang untuk pesanan yang sudah disetujui. Antrean kerjanya langsung ada di dashboard."</div>
+<div class="why"><b class="t">💡 Selip alasan — Kartu Stok — ucapkan di momen ini</b>"Di sinilah stok benar-benar berubah. Setiap pergerakan barang dicatat di Kartu Stok — aplikasi tidak menyediakan fitur untuk mengedit atau menghapus barisnya — supaya selalu bisa diaudit."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">WAREHOUSE</span>Langkah 9 — Warehouse menerima barang (PO) → stok NAIK</div><div class="body">
+<div class="shot"><img src="assets/step-11.jpg" style="max-height:105mm"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Buka Purchase Order berstatus Ordered (dari antrean dashboard → <b>Receive</b>, atau Purchase Orders → detail → <b>Receive Goods</b>). Isi jumlah diterima per baris, simpan.</li><li>Tunjuk: stok produk NAIK, muncul baris di Kartu Stok bertipe Receipt.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Pertama, menerima barang dari pemasok lewat Purchase Order. Saya isi jumlah yang diterima lalu simpan. Stok produk naik, dan muncul catatan baru di Kartu Stok."</div>
+<div class="why"><b class="t">💡 Selip alasan — Transaksi — ucapkan di momen ini</b>"Penambahan stok dan pencatatan Kartu Stok terjadi dalam satu transaksi — kalau salah satu gagal, dua-duanya dibatalkan, jadi stok dan catatannya tidak pernah beda."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">WAREHOUSE</span>Langkah 9b — Buat PO usulan, terima sebagian, dan produk</div><div class="body">
+<div class="grid"><figure><img class="crop" src="assets/s/w-products.jpg"><figcaption>Products read-only</figcaption></figure><figure><img class="crop" src="assets/s/w-po-form.jpg"><figcaption>Create PO usulan</figcaption></figure><figure><img class="crop" src="assets/s/w-po-draft.jpg"><figcaption>PO Draft: tanpa Submit/Cancel</figcaption></figure><figure><img class="crop" src="assets/s/w-po-receive-form.jpg"><figcaption>Form Receive Goods (isi sebagian)</figcaption></figure><figure><img class="crop" src="assets/s/w-po-partial.jpg"><figcaption>PartiallyReceived + audit log</figcaption></figure><figure><img class="crop" src="assets/s/w-bell.jpg"><figcaption>Bel notifikasi stok rendah</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Menu <b>Products</b> → lihat stok per gudang dan produk low stock (read-only, tanpa tombol Add/Edit).</li><li>Menu <b>Purchase Orders</b> → <b>Create PO</b> (supplier, gudang tujuan, tanggal, baris produk &amp; qty) → status <b>Draft</b>. Buka detailnya: <u>tidak ada</u> tombol Submit Order maupun Cancel Order — keduanya khusus Admin.</li><li>Buka PO <b>Ordered</b> → <b>Receive Goods</b> → isi hanya <i>sebagian</i> qty → Simpan → status <b>PartiallyReceived</b>, stok naik sebesar qty itu, progres penerimaan di detail PO bertambah.</li><li>Ulangi Receive untuk sisanya → status <b>Received</b>. Coba isi qty melebihi sisa → ditolak.</li><li>Di dashboard, tunjuk <b>bel notifikasi</b> stok rendah dan tombol <b>Mark All as Read</b>.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Warehouse bisa mengusulkan pembelian ketika stok menipis, tetapi pengirimannya ke supplier harus dilakukan Admin. Saat barang datang bertahap, saya terima sesuai jumlah fisik — sisanya tetap tercatat sebagai belum diterima."</div>
+<div class="why"><b class="t">💡 Selip alasan — Penerimaan parsial — ucapkan di momen ini</b>"Setiap penerimaan menambah stok dan menulis baris Kartu Stok dalam satu transaksi. Jumlah yang diterima tidak boleh melebihi sisa pesanan, sehingga stok tidak bisa digelembungkan."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">WAREHOUSE</span>Langkah 10 — PUNCAK: keluarkan barang + anti-oversell</div><div class="body">
+<div class="shot"><img src="assets/step-12.jpg" style="max-height:100mm"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Dari Goods Issue Queue klik <b>Process Issue</b> pada SO Approved → klik <b>Issue Goods</b>. Stok TURUN, status jadi Fulfilled.</li><li>Buka Stock Ledger (Kartu Stok): tunjuk baris Receipt (masuk) &amp; Issue (keluar) — bukti jejak lengkap.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Dan ini puncaknya. Untuk pesanan yang sudah disetujui, saya klik Issue — barang keluar, stok turun, status menjadi Selesai. Kalau saya buka Kartu Stok, terlihat seluruh jejaknya: barang masuk waktu diterima, dan keluar waktu dikeluarkan."</div>
+<div class="why"><b class="t">💡 Selip alasan — Anti-oversell (penting!) — ucapkan di momen ini</b>"Di balik layar, saat barang dikeluarkan, baris stok dikunci dulu (<code>SELECT … FOR UPDATE</code>) supaya dua pengeluaran bersamaan tidak bisa mengambil stok yang sama. Kalau stok tidak cukup, pengeluaran ditolak dan stok tidak jadi minus. Jadi oversell dicegah secara teknis — ini salah satu syarat kritikal project ini."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">WAREHOUSE</span>Langkah 10b — Stock Ledger, laporan, dan penolakan stok</div><div class="body">
+<div class="grid"><figure><img class="crop" src="assets/s/w-so-detail-29.jpg"><figcaption>SO Approved dengan stok kurang</figcaption></figure><figure><img class="crop" src="assets/s/w-issue-denied.jpg"><figcaption>Issue ditolak: stok tidak mencukupi</figcaption></figure><figure><img class="crop2" src="assets/s/w-ledger.jpg"><figcaption>Stock Ledger</figcaption></figure><figure><img class="crop2" src="assets/s/w-reports.jpg"><figcaption>Reports + Export Stock Ledger</figcaption></figure></div>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Dari antrean Goods Issue, pilih SO yang stok gudang asalnya <b>tidak cukup</b> (bila ada di data demo) → <b>Issue Goods</b> → ditolak dengan pesan stok tidak mencukupi; status tetap Approved dan stok tidak berubah.</li><li>Menu <b>Stock Ledger</b>: filter SKU, nama produk, jenis pergerakan (Receipt / Issue), gudang; urutkan kolom; paging 25 baris. Cocokkan dengan Receipt dan Issue yang baru dibuat.</li><li>Menu <b>Reports</b>: pilih jenis laporan, rentang tanggal, gudang, kategori → Generate → tunjuk analitik; klik <b>Export Stock Ledger</b> → CSV.</li><li>Tunjuk bahwa Warehouse <u>tidak</u> bisa mengekspor SO/PO (tidak punya izin laporan pesanan).</li><li>Menu akun → <b>My Profile</b> → ubah nama/email → <b>Logout</b>.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Kalau stok tidak cukup, sistem menolak pengeluaran dan tidak ada yang berubah — jadi tidak mungkin stok menjadi minus. Kartu Stok lalu memberi saya alat untuk mencocokkan barang fisik dengan catatan sistem."</div>
+<div class="why"><b class="t">💡 Selip alasan — Rekonsiliasi — ucapkan di momen ini</b>"Semua perubahan stok hanya lewat penerimaan dan pengeluaran yang transaksional; tidak ada fitur mengedit angka stok secara langsung. Karena itu Kartu Stok bisa dipercaya sebagai bukti audit."</div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">BUKTI</span>Langkah 11 — Tunjukkan BUKTI keamanan (403)</div><div class="body">
+<div class="shot"><img src="assets/step-13.jpg"></div><p class="cap">Tampilan aplikasi yang harus Anda tampilkan</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Sebagai Sales atau Warehouse, ketik langsung URL menu terlarang <code>/users</code>. Muncul halaman 403 ("You don't have permission to access this page.").</li><li>Variasi lain: Sales buka <code>/purchase-orders</code> atau <code>/stock-ledger</code> → 403.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Terakhir, bukti keamanannya. Kalau role yang tidak berhak memaksa membuka menu terlarang dengan mengetik alamatnya langsung, dia tetap ditolak dengan halaman 403. Jadi keamanan bukan sekadar menyembunyikan menu — dicek sungguhan di server."</div>
+<div class="why"><b class="t">💡 Selip alasan — Keamanan server — ucapkan di momen ini</b>"Menyembunyikan tombol di tampilan bukan otorisasi; pengecekan sesungguhnya ada di server pada setiap permintaan." <i>Catatan jujur: tidak semua halaman daftar dijaga permission — lihat Lampiran F.</i></div>
+</div></section>
+
+<section class="page"><div class="bar"><span class="tag">PENUTUP</span>Penutup demo</div><div class="body">
+<p class="cap">Langkah bicara / persiapan — tidak perlu layar tertentu</p>
+<h2>▶ TAMPILKAN / LAKUKAN</h2><ul><li>Rangkum perjalanan: Sales buat → Admin setujui → Warehouse keluarkan. Siap masuk tanya jawab.</li></ul>
+<h2>🎤 KATAKAN (baca naskah ini)</h2><div class="say">"Jadi tadi satu pesanan berjalan lengkap: Sales membuatnya, Admin menyetujuinya, Warehouse mengeluarkan barangnya — dan di setiap langkah, aplikasi menjaga siapa yang berhak, mencatat jejaknya, dan memastikan stok tidak pernah minus. Itulah inti dari Inventory &amp; Order Management System ini. Saya siap untuk pertanyaan."</div>
+<div class="why"><b class="t">💡 Jika ditanya "kenapa Redis DAN Memcached" — ucapkan di momen ini</b>Jujur: Redis untuk sesi (butuh TTL) dan cache izin role, Memcached untuk cache baca produk &amp; aturan validasi file. Keduanya sebenarnya tidak wajib — saya pakai untuk mendemonstrasikan externalized session &amp; cache-aside, dengan peran yang dipisah jelas (ADR-005). Lihat Lampiran A dan B.</div>
+</div></section>
+
+<!-- ===================== LAMPIRAN A ===================== -->
+<section class="page flow"><div class="bar"><span class="tag">LAMPIRAN A</span>Sesi, Redis fallback, dan bcrypt</div><div class="body">
+<p class="lead">Menjabarkan kalimat di Langkah 1: <i>"Kalau Redis kebetulan mati, aplikasi otomatis beralih ke penyimpanan file, jadi login tetap jalan."</i> dan <i>"password dicek dengan bcrypt, tidak pernah disimpan polos."</i> Sumber: <code>app/Core/SessionManager.php</code>, <code>app/Service/AuthService.php</code>, <code>app/Service/UserService.php</code>, ADR-005. Fallback juga diuji langsung saat penyusunan dokumen ini (lihat A.3).</p>
+
+<h2>A.1 Apa itu "sesi" dan kenapa di Redis?</h2>
+<ul>
+<li>Setelah login berhasil, server menyimpan <code>user_id</code>, <code>role</code>, <code>user_name</code>, dan <code>last_activity</code> di sesi PHP. Browser hanya memegang <i>cookie</i> berisi ID sesi acak (<code>iom_session</code>) — bukan data pengguna.</li>
+<li>Penyimpanan sesi default PHP adalah file di server. Aplikasi ini menggantinya ke <b>Redis</b> (<code>session.save_handler=redis</code>, alamat <code>tcp://redis:6379?database=0</code>) agar: (1) sesi kedaluwarsa otomatis oleh Redis (TTL), (2) cepat dibaca di tiap halaman karena di memori, (3) tidak membebani MySQL, dan (4) tidak terikat satu server/kontainer.</li>
+<li>Redis dipakai untuk sesi (database 0) dan cache izin role (database 1, Lampiran B). Data bisnis (termasuk stok) tidak pernah disimpan di Redis; sesi bisa hilang tanpa merusak data — dampaknya cuma pengguna harus login ulang (ADR-005).</li>
+<li>Masa berlaku: <code>SESSION_LIFETIME</code> = 3600 detik (default di <code>docker-compose.yaml</code>). Selain cookie, server juga memeriksa <b>idle timeout</b>: bila selisih <code>last_activity</code> dengan sekarang melebihi lifetime, sesi dihancurkan dan pengguna dianggap belum login (<code>AuthService::currentUser()</code>).</li>
+<li>Cookie sesi diamankan: <code>HttpOnly</code> (tidak terbaca JavaScript), <code>SameSite=Lax</code>, dan flag <code>Secure</code> aktif di produksi bila lewat HTTPS (termasuk di balik reverse proxy Caddy via header <code>X-Forwarded-Proto</code>).</li>
+<li>Saat login ID sesi diganti (<code>session_regenerate_id(true)</code>) untuk mencegah <i>session fixation</i>, dan token CSRF dibuat baru.</li>
+</ul>
+
+<h2>A.2 Bagaimana fallback "Redis mati → file" bekerja</h2>
+<ol>
+<li>Setiap request, <code>SessionManager::start()</code> melakukan <b>probe TCP</b> singkat ke Redis (<code>fsockopen</code>, timeout 0,5 detik). Ini hanya cek "port terbuka?", bukan handshake Redis penuh.</li>
+<li>Bila terjangkau → sesi disimpan di Redis. Bila tidak → aplikasi menulis peringatan ke error log (<code>"Redis unreachable … falling back to file sessions"</code>) dan memakai <code>session.save_handler=files</code>.</li>
+<li>Tujuannya (kode ditandai C-02): tanpa fallback, handler Redis yang mati membuat <b>setiap</b> request gagal atau menggantung, sehingga tak seorang pun bisa login. Dengan fallback, halaman login tetap berfungsi, pengguna bisa masuk, dan aplikasi tetap dipakai.</li>
+</ol>
+<div class="box note"><b class="t">Batasan yang perlu diketahui (disimpulkan dari logika kode — <span class="inf">inferensi</span>)</b>
+Pilihan handler dibuat <b>per request</b> dan sesi tidak dipindahkan antar penyimpanan. Akibatnya: pengguna yang sudah login lewat Redis akan terlihat "logout" saat Redis mati (sesinya ada di Redis, sementara request baru membaca file), dan harus login ulang; login baru pada masa gangguan tersimpan di file lokal kontainer dan tidak terlihat lagi setelah Redis pulih. Probe hanya mengecek TCP, jadi Redis yang port-nya terbuka tetapi macet tidak terdeteksi. Jawaban jujur saat ditanya: "login tetap bisa, tetapi sesi lama tidak ikut pindah."</div>
+
+<h2>A.3 Bukti verifikasi</h2>
+<p>Dijalankan saat penyusunan dokumen: <code>SessionManager</code> diarahkan ke Redis palsu (<code>127.0.0.1:6399</code>). Hasil: log "falling back to file sessions", <code>session.save_handler=files</code>, sesi aktif dan data sesi dapat ditulis/dibaca. Pada mode normal (Redis hidup) handler = <code>redis</code>. Untuk demo langsung: <code>docker compose stop redis</code> lalu login → tetap berhasil; <code>docker compose start redis</code> untuk memulihkan.</p>
+
+<h2>A.4 Password: bcrypt, tidak pernah polos</h2>
+<ul>
+<li><b>Menyimpan:</b> saat Admin membuat user atau mengganti password, aplikasi memanggil <code>password_hash($password, PASSWORD_BCRYPT)</code> (<code>UserService</code>). Yang masuk kolom <code>users.password_hash</code> hanyalah hash berawalan <code>$2y$10$…</code> (60 karakter; <code>$2y$</code> = bcrypt PHP, <code>10</code> = cost). Password asli tidak disimpan di database, sesi, maupun log. Data seed juga berisi hash, bukan teks polos.</li>
+<li><b>Mengecek:</b> saat login, <code>password_verify($password, $user->passwordHash)</code> membandingkan input dengan hash. Hash tidak dapat "dibalik" ke password; bcrypt memakai <i>salt</i> acak per password (tertanam dalam hash) sehingga dua user dengan password sama punya hash berbeda, dan sengaja lambat (cost 10 = 2<sup>10</sup> putaran) agar sulit ditebak massal.</li>
+<li>Akun nonaktif, email tak dikenal, dan password salah menghasilkan pesan yang sama (anti user-enumeration); percobaan gagal dicatat sebagai <code>login_failed</code>.</li>
+<li>Aturan password: minimal 6 karakter saat dibuat Admin; email unik. Tidak ada ganti password mandiri — Admin menggantinya lewat Users → Edit (My Profile hanya nama &amp; email).</li>
+</ul>
+</div></section>
+
+<!-- ===================== LAMPIRAN B ===================== -->
+<section class="page flow"><div class="bar"><span class="tag">LAMPIRAN B</span>Apa yang sebenarnya di-cache Memcached</div><div class="body">
+<div class="box bad"><b class="t">Koreksi penting</b>Kalimat di versi sebelumnya — "sebagian data dashboard yang sering dibaca &amp; jarang berubah dipercepat dengan cache Memcached" — <b>tidak sesuai kode</b>. <code>DashboardService</code> dan <code>SalesDashboardService</code> tidak memakai cache sama sekali; seluruh angka dashboard (nilai inventori, low stock, jumlah PO/SO per status, antrean) dibaca langsung dari MySQL tiap kali halaman dibuka. Kalimat itu sudah diganti di Langkah 2.</div>
+<p>Hanya <b>dua</b> jenis data yang di-cache di Memcached (pola cache-aside lewat <code>CacheService</code>; sumber: <code>ProductService</code>, <code>FileValidationService</code>, ADR-005). Cache izin role ada di Redis (lihat kotak di bawah tabel):</p>
+<table><tr><th>Data (key)</th><th>Isi &amp; dipakai di mana</th><th>TTL</th><th>Invalidasi</th></tr>
+<tr><td><code>product:&lt;SKU&gt;</code> (SKU huruf besar)</td><td>Satu produk hasil pencarian per SKU (<code>ProductService::findBySku</code>). Dipakai mis. oleh endpoint <code>GET /api/products/{sku}/availability</code>. Hanya data produk — <b>bukan stok</b>.</td><td>300 detik (5 menit)</td><td>Dihapus (<code>delete</code>) saat produk diubah, dinonaktifkan atau diaktifkan (<code>invalidateSkuCache</code>); bila SKU berubah, key lama dan baru dihapus.</td></tr>
+<tr><td><code>file_validation.rules</code></td><td>Aturan tipe gambar yang diizinkan saat upload produk (ekstensi, MIME, byte header/footer) dari tabel <code>file_validation_rules</code>.</td><td>3600 detik (1 jam)</td><td>Hanya TTL. Bila hasil kosong, upload ditolak (bukan diizinkan semua).</td></tr></table>
+<div class="box"><b class="t">Cache izin role ada di Redis, bukan Memcached</b><code>role_permissions.grouped</code> (seluruh tabel izin role: menu sidebar &amp; guard <code>requirePermission()</code>) disimpan lewat <code>RedisCacheService</code> di Redis <b>database 1</b> (sesi di database 0), key berawalan <code>cache:</code>, TTL 3600 detik (1 jam). Tidak ada invalidasi manual — hanya kedaluwarsa TTL; perubahan isi <code>role_permissions</code> berlaku paling lama ±1 jam kemudian (atau segera bila key dihapus / database 1 di-flush). Bila Redis mati, <code>RedisCacheService</code> menjadi no-op dan izin dibaca langsung dari MySQL, sehingga login dan menu tetap berfungsi.</div>
+<h2>Yang sengaja TIDAK di-cache</h2>
+<ul><li><b>Stok</b> (<code>product_stocks</code>) dan ketersediaan — selalu dibaca langsung dari MySQL; penjaga konsistensinya adalah transaksi + <code>SELECT … FOR UPDATE</code> (ADR-002), bukan cache. Alasannya agar syarat ARCH-02 (anti-oversell) tidak pernah bergantung pada data usang.</li>
+<li>Dashboard, daftar produk/SO/PO, laporan, Stock Ledger — semuanya langsung dari database.</li></ul>
+<h2>Perilaku bila Memcached mati</h2>
+<p><code>CacheService</code> mengecek koneksi saat dibuat (timeout 500 ms). Jika ekstensi/ server tidak tersedia, ia menandai diri "tidak tersedia" dan semua <code>get</code> mengembalikan kosong, <code>set/delete</code> tidak melakukan apa-apa — aplikasi tetap berfungsi penuh, hanya membaca dari MySQL. Cache bukan sumber kebenaran dan tidak pernah write-through.</p>
+<div class="box"><b class="t">Redis vs Memcached — ringkas untuk tanya-jawab</b>Redis = sesi login (butuh TTL, hilang tak merusak data). Memcached = cache baca produk &amp; aturan validasi file; cache izin role juga di Redis (database terpisah dari sesi). Semuanya bisa dibangun ulang dari MySQL. Dipisah agar kelak tak ada yang "sekalian" menyimpan stok di store yang juga menjaga login.</div>
+</div></section>
+
+<!-- ===================== LAMPIRAN C ADMIN ===================== -->
+<section class="page flow"><div class="bar"><span class="tag">LAMPIRAN C</span>Checklist pengecekan — role ADMIN (Rita)</div><div class="body">
+<p class="lead">Admin memegang semua permission key di <code>role_permissions</code>. Centang tiap butir saat dites. Format: <b>Lakukan → Hasil yang diharapkan</b>. Sumber: <code>config/routes.php</code>, <code>views/layouts/main.php</code>, controller &amp; view terkait.</p>
+
+<h2>C.1 Peta menu &amp; fungsinya</h2>
+<table><tr><th>Menu (URL)</th><th>Untuk apa</th></tr>
+<tr><td>Dashboard <code>/dashboard</code></td><td>Ringkasan live: total nilai inventori &amp; jumlah produk, produk di bawah reorder point, PO per status, SO per status (semua Sales), transaksi terbaru (5 PO + 5 SO), 5 aktivitas audit terakhir, Quick Actions.</td></tr>
+<tr><td>Products <code>/products</code></td><td>Katalog produk + stok per gudang; tambah/ubah/nonaktifkan produk.</td></tr>
+<tr><td>Categories <code>/categories</code></td><td>Pengelompokan produk; ekspor CSV daftar kategori.</td></tr>
+<tr><td>Warehouses <code>/warehouses</code></td><td>Lokasi gudang; detail menampilkan stok per produk di gudang itu.</td></tr>
+<tr><td>Suppliers <code>/suppliers</code></td><td>Pemasok untuk Purchase Order.</td></tr>
+<tr><td>Customers <code>/customers</code></td><td>Pelanggan untuk Sales Order.</td></tr>
+<tr><td>Purchase Orders <code>/purchase-orders</code></td><td>Pembelian ke supplier → menerima barang (menambah stok).</td></tr>
+<tr><td>Sales Orders <code>/sales-orders</code></td><td>Seluruh pesanan penjualan; approve/reject; kirim barang (mengurangi stok).</td></tr>
+<tr><td>Stock Ledger <code>/stock-ledger</code></td><td>Kartu stok: jejak audit semua pergerakan (Receipt/Issue).</td></tr>
+<tr><td>Reports <code>/reports</code></td><td>Analitik inventori + ekspor CSV (ledger, pesanan).</td></tr>
+<tr><td>Users <code>/users</code></td><td>Kelola akun dan role pengguna.</td></tr>
+<tr><td>My Profile <code>/my-profile</code> (menu akun kanan atas)</td><td>Ubah nama &amp; email sendiri; juga tombol Logout.</td></tr>
+<tr><td>Bel notifikasi (header)</td><td>Peringatan stok rendah (dibuat job terjadwal tiap 15 menit); "Mark All as Read".</td></tr></table>
+
+<h2>C.2 Checklist how-to</h2>
+<h3>Login &amp; Dashboard</h3>
+<ul><li class="cb">Login <code>admin@example.com</code> → diarahkan ke <code>/dashboard</code>; sidebar menampilkan SEMUA grup (Master Data, Procurement, Sales, Inventory, Reports, Administration).</li>
+<li class="cb">Kartu: Total Inventory Value, Below Reorder Point, PO status, SO status ("n Awaiting Approval" bila ada) tampil; klik <b>Refresh</b> memuat ulang angka.</li>
+<li class="cb">Daftar Low Stock punya tombol <b>Create PO</b> → membuka form PO. Quick Actions: buat PO, buat SO, lihat PO/SO, tambah user (<code>/users/create</code>), Stock Ledger.</li>
+<li class="cb">Bel notifikasi: bila ada peringatan, klik <b>Mark All as Read</b> → hitungan menjadi 0.</li></ul><div class="grid"><figure><img class="crop2" src="assets/s/a2b-dashboard-top.jpg"><figcaption>Dashboard Admin (sidebar lengkap, kartu ringkasan)</figcaption></figure><figure><img class="crop" src="assets/s/x-a-createpo-from-alert.jpg"><figcaption>Create PO dari panel Critical Inventory Alerts</figcaption></figure><figure><img class="crop" src="assets/s/a2b-bell.jpg"><figcaption>Bel notifikasi</figcaption></figure><figure><img class="crop" src="assets/s/x-a-refresh.jpg"><figcaption>Setelah klik Refresh</figcaption></figure></div>
+<h3>Products</h3>
+<ul><li class="cb">Cari/filter (SKU, nama, kategori, gudang, status stok), ubah urutan &amp; jumlah per halaman (10/25/50/100) → daftar menyesuaikan.</li>
+<li class="cb">Add Product: isi SKU (unik), barcode, nama (min. 3 huruf), deskripsi, kategori, unit, harga beli/jual, reorder point, gudang &amp; qty awal (opsional), gambar JPG/PNG/WebP → tersimpan; SKU ganda ditolak dengan pesan validasi.</li>
+<li class="cb">Upload file bukan gambar (mis. .exe diganti nama .jpg) → ditolak (validasi ekstensi + byte signature).</li>
+<li class="cb">Detail produk: stok per gudang dan pergerakan terakhir. Edit → simpan. <b>Deactivate</b> → hilang dari daftar default &amp; dropdown PO/SO baru; <b>Activate</b> mengembalikan.</li></ul><div class="grid"><figure><img class="crop" src="assets/s/f-products.jpg"><figcaption>Daftar Products + KPI</figcaption></figure><figure><img class="crop" src="assets/s/x-a-products-filter.jpg"><figcaption>Filter SKU "OFC"</figcaption></figure><figure><img class="crop" src="assets/s/a3b-product-form-filled.jpg"><figcaption>Form Add Product terisi</figcaption></figure><figure><img class="crop" src="assets/s/a3b-product-dup-error.jpg"><figcaption>SKU ganda ditolak</figcaption></figure><figure><img class="crop" src="assets/s/x-a-product-badfile.jpg"><figcaption>File bukan gambar ditolak</figcaption></figure><figure><img class="crop" src="assets/s/x-a-product-detail.jpg"><figcaption>Detail produk: stok per gudang</figcaption></figure><figure><img class="crop" src="assets/s/a3b-product-edit.jpg"><figcaption>Edit produk</figcaption></figure><figure><img class="crop" src="assets/s/a3b-deactivated.jpg"><figcaption>Setelah Deactivate (hilang dari daftar default)</figcaption></figure></div>
+<h3>Categories / Warehouses / Suppliers / Customers</h3>
+<ul><li class="cb">Tiap modul: list + filter + paging; Add (Categories: kode, nama, deskripsi · Warehouses: kode, nama, lokasi · Suppliers: nama, kontak, email · Customers: nama, kontak, email, telepon) → tersimpan.</li>
+<li class="cb">Edit &amp; Deactivate/Activate pada tiap modul → status berubah; data nonaktif tak muncul di dropdown transaksi baru.</li>
+<li class="cb">Categories saja: <b>Export CSV</b> (mengikuti filter) dan aksi <b>hapus sungguhan</b>; hapus kategori yang masih dipakai produk → ditolak.</li>
+<li class="cb">Warehouses → detail: jumlah produk &amp; total qty di gudang itu, tabel stok per produk dengan paging.</li></ul><div class="grid"><figure><img class="crop" src="assets/s/f-categories.jpg"><figcaption>Categories</figcaption></figure><figure><img class="crop" src="assets/s/a3c-category-form.jpg"><figcaption>Dialog Add New Category</figcaption></figure><figure><img class="crop" src="assets/s/x-a-category-delete-disabled.jpg"><figcaption>Menu baris: Delete nonaktif untuk kategori yang dipakai produk</figcaption></figure><figure><img class="crop" src="assets/s/f-warehouses.jpg"><figcaption>Warehouses</figcaption></figure><figure><img class="crop" src="assets/s/x-a-warehouse-detail.jpg"><figcaption>Detail gudang</figcaption></figure><figure><img class="crop" src="assets/s/x-a-warehouse-form.jpg"><figcaption>Form Warehouse</figcaption></figure><figure><img class="crop" src="assets/s/x-a-supplier-form.jpg"><figcaption>Form Supplier</figcaption></figure><figure><img class="crop" src="assets/s/x-a-customer-form.jpg"><figcaption>Form Customer</figcaption></figure></div>
+<h3>Purchase Orders</h3>
+<ul><li class="cb">Create PO: pilih supplier, gudang tujuan, tanggal, catatan, baris produk (qty ≥ 1, harga ≥ 0) → status <b>Draft</b>.</li>
+<li class="cb">Detail Draft → <b>Submit Order</b> → <b>Ordered</b> (hanya Admin). Stepper status Draft→Ordered→PartiallyReceived→Received tampil.</li>
+<li class="cb"><b>Receive Goods</b> → isi qty per baris (boleh sebagian; tidak boleh melebihi sisa) → stok gudang tujuan naik, baris Receipt muncul di Stock Ledger, status PartiallyReceived/Received.</li>
+<li class="cb"><b>Cancel Order</b> hanya muncul/diterima sebelum ada penerimaan barang; PO yang sudah menerima barang tak bisa dibatalkan.</li></ul><div class="grid"><figure><img class="crop" src="assets/s/x-a-po-list.jpg"><figcaption>Daftar PO + filter</figcaption></figure><figure><img class="crop" src="assets/s/a3e-po-form.jpg"><figcaption>Form Create PO</figcaption></figure><figure><img class="crop" src="assets/s/a3e-po-draft.jpg"><figcaption>PO Draft (Submit Order)</figcaption></figure><figure><img class="crop" src="assets/s/a3e-po-ordered.jpg"><figcaption>PO Ordered (Receive Goods, Cancel Order)</figcaption></figure><figure><img class="crop" src="assets/s/a3e-po-cancelled.jpg"><figcaption>PO Cancelled</figcaption></figure></div>
+<h3>Sales Orders</h3>
+<ul><li class="cb">List menampilkan SO semua Sales; filter status, nomor SO, customer, gudang, urutan.</li>
+<li class="cb">Create/Edit Draft (Admin boleh mengedit Draft siapa pun) → Submit for Approval → <b>Approve</b> (tercatat approved_by &amp; waktu) atau <b>Reject</b> dengan alasan opsional → status Cancelled.</li>
+<li class="cb">SO Approved → <b>Issue Goods</b> → stok gudang asal turun, baris Issue di ledger, status Fulfilled; stok tidak cukup → ditolak, tidak ada perubahan.</li>
+<li class="cb"><b>Cancel Order</b> pada SO apa pun yang belum Fulfilled; SO Fulfilled tidak bisa dibatalkan siapa pun.</li>
+<li class="cb">Admin boleh menyetujui SO buatannya sendiri (larangan self-approval hanya untuk Sales).</li></ul><div class="grid"><figure><img class="crop2" src="assets/s/x-a-so-list-top.jpg"><figcaption>Daftar SO semua Sales</figcaption></figure><figure><img class="crop" src="assets/s/x-a-so-pending.jpg"><figcaption>SO Pending: Approve / Reject</figcaption></figure><figure><img class="crop" src="assets/s/x-a-so-approved.jpg"><figcaption>Setelah Approve (Issue Goods, Cancel Order)</figcaption></figure><figure><img class="crop" src="assets/s/x-a-so-fulfilled.jpg"><figcaption>Setelah Issue Goods: Fulfilled</figcaption></figure><figure><img class="crop" src="assets/s/a7b-so-rejected.jpg"><figcaption>Setelah Reject: Cancelled + alasan</figcaption></figure><figure><img class="crop" src="assets/s/x-a-so-cancel-confirm.jpg"><figcaption>Konfirmasi Cancel Order</figcaption></figure><figure><img class="crop" src="assets/s/x-a-so-cancelled.jpg"><figcaption>SO dibatalkan</figcaption></figure><figure><img class="crop" src="assets/s/a7b-so-draft-admin.jpg"><figcaption>Admin melihat SO Draft milik Sales</figcaption></figure></div>
+<h3>Stock Ledger &amp; Reports</h3>
+<ul><li class="cb">Stock Ledger: filter SKU, nama produk, jenis (Receipt/Issue/Adjustment), gudang; urut kolom; 25 baris/halaman → hasil sesuai. Tidak ada tombol edit/hapus baris.</li>
+<li class="cb">Reports: pilih jenis laporan (Stock Valuation &amp; Turnover, Inventory Aging, Slow-Moving &amp; Dead Stock, Movement Ledger Audit), rentang tanggal, gudang, kategori, pencarian, urutan → <b>Generate</b>; grafik &amp; tabel (5 baris/halaman) berubah.</li>
+<li class="cb"><b>Export Stock Ledger</b> (CSV, mengikuti filter) dan <b>Export Orders</b> (CSV gabungan SO semua Sales + semua PO; wajib isi tanggal mulai &amp; akhir, mulai ≤ akhir); tombol preview menampilkan tabel contoh isi CSV.</li></ul><div class="grid"><figure><img class="crop2" src="assets/s/a7c-ledger-top.jpg"><figcaption>Stock Ledger</figcaption></figure><figure><img class="crop" src="assets/s/x-a-ledger-filter.jpg"><figcaption>Filter SKU "OFC"</figcaption></figure><figure><img class="crop2" src="assets/s/a7c-reports.jpg"><figcaption>Reports: Stock Valuation</figcaption></figure><figure><img class="crop2" src="assets/s/x-a-report-aging.jpg"><figcaption>Inventory Aging Analysis</figcaption></figure><figure><img class="crop2" src="assets/s/x-a-report-slow.jpg"><figcaption>Slow-Moving &amp; Dead Stock</figcaption></figure><figure><img class="crop2" src="assets/s/x-a-report-movement.jpg"><figcaption>Movement Ledger Audit</figcaption></figure><figure><img class="crop2" src="assets/s/x-a-report-preview.jpg"><figcaption>Preview Export Orders (SO semua Sales + PO)</figcaption></figure></div>
+<h3>Users &amp; Profile</h3>
+<ul><li class="cb">Add User: nama, email (unik, tak peka huruf besar/kecil), role (Admin/Sales/WarehouseStaff), password (min. 6) → bisa langsung login.</li>
+<li class="cb">Edit user: password dikosongkan = tidak berubah. Deactivate → user itu tidak bisa login &amp; sesi aktifnya ditolak pada request berikutnya; Activate memulihkan.</li>
+<li class="cb">Admin tidak bisa menonaktifkan akunnya sendiri atau mengubah role-nya sendiri → ditolak.</li>
+<li class="cb">My Profile: ubah nama/email → muncul pesan sukses. Logout (menu akun) → kembali ke login.</li></ul><div class="grid"><figure><img class="crop" src="assets/s/f-users.jpg"><figcaption>Daftar Users</figcaption></figure><figure><img class="crop" src="assets/s/a3d-user-form.jpg"><figcaption>Form New User</figcaption></figure><figure><img class="crop" src="assets/s/a3d-user-dup.jpg"><figcaption>Email ganda ditolak</figcaption></figure><figure><img class="crop" src="assets/s/x-a-user-self-menu.jpg"><figcaption>Akun Admin sendiri: tidak ada Deactivate</figcaption></figure><figure><img class="crop" src="assets/s/a3d-user-deactivated.jpg"><figcaption>User dinonaktifkan</figcaption></figure><figure><img class="crop" src="assets/s/a7c-profile.jpg"><figcaption>My Profile</figcaption></figure><figure><img class="crop" src="assets/s/x-a-profile-saved.jpg"><figcaption>Profil tersimpan</figcaption></figure><figure><img class="crop" src="assets/s/a7c-account-menu.jpg"><figcaption>Menu akun: My Profile &amp; Logout</figcaption></figure></div>
+</div></section>
+
+<!-- ===================== LAMPIRAN D SALES ===================== -->
+<section class="page flow"><div class="bar"><span class="tag">LAMPIRAN D</span>Checklist pengecekan — role SALES (Beni)</div><div class="body">
+<p class="lead">Permission Sales: <code>customers.view</code>, <code>sales_orders.menu</code>, <code>reports.sales_orders.view</code>. Tidak punya semua permission <code>*.manage</code>, approve, issue, stock ledger.</p>
+<h2>D.1 Peta menu &amp; fungsinya</h2>
+<table><tr><th>Menu (URL)</th><th>Untuk apa</th></tr>
+<tr><td>Dashboard <code>/dashboard</code></td><td>Jumlah <b>pesanan milik sendiri</b>: total + per status (Draft, Pending Approval, Approved, Fulfilled, Cancelled); Quick Actions "Create Sales Order" &amp; "My Sales Orders". Tanpa bel notifikasi.</td></tr>
+<tr><td>Products <code>/products</code> (read-only)</td><td>Melihat katalog, harga jual, dan stok untuk menyusun pesanan. Tanpa tombol tambah/ubah.</td></tr>
+<tr><td>Sales Orders <code>/sales-orders</code></td><td>Fitur utama: membuat, mengedit Draft, mengajukan, membatalkan, dan memantau pesanan miliknya.</td></tr>
+<tr><td>Reports <code>/reports</code></td><td>Hanya ekspor CSV pesanan miliknya (halaman versi ringkas: rentang tanggal + Export Orders).</td></tr>
+<tr><td>My Profile</td><td>Ubah nama &amp; email sendiri.</td></tr></table>
+<p><span class="inf">Catatan:</span> menu <b>Customers tidak ada di sidebar Sales</b> (link hanya muncul bila punya <code>master_data.menu</code>, milik Admin). Namun Sales punya <code>customers.view</code>, jadi <code>/customers</code> bisa dibuka lewat URL (read-only). Customer dipilih lewat dropdown di form SO. Halaman <code>/sales-dashboard</code> (ringkasan dengan pemilih periode) juga ada dan dijaga <code>sales_orders.menu</code>, tetapi tidak ditemukan tautan menuju halaman itu di tampilan — <span class="inf">inferensi</span> dari pencarian view.</p>
+<h2>D.2 Checklist how-to</h2>
+<ul>
+<li class="cb">Login <code>sales1@example.com</code> → dashboard Sales; sidebar hanya Dashboard, Products, Sales Orders, Reports.</li>
+<li class="cb">Products: cari/filter; tidak ada tombol Add/Edit/Deactivate. Buka <code>/products/create</code> langsung → 403.</li>
+<li class="cb">Sales Orders → list hanya berisi SO buatan sendiri; filter status/nomor/customer/gudang bekerja.</li>
+<li class="cb">Create Sales Order: pilih customer aktif, gudang asal aktif, tanggal, baris produk (qty ≥ 1, harga ≥ 0) → status <b>Draft</b>; stok <u>tidak</u> berubah.</li>
+<li class="cb">Simpan tanpa baris item, atau dengan qty 0 → ditolak dengan pesan validasi.</li>
+<li class="cb">Detail Draft: tombol <b>Edit Draft</b> (ubah &amp; simpan), <b>Submit for Approval</b>, <b>Cancel Order</b>.</li>
+<li class="cb">Submit → <b>Pending Approval</b>; sekarang tombol Edit/Submit hilang, tombol Approve/Reject <u>tidak ada</u>, Cancel Order masih ada.</li>
+<li class="cb">Cancel pada SO Draft/Pending milik sendiri → konfirmasi "Cancel this sales order?" → status Cancelled. Pada SO Approved/Fulfilled → tombol Cancel tidak tersedia (minta Admin).</li>
+<li class="cb">Setelah Admin approve: status Approved; tidak ada tombol Issue Goods untuk Sales. Setelah Warehouse issue: Fulfilled.</li>
+<li class="cb">Reports: pilih rentang tanggal → <b>Export Orders</b> → CSV hanya berisi pesanan Sales ini; tanggal kosong atau mulai &gt; akhir → ditolak.</li>
+<li class="cb">My Profile: ubah nama/email → sukses. Logout.</li></ul><div class="grid"><figure><img class="crop" src="assets/s/s-dashboard.jpg"><figcaption>Dashboard Sales (sidebar 4 menu)</figcaption></figure><figure><img class="crop" src="assets/s/s-products.jpg"><figcaption>Products read-only</figcaption></figure><figure><img class="crop" src="assets/s/s-so-list.jpg"><figcaption>Daftar SO milik sendiri</figcaption></figure><figure><img class="crop" src="assets/s/x-s-so-form.jpg"><figcaption>Form Create SO</figcaption></figure><figure><img class="crop" src="assets/s/s-so-draft.jpg"><figcaption>Detail Draft: Edit / Submit / Cancel</figcaption></figure><figure><img class="crop" src="assets/s/s-so-edit.jpg"><figcaption>Edit Draft</figcaption></figure><figure><img class="crop" src="assets/s/s-so-invalid.jpg"><figcaption>Validasi: simpan dengan qty 0</figcaption></figure><figure><img class="crop" src="assets/s/x-s-so-pending.jpg"><figcaption>Setelah Submit: Pending Approval (tanpa Approve)</figcaption></figure><figure><img class="crop" src="assets/s/s-so-cancel-confirm.jpg"><figcaption>Konfirmasi Cancel Order</figcaption></figure><figure><img class="crop" src="assets/s/s-so-approved.jpg"><figcaption>SO Approved: tidak ada Cancel/Issue</figcaption></figure><figure><img class="crop2" src="assets/s/s-reports.jpg"><figcaption>Reports: preview Export Orders (milik sendiri)</figcaption></figure><figure><img class="crop" src="assets/s/x-s-reports-baddate.jpg"><figcaption>Tanggal mulai &gt; akhir ditolak</figcaption></figure><figure><img class="crop" src="assets/s/x-s-profile-saved.jpg"><figcaption>Profil tersimpan</figcaption></figure><figure><img class="crop" src="assets/s/x-s-account-menu.jpg"><figcaption>Menu akun / Logout</figcaption></figure></div>
+<h2>D.3 Pemeriksaan negatif (harus ditolak)</h2>
+<table><tr><th>Coba</th><th>Hasil yang benar</th></tr>
+<tr><td>Ketik <code>/users</code>, <code>/purchase-orders</code>, <code>/stock-ledger</code></td><td>403</td></tr>
+<tr><td>Buka detail SO milik Sales lain (<code>/sales-orders/{id}</code>)</td><td>403</td></tr>
+<tr><td>POST langsung ke <code>/sales-orders/{id}/approve</code> atau <code>/reject</code>, termasuk untuk SO sendiri</td><td>Ditolak: "Only an administrator can approve a sales order."</td></tr>
+<tr><td>POST ke <code>/sales-orders/{id}/issue</code></td><td>403</td></tr>
+<tr><td>Export Stock Ledger (<code>/reports/export/stock-ledger</code>)</td><td>403</td></tr>
+<tr><td>Buka <code>/categories</code>, <code>/warehouses</code>, <code>/suppliers</code></td><td>Tampil read-only (HTTP 200, tanpa tombol kelola) — halaman daftar hanya butuh login; aksi create/edit/deactivate tetap 403.</td></tr></table><div class="grid"><figure><img class="crop" src="assets/s/x-s-403-users.jpg"><figcaption>403 untuk /users, /purchase-orders, /stock-ledger, /products/create (halaman 403 yang sama)</figcaption></figure><figure><img class="crop" src="assets/s/x-s-so-other-403.jpg"><figcaption>SO milik Sales lain: 403</figcaption></figure><figure><img class="crop" src="assets/s/x-s-categories-readonly.jpg"><figcaption>/categories lewat URL: tampil read-only</figcaption></figure><figure><img class="crop" src="assets/s/x-s-customers-readonly.jpg"><figcaption>/customers lewat URL: read-only</figcaption></figure></div>
+</div></section>
+
+<!-- ===================== LAMPIRAN E WAREHOUSE ===================== -->
+<section class="page flow"><div class="bar"><span class="tag">LAMPIRAN E</span>Checklist pengecekan — role WAREHOUSE STAFF (Wawan)</div><div class="body">
+<p class="lead">Permission Warehouse: <code>purchase_orders.manage</code>, <code>sales_orders.issue</code>, <code>stock_ledger.view</code>, <code>reports.stock_ledger.view</code>. Tidak punya submit/cancel PO, approve SO, <code>sales_orders.menu</code>, <code>customers.view</code>.</p>
+<h2>E.1 Peta menu &amp; fungsinya</h2>
+<table><tr><th>Menu (URL)</th><th>Untuk apa</th></tr>
+<tr><td>Dashboard <code>/dashboard</code></td><td>Antrean kerja gudang: <b>Goods Receipt Queue</b> (PO Ordered + PartiallyReceived, tombol Receive), <b>Goods Issue Queue</b> (SO Approved, tombol Process Issue; tertua dulu, 10 teratas), jumlah &amp; daftar produk di bawah reorder point, bel notifikasi stok rendah.</td></tr>
+<tr><td>Products <code>/products</code> (read-only)</td><td>Cek stok per gudang untuk menentukan restock.</td></tr>
+<tr><td>Purchase Orders <code>/purchase-orders</code></td><td>Melihat PO, membuat PO usulan restock (Draft), dan <b>menerima barang</b>.</td></tr>
+<tr><td>Stock Ledger <code>/stock-ledger</code></td><td>Audit/rekonsiliasi pergerakan stok fisik vs sistem.</td></tr>
+<tr><td>Reports <code>/reports</code></td><td>Analitik inventori + Export Stock Ledger (CSV).</td></tr>
+<tr><td>My Profile</td><td>Ubah nama &amp; email sendiri.</td></tr></table>
+<p><span class="inf">Catatan:</span> <b>tidak ada menu Sales Orders</b> di sidebar. Jalur resmi untuk mengeluarkan barang adalah Dashboard → Process Issue → detail SO → <b>Issue Goods</b> (kodenya memang menjelaskan antrean dashboard sebagai satu-satunya jalur). Meski tanpa menu, <code>/sales-orders</code> dan detailnya tetap bisa dibuka lewat URL oleh Warehouse (hanya butuh login; Warehouse melihat semua SO).</p>
+<h2>E.2 Checklist how-to</h2>
+<ul>
+<li class="cb">Login <code>warehouse@example.com</code> → dashboard Warehouse; sidebar: Dashboard, Products, Purchase Orders, Stock Ledger, Reports; bel notifikasi tampil.</li>
+<li class="cb">Dashboard: angka Goods Receipt Queue &amp; Goods Issue Queue cocok dengan jumlah PO Ordered/PartiallyReceived dan SO Approved; bila ada notifikasi, <b>Mark All as Read</b> bekerja.</li>
+<li class="cb">Products: lihat stok per gudang; tidak ada tombol Add/Edit.</li>
+<li class="cb">Purchase Orders: list + filter status/nomor/supplier; detail menampilkan progres penerimaan dan baris ledger terkait.</li>
+<li class="cb">Create PO (usulan restock) → tersimpan <b>Draft</b>; di detail Draft <u>tidak</u> ada tombol Submit Order dan tidak ada Cancel Order (Admin saja).</li>
+<li class="cb">PO Ordered/PartiallyReceived → <b>Receive Goods</b>: isi qty diterima per baris (bisa sebagian) → stok naik, baris Receipt di Stock Ledger, status PartiallyReceived/Received. Qty melebihi sisa → ditolak.</li>
+<li class="cb">Dashboard → <b>Process Issue</b> pada SO Approved → detail SO hanya menampilkan <b>Issue Goods</b> (tidak ada Approve/Reject) → stok turun, baris Issue di ledger, status Fulfilled.</li>
+<li class="cb">Issue dengan stok gudang asal kurang → ditolak "insufficient stock", stok &amp; status tidak berubah.</li>
+<li class="cb">Stock Ledger: filter SKU/nama/jenis/gudang, urut kolom, 25 baris/halaman; baris Receipt &amp; Issue yang baru dibuat muncul; tidak ada fitur edit/hapus.</li>
+<li class="cb">Reports: generate analitik; <b>Export Stock Ledger</b> → CSV. Tombol Export Orders: Warehouse tak punya izin ekspor SO/PO → 403 bila dipanggil langsung.</li>
+<li class="cb">My Profile: ubah nama/email → sukses. Logout.</li></ul><div class="grid"><figure><img class="crop" src="assets/s/x-w-dashboard.jpg"><figcaption>Dashboard Warehouse (antrean Receipt &amp; Issue)</figcaption></figure><figure><img class="crop" src="assets/s/w-bell.jpg"><figcaption>Bel notifikasi stok rendah</figcaption></figure><figure><img class="crop" src="assets/s/w-products.jpg"><figcaption>Products read-only</figcaption></figure><figure><img class="crop2" src="assets/s/x-w-po-list-top.jpg"><figcaption>Daftar PO</figcaption></figure><figure><img class="crop" src="assets/s/w-po-form.jpg"><figcaption>Create PO usulan</figcaption></figure><figure><img class="crop" src="assets/s/w-po-draft.jpg"><figcaption>PO Draft: tanpa Submit/Cancel</figcaption></figure><figure><img class="crop" src="assets/s/x-w-po-ordered.jpg"><figcaption>PO Ordered: Receive Goods</figcaption></figure><figure><img class="crop" src="assets/s/w-po-receive-form.jpg"><figcaption>Form Receive (isi sebagian)</figcaption></figure><figure><img class="crop" src="assets/s/w-po-partial.jpg"><figcaption>PartiallyReceived + audit log</figcaption></figure><figure><img class="crop" src="assets/s/x-w-so-detail.jpg"><figcaption>SO Approved: hanya Issue Goods</figcaption></figure><figure><img class="crop" src="assets/s/x-w-so-issued.jpg"><figcaption>Setelah Issue: Fulfilled + ledger</figcaption></figure><figure><img class="crop" src="assets/s/w-so-detail-29.jpg"><figcaption>SO Approved dengan stok kurang</figcaption></figure><figure><img class="crop" src="assets/s/w-issue-denied.jpg"><figcaption>Issue ditolak: stok tidak mencukupi</figcaption></figure><figure><img class="crop2" src="assets/s/w-ledger.jpg"><figcaption>Stock Ledger</figcaption></figure><figure><img class="crop" src="assets/s/x-w-ledger-filter.jpg"><figcaption>Filter SKU "OFC"</figcaption></figure><figure><img class="crop2" src="assets/s/w-reports.jpg"><figcaption>Reports + Export Stock Ledger</figcaption></figure><figure><img class="crop" src="assets/s/x-w-profile-saved.jpg"><figcaption>Profil tersimpan</figcaption></figure></div>
+<h2>E.3 Pemeriksaan negatif (harus ditolak)</h2>
+<table><tr><th>Coba</th><th>Hasil yang benar</th></tr>
+<tr><td>Ketik <code>/users</code></td><td>403</td></tr>
+<tr><td>Ketik <code>/customers</code></td><td>403 (butuh <code>customers.view</code>)</td></tr>
+<tr><td>Buka <code>/sales-orders/create</code> atau POST buat SO</td><td>403 (butuh <code>sales_orders.menu</code>)</td></tr>
+<tr><td>POST <code>/sales-orders/{id}/approve</code> atau <code>/reject</code></td><td>403</td></tr>
+<tr><td>POST <code>/purchase-orders/{id}/submit</code> atau <code>/cancel</code></td><td>403</td></tr>
+<tr><td>Create/edit/deactivate produk, kategori, gudang, supplier, customer</td><td>403</td></tr>
+<tr><td>Buka <code>/sales-dashboard</code></td><td>403</td></tr></table><div class="grid"><figure><img class="crop" src="assets/s/x-w-403-users.jpg"><figcaption>403 untuk /users, /customers, /sales-orders/create, /sales-dashboard (halaman 403 yang sama)</figcaption></figure><figure><img class="crop" src="assets/s/x-w-403-po-create-ok.jpg"><figcaption>Pembanding: /purchase-orders/create boleh dibuka Warehouse</figcaption></figure><figure><img class="crop" src="assets/s/x-w-suppliers-readonly.jpg"><figcaption>/suppliers lewat URL: read-only</figcaption></figure></div>
+</div></section>
+
+<!-- ===================== LAMPIRAN F ===================== -->
+<section class="page flow"><div class="bar"><span class="tag">LAMPIRAN F</span>Matriks akses &amp; koreksi terhadap versi sebelumnya</div><div class="body">
+<h2>F.1 Matriks permission (dari <code>database/seed.sql</code>)</h2>
+<table><tr><th>Permission</th><th>Admin</th><th>Sales</th><th>Warehouse</th></tr>
+<tr><td>users.manage, products/categories/warehouses/suppliers/customers .manage, master_data.menu</td><td>✔</td><td>✘</td><td>✘</td></tr>
+<tr><td>customers.view</td><td>✔</td><td>✔</td><td>✘</td></tr>
+<tr><td>purchase_orders.manage (lihat, buat, receive)</td><td>✔</td><td>✘</td><td>✔</td></tr>
+<tr><td>purchase_orders.submit / .cancel</td><td>✔</td><td>✘</td><td>✘</td></tr>
+<tr><td>sales_orders.menu (lihat menu, buat/edit SO)</td><td>✔</td><td>✔</td><td>✘</td></tr>
+<tr><td>sales_orders.approve</td><td>✔</td><td>✘</td><td>✘</td></tr>
+<tr><td>sales_orders.issue</td><td>✔</td><td>✘</td><td>✔</td></tr>
+<tr><td>stock_ledger.view, reports.stock_ledger.view</td><td>✔</td><td>✘</td><td>✔</td></tr>
+<tr><td>reports.sales_orders.view</td><td>✔</td><td>✔ (milik sendiri)</td><td>✘</td></tr>
+<tr><td>reports.purchase_orders.view</td><td>✔</td><td>✘</td><td>✘</td></tr></table>
+<h2>F.2 Koreksi yang dilakukan pada panduan ini</h2>
+<table><tr><th>Versi lama</th><th>Fakta terverifikasi</th></tr>
+<tr><td>Dashboard sebagian di-cache Memcached</td><td>Dashboard tidak di-cache; Memcached hanya untuk <code>product:&lt;SKU&gt;</code> dan aturan validasi file; izin role di Redis (Lampiran B).</td></tr>
+<tr><td>Menu Sales: "Sales Orders, Customers, Reports"</td><td>Sidebar Sales: Dashboard, Products, Sales Orders, Reports. Customers tidak ada di sidebar (hanya via URL).</td></tr>
+<tr><td>Menu Warehouse: "Purchase Orders, Sales Orders (untuk issue), Stock Ledger"</td><td>Tidak ada menu Sales Orders. Issue dilakukan lewat Goods Issue Queue di dashboard. Sidebar juga memuat Products dan Reports.</td></tr>
+<tr><td>Admin menu: "Master Data, Procurement, Sales, Inventory, Reports, Users"</td><td>Lengkap: ditambah Dashboard; Master Data berisi Products, Categories, Warehouses, Suppliers, Customers; Users ada di grup Administration.</td></tr>
+<tr><td>Tombol "Terima", "Issue"</td><td>Label di aplikasi: "Receive Goods", "Issue Goods" (juga "Process Issue"/"Receive" di antrean dashboard).</td></tr>
+<tr><td>Kartu Stok "tidak bisa diubah"</td><td>Tidak ada rute/fitur edit atau hapus baris ledger. Skema tidak punya trigger DB yang melarangnya — jadi perlindungan ada di tingkat aplikasi.</td></tr>
+<tr><td>Sesi "bila Redis mati login tetap jalan"</td><td>Benar, dengan batasan: sesi lama tidak ikut pindah (Lampiran A.2).</td></tr></table>
+<h2>F.3 Catatan jujur untuk tanya-jawab</h2>
+<ul><li>Halaman daftar Categories, Warehouses, Suppliers, dan Products hanya butuh login; Sales &amp; Warehouse yang mengetik URL-nya melihat data read-only (tanpa tombol kelola). Yang dijaga ketat di server adalah aksi tulis. <code>/customers</code> dijaga <code>customers.view</code> (Warehouse → 403).</li>
+<li>Menu disembunyikan lewat <code>PermissionService</code> (yang di-cache 1 jam di Redis); guard server memakai data izin yang sama. Perubahan izin di database dapat tertunda hingga TTL habis.</li>
+<li>Menandai <span class="inf">inferensi</span> = disimpulkan dari pembacaan kode, belum dijalankan end-to-end.</li></ul>
+</div></section>
+
+</body>
+</html>
